@@ -1,6 +1,6 @@
 # Zabbix Modules Collection
 
-[中文](README.md) · [Русский](README_ru.md)
+[中文](README.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
 
 <div>
   <img src="images/wechat.jpg" width="20%" alt="wechat">
@@ -17,7 +17,7 @@ This collection contains independent modules that extend the Zabbix monitoring s
 
 ## Interface language
 
-Choose **Русский** in your Zabbix user profile to use the modules in Russian. If your profile uses the default language, the modules inherit the Zabbix system default (`default_lang`).
+Choose **Русский** in your Zabbix user profile to use the modules in Russian, or **Português (pt_BR)** to use them in Brazilian Portuguese. If your profile uses the default language, the modules inherit the Zabbix system default (`default_lang`).
 
 ## Modules
 

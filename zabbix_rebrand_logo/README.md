@@ -1,6 +1,6 @@
 # Zabbix 品牌 logo 设置
 
-[English](README_en.md) · [Русский](README_ru.md)
+[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
 
 ## ✨ 版本兼容性
 

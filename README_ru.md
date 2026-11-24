@@ -1,6 +1,6 @@
 # Коллекция модулей Zabbix
 
-[中文](README.md) · [English](README_en.md)
+[中文](README.md) · [English](README_en.md) · [Português (Brasil)](README_pt-BR.md)
 
 <div>
   <img src="images/wechat.jpg" width="20%" alt="QR-код WeChat">

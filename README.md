@@ -1,6 +1,6 @@
 # Zabbix Modules 集合
 
-[English](README_en.md) · [Русский](README_ru.md)
+[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
 
 <div>
   <img src="images/wechat.jpg" width="20%" alt="wechat">
@@ -17,7 +17,7 @@
 
 ## 界面语言
 
-在 Zabbix 用户资料中选择 **Русский** 即可使用俄语界面。用户资料选择默认语言时，模块会继承 Zabbix 的系统默认语言（`default_lang`）。
+在 Zabbix 用户资料中选择 **Русский** 即可使用俄语界面，选择 **Português (pt_BR)** 即可使用巴西葡萄牙语界面。用户资料选择默认语言时，模块会继承 Zabbix 的系统默认语言（`default_lang`）。
 
 ## 模块列表
 

@@ -1,6 +1,6 @@
 # Zabbix 自动拓扑图模块
 
-[English](README_en.md) · [Русский](README_ru.md)
+[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
 
 ## ✨ 版本兼容性
 

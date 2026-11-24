@@ -1,6 +1,6 @@
 # Zabbix LLDP Topology Module
 
-[中文](README.md) · [Русский](README_ru.md)
+[中文](README.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
 
 ## ✨ Version Compatibility
 

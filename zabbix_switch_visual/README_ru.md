@@ -1,6 +1,6 @@
 # Zabbix Switch Visual — панель коммутатора
 
-[中文](README.md) · [English](README_en.md)
+[中文](README.md) · [English](README_en.md) · [Português (Brasil)](README_pt-BR.md)
 
 ## Совместимость версий
 
