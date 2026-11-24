@@ -162,6 +162,58 @@ final class LanguageManager {
             'The backup options are invalid.' => 'Недопустимые параметры резервного копирования.',
             'Could not create a temporary backup file.' => 'Не удалось создать временный файл резервной копии.',
         ],
+        'pt_BR' => [
+            'Install a pg_dump client compatible with the PostgreSQL server version.' => 'Instale um cliente pg_dump compatível com a versão do servidor PostgreSQL.',
+            'Database export' => 'Exportação do banco de dados',
+            'Database type' => 'Tipo de banco de dados',
+            'Database version' => 'Versão do banco de dados',
+            'MySQL, MariaDB or PostgreSQL is required.' => 'É necessário MySQL, MariaDB ou PostgreSQL.',
+            'The PostgreSQL export failed.' => 'A exportação do PostgreSQL falhou.',
+            'PostgreSQL export requires proc_open and a compatible pg_dump client.' => 'A exportação do PostgreSQL requer proc_open e um cliente pg_dump compatível.',
+            'PostgreSQL password files cannot contain line breaks.' => 'Arquivos de senha do PostgreSQL não podem conter quebras de linha.',
+            'pg_dump failed. Check its version, database access and server logs.' => 'O pg_dump falhou. Verifique a versão, o acesso ao banco de dados e os logs do servidor.',
+            'Database tables' => 'Tabelas do banco de dados',
+            'Table name' => 'Nome da tabela',
+            'Engine' => 'Engine',
+            'Estimated size' => 'Tamanho estimado',
+            'Search tables' => 'Pesquisar tabelas',
+            'Exclude history records' => 'Excluir registros de histórico',
+            'Select all filtered tables' => 'Selecionar todas as tabelas filtradas',
+            'Selected tables: %d / %d' => 'Tabelas selecionadas: %d / %d',
+            'Table sizes include data and indexes.' => 'Os tamanhos das tabelas incluem dados e índices.',
+            'No matching tables.' => 'Nenhuma tabela correspondente.',
+            'No tables are available to export.' => 'Não há tabelas disponíveis para exportação.',
+            'Export options' => 'Opções de exportação',
+            'Table scope' => 'Escopo das tabelas',
+            'All tables' => 'Todas as tabelas',
+            'Selected tables' => 'Tabelas selecionadas',
+            'Unselected tables are exported as structure only.' => 'Tabelas não selecionadas são exportadas apenas com a estrutura.',
+            'Contents' => 'Conteúdo',
+            'Structure and data' => 'Estrutura e dados',
+            'Structure only' => 'Somente estrutura',
+            'Data only' => 'Somente dados',
+            'Destination' => 'Destino',
+            'Download in browser' => 'Baixar no navegador',
+            'Save on server' => 'Salvar no servidor',
+            'Server directory' => 'Diretório no servidor',
+            'SQL files over 500 MB are saved to this directory automatically.' => 'Arquivos SQL acima de 500 MB são salvos automaticamente neste diretório.',
+            'Export SQL' => 'Exportar SQL',
+            'Backup saved on the server' => 'Backup salvo no servidor',
+            'Backup exceeded 500 MB and was saved on the server' => 'O backup ultrapassou 500 MB e foi salvo no servidor',
+            'The database export failed.' => 'A exportação do banco de dados falhou.',
+            'The database export failed (MySQL error %d).' => 'A exportação do banco de dados falhou (erro MySQL %d).',
+            'Choose an export mode.' => 'Escolha um modo de exportação.',
+            'Select at least one table.' => 'Selecione pelo menos uma tabela.',
+            'The table selection is invalid. Refresh the page and retry.' => 'A seleção de tabelas é inválida. Atualize a página e tente novamente.',
+            'Could not write the backup. Check available disk space.' => 'Não foi possível gravar o backup. Verifique o espaço livre em disco.',
+            'Could not create a private backup file.' => 'Não foi possível criar um arquivo de backup privado.',
+            'Could not save the backup. Check permissions or retry in a second.' => 'Não foi possível salvar o backup. Verifique as permissões ou tente novamente em um segundo.',
+            'The server backup directory configuration is invalid.' => 'A configuração do diretório de backup no servidor é inválida.',
+            'Choose a private backup directory outside the web root.' => 'Escolha um diretório de backup privado fora da raiz web.',
+            'Choose a private, writable directory configured for backups.' => 'Escolha um diretório privado e gravável configurado para backups.',
+            'The backup options are invalid.' => 'As opções de backup são inválidas.',
+            'Could not create a temporary backup file.' => 'Não foi possível criar um arquivo temporário de backup.'
+        ],
     ];
 
     private static $currentLanguage;
@@ -175,6 +227,8 @@ final class LanguageManager {
 
             if (preg_match('/^ru(?:_|$)/', $locale)) {
                 self::$currentLanguage = 'ru_RU';
+            } elseif (preg_match('/^pt(?:_|$)/', $locale)) {
+                self::$currentLanguage = 'pt_BR';
             } else {
                 self::$currentLanguage = preg_match('/^zh(?:_|$)/', $locale) ? 'zh_CN' : self::DEFAULT_LANGUAGE;
             }

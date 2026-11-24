@@ -521,7 +521,7 @@ $content->addItem(new CJsScript('<script>
         if (!ts) { return "-"; }
         var d = new Date(ts * 1000);
         if (isNaN(d.getTime())) { return "-"; }
-        return locale === "ru-RU" ? d.toLocaleString(locale) : d.toLocaleString();
+        return locale === "ru-RU" || locale === "pt-BR" ? d.toLocaleString(locale) : d.toLocaleString();
     }
 
     function hideTooltip() {

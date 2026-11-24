@@ -36,6 +36,40 @@ if (!class_exists('ZabbixModuleNotice', false)) {
             'memory_usage rules are required' => 'Для использования памяти требуется хотя бы одно правило.',
         ];
 
+        private const PORTUGUESE = [
+            'If saving fails, change the directory ownership and check SELinux: ' => 'Se o salvamento falhar, altere o proprietário do diretório e verifique o SELinux: ',
+            'Directory ownership reminder: ' => 'Lembrete sobre o proprietário do diretório: ',
+            'Please change the directory ownership and check SELinux.' => 'Altere o proprietário do diretório e verifique o SELinux.',
+            'Configuration file: ' => 'Arquivo de configuração: ',
+            'Invalid JSON' => 'JSON inválido',
+            'Invalid config.json' => 'config.json inválido',
+            'Invalid provider' => 'Provedor inválido',
+            'Invalid region' => 'Região inválida',
+            'Account not found' => 'Conta não encontrada',
+            'Name is required.' => 'O nome é obrigatório.',
+            'Access key is required.' => 'A chave de acesso é obrigatória.',
+            'Secret key is required.' => 'A chave secreta é obrigatória.',
+            'Cannot lock config file' => 'Não foi possível bloquear o arquivo de configuração',
+            'Failed to initialize branding storage. Review the web server error log for details.' => 'Falha ao inicializar o armazenamento da identidade visual. Consulte o log de erros do servidor web para mais detalhes.',
+            'Failed to encode branding settings as JSON.' => 'Falha ao codificar as configurações de identidade visual como JSON.',
+            'Please select dates' => 'Selecione as datas',
+            'Help URL: only HTTP and HTTPS URLs are allowed.' => 'URL de ajuda: somente URLs HTTP e HTTPS são permitidas.',
+            'Server name: enter a name, or choose Default or Hidden.' => 'Nome do servidor: informe um nome ou escolha Padrão ou Oculto.',
+            'file too large.' => 'arquivo grande demais.',
+            'upload was only partially completed.' => 'o upload foi concluído apenas parcialmente.',
+            'no file was uploaded.' => 'nenhum arquivo foi enviado.',
+            'missing temporary upload directory.' => 'diretório temporário de upload ausente.',
+            'could not write file to disk.' => 'não foi possível gravar o arquivo em disco.',
+            'upload blocked by a PHP extension.' => 'upload bloqueado por uma extensão do PHP.',
+            'unknown upload error.' => 'erro de upload desconhecido.',
+            'invalid upload payload.' => 'conteúdo de upload inválido.',
+            'invalid file type. Allowed: PNG, JPG, GIF, ICO.' => 'tipo de arquivo inválido. Permitidos: PNG, JPG, GIF, ICO.',
+            'file too large. Maximum: 2 MB.' => 'arquivo grande demais. Máximo: 2 MB.',
+            'file content does not match the selected image format.' => 'o conteúdo do arquivo não corresponde ao formato de imagem selecionado.',
+            'cpu_usage rules are required' => 'Uso de CPU requer pelo menos uma regra.',
+            'memory_usage rules are required' => 'Uso de memória requer pelo menos uma regra.',
+        ];
+
         public static function language(): string {
             $locale = '';
             try {
@@ -61,6 +95,9 @@ if (!class_exists('ZabbixModuleNotice', false)) {
             if (preg_match('/^ru(?:[-_]|$)/i', $locale)) {
                 return 'ru_RU';
             }
+            if (preg_match('/^pt(?:[-_]|$)/i', $locale)) {
+                return 'pt_BR';
+            }
 
             return preg_match('/^zh(?:[-_]|$)/i', $locale) ? 'zh_CN' : 'en_US';
         }
@@ -68,6 +105,9 @@ if (!class_exists('ZabbixModuleNotice', false)) {
             $language = self::language();
             if ($language === 'ru_RU') {
                 return self::RUSSIAN[$english] ?? $english;
+            }
+            if ($language === 'pt_BR') {
+                return self::PORTUGUESE[$english] ?? $english;
             }
 
             return $language === 'zh_CN' ? $chinese : $english;
@@ -190,6 +230,9 @@ if (!class_exists('ZabbixModuleNotice', false)) {
             }
             $reverse = array_flip($translations);
             $english = $reverse[$message] ?? $message;
+            if ($language === 'pt_BR') {
+                return self::PORTUGUESE[$english] ?? $english;
+            }
             return $language === 'ru_RU' ? (self::RUSSIAN[$english] ?? $english) : $english;
         }
     }

@@ -176,6 +176,61 @@ class LanguageManager {
             'Time range exceeds the maximum allowed by Zabbix.' => 'Период превышает ограничение Zabbix.',
             'Failed to validate time range. Please try again.' => 'Не удалось проверить период. Повторите попытку.',
         ],
+        'pt_BR' => [
+            'Graph Trees' => 'Árvores de gráficos',
+            'Resource Tree' => 'Árvore de recursos',
+            'Host Groups' => 'Grupos de hosts',
+            'Hosts' => 'Hosts',
+            'Search...' => 'Pesquisar...',
+            'Expand All' => 'Expandir tudo',
+            'Collapse All' => 'Recolher tudo',
+            'Time Range' => 'Período',
+            'Last 10 Minutes' => 'Últimos 10 minutos',
+            'Last 30 Minutes' => 'Últimos 30 minutos',
+            'Last Hour' => 'Última hora',
+            'Last 3 Hours' => 'Últimas 3 horas',
+            'Last 6 Hours' => 'Últimas 6 horas',
+            'Last 12 Hours' => 'Últimas 12 horas',
+            'Last 24 Hours' => 'Últimas 24 horas',
+            'Last 2 Days' => 'Últimos 2 dias',
+            'Last 7 Days' => 'Últimos 7 dias',
+            'Last 30 Days' => 'Últimos 30 dias',
+            'Columns' => 'Colunas',
+            'Auto Refresh' => 'Atualização automática',
+            'Off' => 'Desligado',
+            'seconds' => 'segundos',
+            'Refresh' => 'Atualizar',
+            'All Graphs' => 'Todos os gráficos',
+            'Other' => 'Outros',
+            'No graphs available' => 'Nenhum gráfico disponível',
+            'No categories found' => 'Nenhuma categoria encontrada',
+            'Select a host to view graphs' => 'Selecione um host para ver os gráficos',
+            'Loading...' => 'Carregando...',
+            'Failed to load data' => 'Falha ao carregar os dados',
+            'Close' => 'Fechar',
+            'Pre-configured' => 'Pré-configurado',
+            'Auto-generated' => 'Gerado automaticamente',
+            'graphs' => 'gráficos',
+            'No data' => 'Sem dados',
+            'Custom' => 'Personalizado',
+            'From' => 'De',
+            'To' => 'Até',
+            'Apply' => 'Aplicar',
+            'Cancel' => 'Cancelar',
+            'Quick Select' => 'Seleção rápida',
+            'Custom Range' => 'Intervalo personalizado',
+            'Start time' => 'Hora inicial',
+            'End time' => 'Hora final',
+            'Time zone' => 'Fuso horário',
+            'Select a valid start and end time.' => 'Selecione uma hora inicial e final válidas.',
+            'Start time must be earlier than end time.' => 'A hora inicial deve ser anterior à hora final.',
+            'Export image' => 'Exportar imagem',
+            'Exporting...' => 'Exportando...',
+            'Failed to export image. Please try again.' => 'Falha ao exportar a imagem. Tente novamente.',
+            'Time range must be at least one minute.' => 'O período deve ter pelo menos um minuto.',
+            'Time range exceeds the maximum allowed by Zabbix.' => 'O período excede o máximo permitido pelo Zabbix.',
+            'Failed to validate time range. Please try again.' => 'Falha ao validar o período. Tente novamente.'
+        ],
     ];
     
     /**
@@ -400,6 +455,9 @@ class LanguageManager {
 
         if (preg_match('/^ru(?:[-_]|$)/i', trim($lowerLang))) {
             return 'ru_RU';
+        }
+        if (preg_match('/^pt(?:[-_]|$)/i', trim($lowerLang))) {
+            return 'pt_BR';
         }
         
         $langMap = [

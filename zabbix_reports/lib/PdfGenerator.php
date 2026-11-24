@@ -29,8 +29,8 @@ class PdfGenerator {
             return $this->generateTCPDF();
         }
 
-        // FPDF's built-in Arial font cannot display Cyrillic.
-        if (class_exists('FPDF') && LanguageManager::getCurrentLanguage() !== 'ru_RU') {
+        // FPDF's built-in Arial font cannot display Cyrillic or UTF-8 accented (pt_BR) text.
+        if (class_exists('FPDF') && !in_array(LanguageManager::getCurrentLanguage(), ['ru_RU', 'pt_BR'], true)) {
             return $this->generateFPDF();
         }
 
@@ -51,7 +51,7 @@ class PdfGenerator {
         $pdf->SetAutoPageBreak(TRUE, 25);
         $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
 
-        if (LanguageManager::getCurrentLanguage() === 'ru_RU') {
+        if (in_array(LanguageManager::getCurrentLanguage(), ['ru_RU', 'pt_BR'], true)) {
             $pdf->SetFont('dejavusans', '', 10);
         }
         

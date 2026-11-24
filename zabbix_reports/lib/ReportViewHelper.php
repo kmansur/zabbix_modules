@@ -1035,7 +1035,8 @@ class ReportViewHelper {
         // 表体
         $tbody = new \CTag('tbody', true);
         if (!empty($alerts)) {
-            $isRussian = LanguageManager::getCurrentLanguage() === 'ru_RU';
+            // ru_RU and pt_BR use localized day-first timestamps.
+            $isRussian = in_array(LanguageManager::getCurrentLanguage(), ['ru_RU', 'pt_BR'], true);
             $count = 0;
             foreach ($alerts as $alert) {
                 if ($count >= $limit) break;

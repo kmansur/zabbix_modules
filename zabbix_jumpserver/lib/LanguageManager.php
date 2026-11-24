@@ -207,6 +207,72 @@ class LanguageManager {
             'Problem' => 'Проблема',
             'Time' => 'Время',
         ],
+        'pt_BR' => [
+            'JumpServer' => 'JumpServer',
+            'JumpServer Sync' => 'Sincronização com o JumpServer',
+            'Select host group' => 'Selecione o grupo de hosts',
+            'Select host' => 'Selecione o host',
+            'All Groups' => 'Todos os grupos',
+            'All Hosts' => 'Todos os hosts',
+            'Push all host groups' => 'Enviar todos os grupos de hosts',
+            'Push all hosts' => 'Enviar todos os hosts',
+            'Push' => 'Enviar',
+            'Connect' => 'Conectar',
+            'Not pushed' => 'Não enviado',
+            'Pushed' => 'Enviado',
+            'Re-push' => 'Reenviar',
+            'Host Name' => 'Nome do host',
+            'IP Address' => 'Endereço IP',
+            'Platform' => 'Plataforma',
+            'Host Group' => 'Grupo de hosts',
+            'JumpServer Status' => 'Status do JumpServer',
+            'Action' => 'Ação',
+            'No hosts found' => 'Nenhum host encontrado',
+            'Total Hosts' => 'Total de hosts',
+            'Host Groups' => 'Grupos de hosts',
+            'Pushed Hosts' => 'Hosts enviados',
+            'Host List' => 'Lista de hosts',
+            'Invalid input parameters.' => 'Parâmetros de entrada inválidos.',
+            'JumpServer is not configured. Please edit data/config.json.' => 'O JumpServer não está configurado. Edite data/config.json.',
+            'Pushing...' => 'Enviando...',
+            'Push completed' => 'Envio concluído',
+            'Push failed' => 'Falha no envio',
+            'Created' => 'Criado',
+            'Updated' => 'Atualizado',
+            'Failed' => 'Falhou',
+            'Accounts linked' => 'Contas vinculadas',
+            'No permission.' => 'Sem permissão.',
+            'Confirm push all host groups to JumpServer?' => 'Confirma o envio de todos os grupos de hosts para o JumpServer?',
+            'Confirm push all hosts to JumpServer?' => 'Confirma o envio de todos os hosts para o JumpServer?',
+            'Configuration error' => 'Erro de configuração',
+            'hosts' => 'hosts',
+            'groups' => 'grupos',
+            'Alarm Status' => 'Status de alarme',
+            'All States' => 'Todos os estados',
+            'Search' => 'Pesquisar',
+            'Search by IP or host name' => 'Pesquisar por IP ou nome do host',
+            'OK' => 'OK',
+            'Not classified' => 'Não classificada',
+            'Information' => 'Informação',
+            'Warning' => 'Atenção',
+            'Average' => 'Média',
+            'High' => 'Alta',
+            'Disaster' => 'Desastre',
+            'Fetch JumpServer asset IDs' => 'Obter IDs de ativos do JumpServer',
+            'Fetch all assets from JumpServer and match by IP to update host tags?' => 'Obter todos os ativos do JumpServer e associá-los por IP para atualizar as tags dos hosts?',
+            'Fetching...' => 'Obtendo...',
+            'Fetch completed' => 'Obtenção concluída',
+            'Fetch failed' => 'Falha na obtenção',
+            'No assets found in JumpServer.' => 'Nenhum ativo encontrado no JumpServer.',
+            'Matched' => 'Correspondido',
+            'Skipped' => 'Ignorado',
+            'Show alarms' => 'Mostrar alarmes',
+            'No active alarms' => 'Nenhum alarme ativo',
+            'Active alarms' => 'Alarmes ativos',
+            'Severity' => 'Severidade',
+            'Problem' => 'Incidente',
+            'Time' => 'Hora'
+        ],
     ];
 
     public static function detectLanguage() {
@@ -340,6 +406,9 @@ class LanguageManager {
 
         if (preg_match('/^ru(?:[-_]|$)/i', trim($lowerLang))) {
             return 'ru_RU';
+        }
+        if (preg_match('/^pt(?:[-_]|$)/i', trim($lowerLang))) {
+            return 'pt_BR';
         }
 
         $langMap = [

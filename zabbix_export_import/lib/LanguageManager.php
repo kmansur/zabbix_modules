@@ -16,6 +16,9 @@ final class LanguageManager
         if (preg_match('/^ru(?:_|$)/i', $locale)) {
             return "ru_RU";
         }
+        if (preg_match('/^pt(?:_|$)/i', $locale)) {
+            return "pt_BR";
+        }
         return preg_match('/^[a-z]{2,3}_[A-Z]{2}$/D', $locale) ? $locale : "en_US";
     }
     public static function t(string $text): string

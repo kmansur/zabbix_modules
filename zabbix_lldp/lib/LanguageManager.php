@@ -170,6 +170,61 @@ class LanguageManager {
             'Hidden device alert' => 'Проблема у скрытого устройства',
             'Visible devices: %d' => 'Видимых устройств: %d',
         ],
+        'pt_BR' => [
+            'LLDP Topology' => 'Topologia LLDP',
+            'Select host group' => 'Selecione o grupo de hosts',
+            'Select host' => 'Selecione o host',
+            'All Groups' => 'Todos os grupos',
+            'All Hosts' => 'Todos os hosts',
+            'Query' => 'Consultar',
+            'Querying...' => 'Consultando...',
+            'Host Group' => 'Grupo de hosts',
+            'Host' => 'Host',
+            'Local device' => 'Dispositivo local',
+            'Remote device' => 'Dispositivo remoto',
+            'Local port' => 'Porta local',
+            'Remote port' => 'Porta remota',
+            'Last update' => 'Última atualização',
+            'Links' => 'Enlaces',
+            'Devices' => 'Dispositivos',
+            'Hosts' => 'Hosts',
+            'Stats format' => '%d hosts / %d enlaces / %d dispositivos',
+            'Click query to load topology' => 'Selecione os filtros e clique em Consultar para carregar a topologia',
+            'No LLDP data found' => 'Nenhum dado LLDP encontrado',
+            'No hosts with LLDP template' => 'Nenhum host vinculado ao template LLDP',
+            'Template not found' => 'Template LLDP não encontrado. Verifique template_name em data/config.json',
+            'Invalid input parameters.' => 'Parâmetros de entrada inválidos.',
+            'Query failed' => 'Falha na consulta',
+            'No permission.' => 'Sem permissão.',
+            'Local' => 'Local',
+            'Remote' => 'Remoto',
+            'Skipped items' => 'Itens ignorados',
+            'Zoom in' => 'Ampliar',
+            'Zoom out' => 'Reduzir',
+            'Details' => 'Detalhes',
+            'Click a node or link to view details' => 'Clique em um nó ou enlace para ver os detalhes',
+            'Node type' => 'Tipo de nó',
+            'Connected links' => 'Enlaces conectados',
+            'Link details' => 'Detalhes do enlace',
+            'Link filter' => 'Filtro de enlaces',
+            'Filter links by device or port' => 'Filtrar enlaces por dispositivo ou porta',
+            'Clear filter' => 'Limpar filtro',
+            'Matched links' => 'Enlaces correspondentes: %d',
+            'Host name' => 'Nome do host',
+            'Problem count' => 'Quantidade de incidentes',
+            'No active problem' => 'Nenhum incidente ativo',
+            'Problem details' => 'Detalhes do incidente',
+            'Severity: Not classified' => 'Severidade: Não classificada',
+            'Severity: Information' => 'Severidade: Informação',
+            'Severity: Warning' => 'Severidade: Atenção',
+            'Severity: Average' => 'Severidade: Média',
+            'Severity: High' => 'Severidade: Alta',
+            'Severity: Disaster' => 'Severidade: Desastre',
+            'Show %d more devices' => 'Mostrar mais %d dispositivos',
+            'Collapse branch' => 'Recolher ramo',
+            'Hidden device alert' => 'Alerta de dispositivo oculto',
+            'Visible devices: %d' => 'Dispositivos visíveis: %d'
+        ],
     ];
 
     public static function detectLanguage() {
@@ -244,6 +299,9 @@ class LanguageManager {
 
         if (preg_match('/^ru(?:[-_]|$)/i', trim($lowerLang))) {
             return 'ru_RU';
+        }
+        if (preg_match('/^pt(?:[-_]|$)/i', trim($lowerLang))) {
+            return 'pt_BR';
         }
         $langMap = [
             'zh_cn' => 'zh_CN', 'zh-cn' => 'zh_CN', 'zh' => 'zh_CN',
