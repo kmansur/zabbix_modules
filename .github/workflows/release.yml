@@ -1,12 +1,12 @@
 name: Release Zabbix Modules
 
-# 当任意模块的 manifest.json 中 version 字段升级并推送到主分支时，
-# 自动打包所有模块和整体项目到一个 Release 中。
-# 版本号格式：模块数量.大版本.小版本（如 8.1.0）
-# Release Assets 包含：
-#   - zabbix_modules-<版本号>.tar.gz（整体打包）
-#   - zabbix_<模块名>-<版本号>.tar.gz（每个模块独立打包）
-# 也支持手动触发。
+# When the version field in any module's manifest.json is bumped and pushed to the main branch,
+# all modules and the whole project are packaged automatically into one Release.
+# Version format: module count.major.minor (e.g. 8.1.0)
+# Release assets include:
+#   - zabbix_modules-<version>.tar.gz (whole project)
+#   - zabbix_<module>-<version>.tar.gz (one package per module)
+# Manual triggering is also supported.
 
 on:
   push:
@@ -138,12 +138,12 @@ jobs:
             echo ""
             echo "### Assets"
             echo ""
-            echo "- \`zabbix_modules-${VERSION}.tar.gz\` - 所有模块整体打包（All modules in one package）"
-            echo "- \`zabbix_<module>-<version>.tar.gz\` - 单个模块独立打包（Individual module packages）"
+            echo "- \`zabbix_modules-${VERSION}.tar.gz\` - All modules in one package"
+            echo "- \`zabbix_<module>-<version>.tar.gz\` - Individual module packages"
             echo ""
             echo "### Deployment"
             echo ""
-            echo "#### 选项 A：部署所有模块（整体包）"
+            echo "#### Option A: deploy all modules (full package)"
             echo ""
             echo "1. Download \`zabbix_modules-${VERSION}.tar.gz\` below"
             echo "2. Upload to Zabbix server and extract:"

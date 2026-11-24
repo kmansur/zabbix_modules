@@ -2,7 +2,7 @@
 (function() {
     "use strict";
 
-    var labels = {"querying":"查询中...","query":"查询","queryFailed":"查询失败","statsFormat":"%d 主机 \/ %d 链路 \/ %d 设备","placeholder":"请选择条件并点击查询以加载拓扑","noData":"未找到 LLDP 数据","localDevice":"本地设备","remoteDevice":"对端设备","localPort":"本地端口","remotePort":"对端端口","lastUpdate":"更新时间","local":"本地","remote":"对端","skipped":"跳过项","zoomIn":"放大","zoomOut":"缩小","clickExpand":"点击展开下层邻居","hiddenNeighbors":"隐藏邻居","inferredLink":"推断链路","topologyGroup":"拓扑","layersShown":"默认显示前 3 层，点击或双击带 +N 的节点展开更深层","dragNode":"拖动移动节点","moreRemotes":"更多对端"};
+    var labels = {"querying": "Querying...", "query": "Query", "queryFailed": "Query failed", "statsFormat": "%d hosts \/ %d links \/ %d devices", "placeholder": "Select filters and click Query to load topology", "noData": "No LLDP data found", "localDevice": "Local device", "remoteDevice": "Remote device", "localPort": "Local port", "remotePort": "Remote port", "lastUpdate": "Last update", "local": "Local", "remote": "Remote", "skipped": "Skipped items", "zoomIn": "Zoom in", "zoomOut": "Zoom out", "clickExpand": "Click to expand the next level of neighbors", "hiddenNeighbors": "Hidden neighbors", "inferredLink": "Inferred link", "topologyGroup": "Topology", "layersShown": "The first 3 levels are shown by default; click or double-click a node with +N to expand deeper levels", "dragNode": "Drag to move the node", "moreRemotes": "More remote devices"};
     var NODE_R = 10;
     var LABEL_PAD = 56;
     var ZOOM_MIN = 0.5;

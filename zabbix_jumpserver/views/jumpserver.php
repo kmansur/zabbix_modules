@@ -21,7 +21,7 @@ $searchTerm = (string) ($data['search'] ?? '');
 $severityOptions = $data['severity_options'] ?? [];
 $isConfigured = !empty($data['is_configured']);
 
-// 严重度 => [显示名, CSS 类]
+// Severity => [display name, CSS class]
 $severityMeta = [
     -1 => [LanguageManager::t('OK'), 'sev-ok'],
     0  => [LanguageManager::t('Not classified'), 'sev-0'],
@@ -380,22 +380,22 @@ $styleTag = new CTag('style', true, '
 
 $content = (new CDiv())->addClass('jms-container');
 
-// 未配置提示
+// Not configured hint
 if (!$isConfigured) {
     $content->addItem(
-        (new CDiv('⚠️ ' . LanguageManager::t('JumpServer is not configured. Please edit data/config.json.').'\n'.\ZabbixModuleNotice::text('Configuration file: ', '配置文件：').\Modules\ZabbixJumpserver\Lib\ConfigManager::getConfigPath()))
+        (new CDiv('⚠️ ' . LanguageManager::t('JumpServer is not configured. Please edit data/config.json.').'\n'.\ZabbixModuleNotice::text('Configuration file: ').\Modules\ZabbixJumpserver\Lib\ConfigManager::getConfigPath()))
             ->addClass('jms-alert')
     );
 }
 
-// ── 顶部工具栏：两个下拉框 + 两个推送按钮 ──
+// ── Top toolbar: two dropdowns + two push buttons ──
 $form = (new CForm('get'))
     ->setAction('zabbix.php?action=jumpserver')
     ->addItem((new CInput('hidden', 'action', 'jumpserver')));
 
 $toolbar = (new CDiv())->addClass('jms-toolbar');
 
-// 主机分组下拉
+// Host group dropdown
 $groupField = (new CDiv())->addClass('jms-field');
 $groupField->addItem(new CLabel('📂 ' . LanguageManager::t('Select host group')));
 $groupSelect = (new CTag('select', true))
@@ -414,7 +414,7 @@ foreach ($hostGroups as $group) {
 $groupField->addItem($groupSelect);
 $toolbar->addItem($groupField);
 
-// 主机下拉
+// Host dropdown
 $hostField = (new CDiv())->addClass('jms-field');
 $hostField->addItem(new CLabel('🖥️ ' . LanguageManager::t('Select host')));
 $hostSelect = (new CTag('select', true))
@@ -434,7 +434,7 @@ foreach ($hosts as $host) {
 $hostField->addItem($hostSelect);
 $toolbar->addItem($hostField);
 
-// 告警状态下拉
+// Alarm status dropdown
 $severityField = (new CDiv())->addClass('jms-field');
 $severityField->addItem(new CLabel('🚨 ' . LanguageManager::t('Alarm Status')));
 $severitySelect = (new CTag('select', true))
@@ -453,7 +453,7 @@ foreach ($severityOptions as $sevValue => $sevLabel) {
 $severityField->addItem($severitySelect);
 $toolbar->addItem($severityField);
 
-// 搜索框（IP / 主机名）
+// Search box (IP / host name)
 $searchField = (new CDiv())->addClass('jms-field jms-search-field');
 $searchField->addItem(new CLabel('🔍 ' . LanguageManager::t('Search')));
 $searchWrap = (new CDiv())->addClass('jms-search-wrap');
@@ -471,7 +471,7 @@ $searchWrap->addItem($searchBtn);
 $searchField->addItem($searchWrap);
 $toolbar->addItem($searchField);
 
-// 推送按钮组
+// Push button group
 $actions = (new CDiv())->addClass('jms-toolbar-actions');
 $pushGroupsBtn = (new CTag('button', true, '📂 ' . LanguageManager::t('Push all host groups')))
     ->addClass('jms-btn jms-btn-primary')
@@ -498,7 +498,7 @@ $toolbar->addItem($actions);
 $form->addItem($toolbar);
 $content->addItem($form);
 
-// ── 统计卡片 ──
+// ── Statistics cards ──
 $content->addItem(
     (new CDiv())
         ->addClass('jms-stats')
@@ -537,7 +537,7 @@ $content->addItem(
         )
 );
 
-// ── 主机表格 ──
+// ── Host table ──
 $table = (new CTable())->addClass('jms-table');
 $table->setHeader([
     LanguageManager::t('#'),
@@ -560,7 +560,7 @@ if (empty($hosts)) {
     foreach ($hosts as $host) {
         $rowNum++;
 
-        // 主机名（链接到 Zabbix 主机详情）
+        // Host name (links to the Zabbix host details)
         $nameCol = new CCol(
             (new CLink(htmlspecialchars($host['name'] !== '' ? $host['name'] : $host['host']),
                 'zabbix.php?action=host.view&hostid=' . $host['hostid']))->addClass('host-link')
@@ -569,7 +569,7 @@ if (empty($hosts)) {
         // IP
         $ipCol = new CCol(htmlspecialchars($host['ip'] !== '' ? $host['ip'] : '-'));
 
-        // 分组
+        // Group
         $groupCol = new CCol();
         if (!empty($host['group_names'])) {
             foreach ($host['group_names'] as $gn) {
@@ -580,7 +580,7 @@ if (empty($hosts)) {
             $groupCol->addItem('-');
         }
 
-        // 告警状态：按严重度展示各自数量；无告警显示“正常”
+        // Alarm status: counts per severity; "OK" when there are no alarms
         $problemCounts = $host['problem_counts'] ?? [];
         $sevCol = new CCol();
         if (empty($problemCounts)) {
@@ -599,7 +599,7 @@ if (empty($hosts)) {
             }
         }
 
-        // 状态：未推送 → 推送按钮；已推送 → 已推送/悬停重新推送
+        // Status: not pushed → push button; pushed → pushed / re-push on hover
         $statusCol = new CCol();
         $isPushed = ($host['asset_id'] ?? '') !== '';
         if ($isPushed) {
@@ -624,7 +624,7 @@ if (empty($hosts)) {
             $statusCol->addItem($pushBtn);
         }
 
-        // 操作列：已推送 → 连接
+        // Action column: pushed → connect
         $actionCol = new CCol();
         if ($isPushed) {
             $connectUrl = ConfigManager::buildConnectUrl($host['asset_id']);
@@ -638,7 +638,7 @@ if (empty($hosts)) {
             $actionCol->addItem((new CSpan('-'))->setAttribute('style', 'color:#6c757d;'));
         }
 
-        // 首列：展开切换 + 序号
+        // First column: expand toggle + row number
         $hostidStr = (string) $host['hostid'];
         $toggle = (new CSpan('▶'))
             ->addClass('jms-expand-toggle')
@@ -660,7 +660,7 @@ if (empty($hosts)) {
         ]))->setAttribute('data-hostid', $hostidStr);
         $table->addRow($mainRow);
 
-        // 展开明细行：展示该主机所有告警
+        // Expanded detail row: all alarms of the host
         $detailWrap = (new CDiv())->addClass('jms-detail-wrap');
         $problems = $host['problems'] ?? [];
         if (empty($problems)) {
@@ -804,7 +804,7 @@ $content->addItem(new CJsScript('<script>
 
     window.jmsOnGroupChange = function(select) {
         var form = select.closest("form");
-        // 切换分组时重置主机选择
+        // Reset the host selection when the group changes
         var hostSelect = document.getElementById("jms-host-select");
         if (hostSelect) { hostSelect.value = "0"; }
         if (form) { form.submit(); }

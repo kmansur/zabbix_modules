@@ -1,6 +1,6 @@
 # Módulo Zabbix Database Export
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -22,7 +22,7 @@ Este módulo de frontend exporta backups do banco de dados a partir do Zabbix We
 - **Seleção de tabelas**. Mostra nomes das tabelas, engines de armazenamento e tamanhos estimados incluindo dados e índices. Filtre por nome e selecione tabelas em lote.
 - **Modos de exportação**. Exporte estrutura e dados, somente estrutura ou somente dados. Tabelas não selecionadas sempre mantêm suas instruções `CREATE TABLE`, com colunas, índices e restrições.
 - **Destino da saída**. Baixe no navegador ou salve no servidor. Com o download pelo navegador, arquivos de até 500 MB (500.000.000 bytes) são baixados diretamente; arquivos maiores são salvos automaticamente no diretório informado.
-- **Fuso horário e idioma**. Os nomes de arquivo incluem o tipo de banco e usam o fuso horário do usuário atual. A interface segue o idioma do frontend e está disponível em inglês, chinês, russo e português do Brasil.
+- **Fuso horário e idioma**. Os nomes de arquivo incluem o tipo de banco e usam o fuso horário do usuário atual. A interface segue o idioma do frontend e está disponível em inglês e português do Brasil.
 - **Interface**. CSS e JavaScript locais oferecem um layout responsivo inspirado no Element Plus.
 
 ![1](images/1.png)

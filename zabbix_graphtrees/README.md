@@ -1,105 +1,104 @@
-# Zabbix Graph Trees 模块
+# Zabbix Graph Trees Module
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-这是一个 Zabbix 前端模块，提供树形资源浏览和监控图形可视化功能。模块在 Zabbix Web 的监控菜单下新增 Graph Trees 菜单，支持树形导航和实时图表展示。
+This is a Zabbix frontend module that provides tree-structured resource browsing and monitoring graph visualization. The module adds a Graph Trees menu under the Monitoring section of Zabbix Web, supporting tree navigation and real-time chart display.
 
 ![1](images/1.png)
-![2](images/2.png)
 
-## 功能特性
+## Features
 
-- **树形资源浏览**：
-  - 主机分组层级展示
-  - 主机列表展示
-  - 快速搜索定位
-  - 展开/收起控制
-- **标记过滤**：
-  - 支持按标记（Tag）和标记值筛选监控项
-  - 监控项多选下拉框，灵活选择要展示的图表
-- **图形展示**：
-  - 使用 Zabbix 原生图表展示预配置图形和自动生成图形
-  - 图表放大全屏查看
-  - 自动刷新功能（支持30/60/120/300秒间隔）
-  - 多种快捷时间范围（最近10分钟至30天），支持手动选择开始和结束时间
-  - 每张图表右上角提供导出图标按钮，自动下载高清 PNG（绘图区 2400×600）
-- **国际化支持**：支持中文、英文和俄语界面
-- **响应式设计**：适配不同屏幕尺寸
-- **现代化界面**：采用清晰简洁的设计风格
+- **Tree-structured Resource Browsing**:
+  - Host group hierarchical display
+  - Host list display
+  - Quick search positioning
+  - Expand/collapse control
+- **Tag Filtering**:
+  - Filter items by tags and tag values
+  - Multi-select dropdown for flexible chart selection
+- **Chart Display**:
+  - Native Zabbix charts for pre-configured and auto-generated graphs
+  - Full-screen chart zoom view
+  - Auto-refresh (30/60/120/300 second intervals)
+  - Quick time ranges from the last 10 minutes to 30 days, plus manual start and end times
+  - An export icon at the top right of each chart downloads a high-resolution PNG (2400×600 plot area)
+- **Internationalization**: English and Brazilian Portuguese interfaces
+- **Responsive Design**: Adapts to different screen sizes
+- **Modern Interface**: Clean and concise design style
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
 ```bash
-# Zabbix 6.0 / 7.0 部署方法
+# Zabbix 6.0 / 7.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/modules/
 
-# Zabbix 7.2+ / 7.4 / 8.0 部署方法
+# Zabbix 7.2+ / 7.4 / 8.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/ui/modules/
 ```
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
 
 ```bash
-# ⚠️ 如果使用Zabbix 6.0，修改manifest_version
+# ⚠️ For Zabbix 6.0, modify manifest_version
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_graphtrees/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 转到 **Administration → General → Modules**。
-2. 点击 **Scan directory** 按钮扫描新模块。
-3. 找到 "Zabbix Graph Trees" 模块，点击启用模块。
-4. 刷新页面，模块将在 **Monitoring** 菜单下显示为 "Graph Trees" 子菜单。
+1. Go to **Administration → General → Modules**.
+2. Click **Scan directory** to scan for new modules.
+3. Find the "Zabbix Graph Trees" module and enable it.
+4. Refresh the page. The module will appear under the **Monitoring** menu as "Graph Trees" submenu.
 
-## 注意事项
+## Notes
 
-- **性能考虑**：对于大型环境，建议适当限制查询结果数量。
-- **数据准确性**：显示的信息基于Zabbix数据库的当前状态。
-- **监控项依赖**：图形展示依赖于相应的监控项配置。
+- **Performance**: For large environments, consider limiting query result quantities appropriately.
+- **Data Accuracy**: Displayed information is based on the current state of the Zabbix database.
+- **Item Dependencies**: Chart display depends on corresponding item configuration.
 
-### 目录归属与保存提示
+### Directory ownership and save errors
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-## 开发
+## Development
 
-插件基于Zabbix模块框架开发。文件结构：
+The module is built on the Zabbix module framework. File structure:
 
-- `manifest.json`：模块配置
-- `Module.php`：菜单注册
-- `actions/GraphTrees.php`：图形树业务逻辑处理
-- `actions/GraphTreesData.php`：数据获取业务逻辑处理
-- `views/graphtrees.php`：图形树页面视图
-- `lib/LanguageManager.php`：国际化语言管理
-- `lib/ViewRenderer.php`：视图渲染工具
-- `lib/ZabbixVersion.php`：版本兼容工具
+- `manifest.json`: Module configuration
+- `Module.php`: Menu registration
+- `actions/GraphTrees.php`: Graph trees business logic
+- `actions/GraphTreesData.php`: Data acquisition business logic
+- `views/graphtrees.php`: Graph trees page view
+- `lib/LanguageManager.php`: Internationalization language management
+- `lib/ViewRenderer.php`: View rendering utilities
+- `lib/ZabbixVersion.php`: Version compatibility utilities
 
-如需扩展，可参考[Zabbix模块开发文档](https://www.zabbix.com/documentation/7.0/en/devel/modules)。
+For extensions, refer to [Zabbix module documentation](https://www.zabbix.com/documentation/7.0/en/devel/modules).
 
-## 模块配置
+## Module Configuration
 
-选择主机组与主机，按标签筛选监控项，再设置图表时间范围和自动刷新周期。
+Select host groups and hosts, filter items by tags, and set the chart time range and automatic refresh interval.
 
-时间范围选择“自定义范围”后，填写开始和结束时间后自动校验并刷新图表。时间使用 Zabbix 用户时区，开始时间必须早于结束时间；列表图表和已打开的放大图会同步更新。刷新时保留已应用的自定义范围。
+Choose **Custom Range**, enter a start and end time. Changes automatically validate and refresh the charts. Times use the Zabbix user time zone. The start must precede the end. Both the chart grid and any open zoom view update together, and refreshes retain the applied custom range.
 
-应用前使用 Zabbix 原生时间解析和最大跨度配置进行服务端校验。无效、过短或超出上限的范围会显示错误，并保留上次生效范围；校验期间切换快捷范围不会被旧请求覆盖。
+Before applying, the server validates the range with the native Zabbix time parser and maximum-period setting. Invalid, too-short, or excessive ranges show an error and retain the last applied range. Switching to a preset also prevents an older validation response from overriding it.
 
-点击任意图表右上角的导出图标，按该图表已应用的时间范围生成高清 PNG 并自动下载。预配置图形和自动生成图形均支持导出，文件名包含主机、图表名称和时间范围。
+Click the export icon at the top right of any chart to generate and download a high-resolution PNG using its applied time range. Both pre-configured and auto-generated graphs support export. Filenames include the host, chart name, and time range.
 
-导出会检查 PNG 是否能正常解码及实际尺寸，拒绝把登录页面、损坏图片或 Zabbix 返回的小尺寸错误图当作高清图下载。完整开发环境测试记录与复测脚本见 [1.1.0 测试报告](tests/README.md)。
+Exports verify PNG decoding and actual dimensions, rejecting login pages, corrupt images, and small error images returned by Zabbix. See the [1.1.0 development-environment test report](tests/README.md) for results and repeatable browser scripts.
 
-## 许可证
+## License
 
-本项目遵循Zabbix的许可证。详情请见[Zabbix许可证](https://www.zabbix.com/license)。
+This project follows the Zabbix license. For details, see [Zabbix License](https://www.zabbix.com/license).

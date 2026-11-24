@@ -3,10 +3,10 @@
 namespace Modules\ZabbixSnmp\Lib;
 
 /**
- * 将 Zabbix Host Interface SNMPv3 字段规范化为 net-snmp 可识别的字符串。
+ * Normalize Zabbix host interface SNMPv3 fields into strings net-snmp understands.
  *
- * Zabbix 7.x API 返回 securitylevel / authprotocol / privprotocol 为整型枚举；
- * Zabbix 6.x 或手动连接模式可能已是字符串。本类兼容两种输入。
+ * The Zabbix 7.x API returns securitylevel / authprotocol / privprotocol as integer enums;
+ * Zabbix 6.x or manual connection mode may already provide strings. This class accepts both.
  *
  * @see https://www.zabbix.com/documentation/7.0/en/manual/api/reference/hostinterface/object
  */
@@ -36,12 +36,12 @@ class SnmpConnectionMapper {
         5 => 'AES256C',
     ];
 
-    /** net-snmp -a 常用名（Zabbix API 为 SHA1） */
+    /** Common net-snmp -a names (SHA1 in the Zabbix API) */
     private const AUTH_NETSNMP = [
         'SHA1' => 'SHA',
     ];
 
-    /** net-snmp -x 常用名（Zabbix API 为 AES128） */
+    /** Common net-snmp -x names (AES128 in the Zabbix API) */
     private const PRIV_NETSNMP = [
         'AES128' => 'AES',
     ];
@@ -110,7 +110,7 @@ class SnmpConnectionMapper {
             }
         }
 
-        // 手动模式常见简写 DES / AES
+        // Common manual-mode abbreviations DES / AES
         if ($normalized === 'AES') {
             return 'AES';
         }

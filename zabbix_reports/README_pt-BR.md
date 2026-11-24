@@ -1,6 +1,6 @@
 # Módulo Zabbix Reports
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -30,7 +30,7 @@ O Zabbix Reports é um módulo de frontend do Zabbix que gera relatórios diári
   - Exportação manual em PDF
   - Envio do relatório por e-mail (formato HTML)
   - Seleção de intervalo de datas personalizado
-- Internacionalização: chinês, inglês, russo e português do Brasil
+- Internacionalização: inglês e português do Brasil
 - Design responsivo: adapta-se a diferentes tamanhos de tela
 - Interface moderna: cores em degradê e animações
 - Compatibilidade: suporta os templates de Linux Agent e Windows Agent
@@ -93,7 +93,7 @@ Para estender o módulo, consulte a documentação de desenvolvimento de módulo
 
 Selecione um grupo de hosts e o período no menu do relatório. Gere a pré-visualização e use as ações da página para exportar em PDF ou enviar por e-mail.
 
-Em português do Brasil, as datas são exibidas no formato dd/mm/aaaa. As exportações em PDF em russo ou em português usam o TCPDF com uma fonte Unicode (DejaVu Sans). Quando o TCPDF não está disponível, esses relatórios são baixados como HTML pronto para impressão.
+Em português do Brasil, as datas são exibidas no formato dd/mm/aaaa. As exportações em PDF em português usam o TCPDF com uma fonte Unicode (DejaVu Sans). Quando o TCPDF não está disponível, os relatórios em português são baixados como HTML pronto para impressão.
 
 ## Licença
 

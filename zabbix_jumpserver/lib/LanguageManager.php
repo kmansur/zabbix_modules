@@ -9,72 +9,6 @@ class LanguageManager {
 
     private static $currentLanguage = null;
     private static $translations = [
-        'zh_CN' => [
-            'JumpServer' => 'JumpServer',
-            'JumpServer Sync' => 'JumpServer 同步',
-            'Select host group' => '选择主机分组',
-            'Select host' => '选择主机',
-            'All Groups' => '所有分组',
-            'All Hosts' => '所有主机',
-            'Push all host groups' => '推送所有主机组',
-            'Push all hosts' => '推送所有主机',
-            'Push' => '推送',
-            'Connect' => '连接',
-            'Not pushed' => '未推送',
-            'Pushed' => '已推送',
-            'Re-push' => '重新推送',
-            'Host Name' => '主机名',
-            'IP Address' => 'IP地址',
-            'Platform' => '平台',
-            'Host Group' => '主机分组',
-            'JumpServer Status' => 'JumpServer 状态',
-            'Action' => '操作',
-            'No hosts found' => '未找到主机',
-            'Total Hosts' => '主机总数',
-            'Host Groups' => '主机分组',
-            'Pushed Hosts' => '已推送主机',
-            'Host List' => '主机列表',
-            'Invalid input parameters.' => '无效的输入参数。',
-            'JumpServer is not configured. Please edit data/config.json.' => 'JumpServer 未配置，请编辑 data/config.json。',
-            'Pushing...' => '推送中...',
-            'Push completed' => '推送完成',
-            'Push failed' => '推送失败',
-            'Created' => '创建',
-            'Updated' => '更新',
-            'Failed' => '失败',
-            'Accounts linked' => '账号关联',
-            'No permission.' => '没有权限。',
-            'Confirm push all host groups to JumpServer?' => '确认推送所有主机组到 JumpServer 吗？',
-            'Confirm push all hosts to JumpServer?' => '确认推送所有主机到 JumpServer 吗？',
-            'Configuration error' => '配置错误',
-            'hosts' => '个主机',
-            'groups' => '个分组',
-            'Alarm Status' => '告警状态',
-            'All States' => '所有状态',
-            'Search' => '搜索',
-            'Search by IP or host name' => '按 IP 或主机名搜索',
-            'OK' => '正常',
-            'Not classified' => '未分类',
-            'Information' => '信息',
-            'Warning' => '警告',
-            'Average' => '一般严重',
-            'High' => '严重',
-            'Disaster' => '灾难',
-            'Fetch JumpServer asset IDs' => '获取 JumpServer 资产 ID',
-            'Fetch all assets from JumpServer and match by IP to update host tags?' => '从 JumpServer 获取所有资产并按 IP 匹配，更新主机标记吗？',
-            'Fetching...' => '获取中...',
-            'Fetch completed' => '获取完成',
-            'Fetch failed' => '获取失败',
-            'No assets found in JumpServer.' => 'JumpServer 中没有资产。',
-            'Matched' => '匹配',
-            'Skipped' => '跳过',
-            'Show alarms' => '展开告警',
-            'No active alarms' => '当前无告警',
-            'Active alarms' => '当前告警',
-            'Severity' => '严重度',
-            'Problem' => '告警',
-            'Time' => '时间',
-        ],
         'en_US' => [
             'JumpServer' => 'JumpServer',
             'JumpServer Sync' => 'JumpServer Sync',
@@ -140,72 +74,6 @@ class LanguageManager {
             'Severity' => 'Severity',
             'Problem' => 'Problem',
             'Time' => 'Time',
-        ],
-        'ru_RU' => [
-            'JumpServer' => 'JumpServer',
-            'JumpServer Sync' => 'Синхронизация с JumpServer',
-            'Select host group' => 'Выберите группу узлов сети',
-            'Select host' => 'Выберите узел сети',
-            'All Groups' => 'Все группы',
-            'All Hosts' => 'Все узлы сети',
-            'Push all host groups' => 'Отправить все группы узлов сети',
-            'Push all hosts' => 'Отправить все узлы сети',
-            'Push' => 'Отправить',
-            'Connect' => 'Подключиться',
-            'Not pushed' => 'Не отправлено',
-            'Pushed' => 'Отправлено',
-            'Re-push' => 'Отправить повторно',
-            'Host Name' => 'Имя узла сети',
-            'IP Address' => 'IP-адрес',
-            'Platform' => 'Платформа',
-            'Host Group' => 'Группа узлов сети',
-            'JumpServer Status' => 'Состояние JumpServer',
-            'Action' => 'Действие',
-            'No hosts found' => 'Узлы сети не найдены',
-            'Total Hosts' => 'Всего узлов сети',
-            'Host Groups' => 'Группы узлов сети',
-            'Pushed Hosts' => 'Отправлено узлов сети',
-            'Host List' => 'Список узлов сети',
-            'Invalid input parameters.' => 'Недопустимые входные параметры.',
-            'JumpServer is not configured. Please edit data/config.json.' => 'JumpServer не настроен. Измените data/config.json.',
-            'Pushing...' => 'Отправка…',
-            'Push completed' => 'Отправка завершена',
-            'Push failed' => 'Не удалось отправить',
-            'Created' => 'Создано',
-            'Updated' => 'Обновлено',
-            'Failed' => 'Ошибка',
-            'Accounts linked' => 'Учётные записи связаны',
-            'No permission.' => 'Недостаточно прав.',
-            'Confirm push all host groups to JumpServer?' => 'Отправить все группы узлов сети в JumpServer?',
-            'Confirm push all hosts to JumpServer?' => 'Отправить все узлы сети в JumpServer?',
-            'Configuration error' => 'Ошибка конфигурации',
-            'hosts' => 'узлов сети',
-            'groups' => 'групп',
-            'Alarm Status' => 'Состояние проблем',
-            'All States' => 'Все состояния',
-            'Search' => 'Поиск',
-            'Search by IP or host name' => 'Поиск по IP-адресу или имени узла сети',
-            'OK' => 'ОК',
-            'Not classified' => 'Не классифицировано',
-            'Information' => 'Информация',
-            'Warning' => 'Предупреждение',
-            'Average' => 'Средняя',
-            'High' => 'Высокая',
-            'Disaster' => 'Чрезвычайная',
-            'Fetch JumpServer asset IDs' => 'Получить ID ресурсов JumpServer',
-            'Fetch all assets from JumpServer and match by IP to update host tags?' => 'Получить все ресурсы JumpServer и обновить теги узлов сети по совпадениям IP-адресов?',
-            'Fetching...' => 'Получение…',
-            'Fetch completed' => 'Получение завершено',
-            'Fetch failed' => 'Не удалось получить данные',
-            'No assets found in JumpServer.' => 'В JumpServer не найдено ресурсов.',
-            'Matched' => 'Сопоставлено',
-            'Skipped' => 'Пропущено',
-            'Show alarms' => 'Показать проблемы',
-            'No active alarms' => 'Нет активных проблем',
-            'Active alarms' => 'Активные проблемы',
-            'Severity' => 'Важность',
-            'Problem' => 'Проблема',
-            'Time' => 'Время',
         ],
         'pt_BR' => [
             'JumpServer' => 'JumpServer',
@@ -402,48 +270,16 @@ class LanguageManager {
     }
 
     private static function mapZabbixLangToOurs($zabbixLang) {
-        $lowerLang = strtolower(trim($zabbixLang));
-
-        if (preg_match('/^ru(?:[-_]|$)/i', trim($lowerLang))) {
-            return 'ru_RU';
+        $lang = strtolower(str_replace('-', '_', trim((string) $zabbixLang)));
+        if ($lang === self::LANG_DEFAULT) {
+            return self::LANG_DEFAULT;
         }
-        if (preg_match('/^pt(?:[-_]|$)/i', trim($lowerLang))) {
+        // Supported languages: Brazilian Portuguese (pt*) and English (everything else).
+        if (preg_match('/^pt(?:_|$)/', $lang)) {
             return 'pt_BR';
         }
 
-        $langMap = [
-            'zh_cn' => 'zh_CN',
-            'zh-cn' => 'zh_CN',
-            'zh_tw' => 'zh_CN',
-            'zh-tw' => 'zh_CN',
-            'zh' => 'zh_CN',
-            'chinese' => 'zh_CN',
-            'china' => 'zh_CN',
-            'cn' => 'zh_CN',
-            'en_us' => 'en_US',
-            'en-us' => 'en_US',
-            'en_gb' => 'en_US',
-            'en-gb' => 'en_US',
-            'en' => 'en_US',
-            'english' => 'en_US',
-            'us' => 'en_US',
-            'gb' => 'en_US',
-            'default' => self::LANG_DEFAULT
-        ];
-
-        if (isset($langMap[$lowerLang])) {
-            return $langMap[$lowerLang];
-        }
-
-        if (strpos($lowerLang, 'zh') === 0 || strpos($lowerLang, 'cn') !== false || strpos($lowerLang, 'chinese') !== false) {
-            return 'zh_CN';
-        }
-
-        if (strpos($lowerLang, 'en') === 0 || strpos($lowerLang, 'english') !== false) {
-            return 'en_US';
-        }
-
-        return self::ZBX_DEFAULT_LANG;
+        return 'en_US';
     }
 
     private static function ensureSupportedOrFallback($lang) {

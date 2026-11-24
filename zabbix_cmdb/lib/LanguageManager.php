@@ -4,108 +4,13 @@ namespace Modules\ZabbixCmdb\Lib;
 
 class LanguageManager {
     /**
-     * 与 Zabbix 前端保持一致的标识与默认值
+     * Identifiers and defaults consistent with the Zabbix frontend
      */
     private const LANG_DEFAULT = 'default';
     private const ZBX_DEFAULT_LANG = 'en_US';
     
     private static $currentLanguage = null;
     private static $translations = [
-        'zh_CN' => [
-            'CMDB' => 'CMDB',
-            'Configuration Management Database' => '配置管理数据库',
-            'Search hosts...' => '搜索主机...',
-            'Search by hostname or IP' => '按主机名或IP搜索',
-            'All Groups' => '所有分组',
-            'Select host group' => '选择主机分组',
-            'Host Name' => '主机名',
-            'IP Address' => 'IP地址',
-            'Interface Type' => '接口方式',
-            'All Interfaces' => '所有接口',
-            'CPU Total' => 'CPU总量',
-            'CPU Usage' => 'CPU使用率',
-            'Memory Total' => '内存总量',
-            'Memory Usage' => '内存使用率',
-            'Host Group' => '主机分组',
-            'System Name' => '系统名称',
-            'Architecture' => '架构',
-            'Operating System' => '操作系统',
-            'Kernel Version' => '内核版本',
-            'Agent' => 'Agent',
-            'SNMP' => 'SNMP',
-            'IPMI' => 'IPMI',
-            'JMX' => 'JMX',
-            'No hosts found' => '未找到主机',
-            'Loading...' => '加载中...',
-            'Search' => '搜索',
-            'Clear' => '清除',
-            'Total Hosts' => '主机总数',
-            'Host Groups' => '主机分组',
-            'Host List' => '主机列表',
-            'Search host groups...' => '搜索主机分组...',
-            'Enter group name' => '输入分组名称',
-            'Group Name' => '分组名称',
-            'Host Count' => '主机数量',
-            'Active Hosts' => '活跃主机',
-            'Search by group name' => '按分组名称搜索',
-            'Search groups...' => '搜索分组...',
-            'Status' => '状态',
-            'No groups found' => '未找到分组',
-            'Empty Group' => '空分组',
-            'Active Group' => '活跃分组',
-            'Basic Group' => '基础分组',
-            'hosts' => '个主机',
-            'cores' => '核',
-            'Invalid input parameters.' => '无效的输入参数。',
-            'Showing %d to %d of %d hosts' => '显示第 %d 到 %d 条，共 %d 台主机',
-            'First' => '首页',
-            'Prev' => '上一页',
-            'Next' => '下一页',
-            'Last' => '末页',
-            'Per page' => '每页显示',
-            'Current Page' => '当前页',
-            'Item Configuration' => '监控项配置',
-            'Rules are evaluated from top to bottom; the first match wins. Item name and key rules can be mixed in any order.' => '规则从上到下匹配，首条命中后停止。可混合设置监控项名称和 Key 的优先顺序。',
-            'Fuzzy matching is case-insensitive and supports substrings and the * wildcard. Exact matching is case-sensitive. If multiple enabled items match one rule, the item with the lowest itemid is selected.' => '模糊匹配不区分大小写，支持包含匹配和 * 通配符；精确匹配区分大小写。同一规则命中多个监控项时，取 itemid 最小的启用项。',
-            'CPU total is measured in cores, memory total in bytes, and usage in %. For idle or available percentages, select “100 − value”. An empty rule list disables the metric.' => 'CPU 总量单位为核，内存总量单位为字节，使用率单位为 %。空闲率或可用率请选择“100 − 原值”。留空规则列表将停用该指标。',
-            'Match Field' => '匹配字段',
-            'Match Type' => '匹配方式',
-            'Item Name / Key' => '监控项名称 / Key',
-            'Value Conversion' => '数值转换',
-            'Order / Actions' => '顺序 / 操作',
-            'Add Rule' => '添加规则',
-            'Save Configuration' => '保存配置',
-            'Back to Host List' => '返回主机列表',
-            'Item Name' => '监控项名称',
-            'Exact Match' => '精确匹配',
-            'Fuzzy Match' => '模糊匹配',
-            'Item name or key' => '监控项名称或 Key',
-            'Original Value' => '原值',
-            '100 − value' => '100 − 原值',
-            'Move Up' => '上移',
-            'Move Down' => '下移',
-            'Delete' => '删除',
-            'Rules' => '条规则',
-            'No rules configured' => '暂未配置规则',
-            'Add the first rule to enable this metric.' => '添加第一条规则以启用此指标。',
-            'Invalid security token. Refresh the page and try again.' => '安全令牌无效，请刷新页面后重试。',
-            'The configuration is too large.' => '配置内容过大。',
-            'The configuration must be a JSON object.' => '配置必须是 JSON 对象。',
-            'Configuration saved. The host list and group statistics now use the new rules.' => '配置已保存，主机列表和分组统计立即使用新规则。',
-            'Cannot read CMDB data/item_rules.json, or the JSON is invalid.' => '无法读取 CMDB data/item_rules.json，或 JSON 格式无效。',
-            'Each metric must have a rule list with at most 100 rules.' => '每个指标必须提供规则列表，最多 100 条。',
-            'Invalid rule: enter an item name or key of 1–255 bytes and select valid matching and conversion options.' => '规则无效：请填写 1–255 字节的名称或 Key，并选择有效的匹配方式和转换方式。',
-            'Cannot save: grant the web service user write access to the CMDB data directory.' => '保存失败：请授予 Web 服务用户 CMDB data 目录写入权限。',
-            'Cannot save: check write permissions on the CMDB data directory.' => '保存失败：请检查 CMDB data 目录写入权限。',
-            'Invalid JSON configuration.' => 'JSON 配置格式无效。',
-            'Available' => '可用',
-            'Unavailable' => '不可用',
-            'Unknown' => '未知',
-            'Disabled' => '已禁用',
-            'Maintenance' => '维护中',
-            'host' => '台主机',
-            'core' => '核',
-        ],
         'en_US' => [
             'CMDB' => 'CMDB',
             'Configuration Management Database' => 'Configuration Management Database',
@@ -201,102 +106,8 @@ class LanguageManager {
             'host' => 'host',
             'core' => 'core',
         ],
-        'ru_RU' => [
-            'CMDB' => 'CMDB',
-            'Configuration Management Database' => 'База данных управления конфигурациями',
-            'Search hosts...' => 'Поиск узлов сети…',
-            'Search by hostname or IP' => 'Поиск по имени узла или IP-адресу',
-            'All Groups' => 'Все группы',
-            'Select host group' => 'Выберите группу узлов сети',
-            'Host Name' => 'Имя узла сети',
-            'IP Address' => 'IP-адрес',
-            'Interface Type' => 'Тип интерфейса',
-            'All Interfaces' => 'Все интерфейсы',
-            'CPU Total' => 'Всего ядер ЦП',
-            'CPU Usage' => 'Использование ЦП',
-            'Memory Total' => 'Общий объём памяти',
-            'Memory Usage' => 'Использование памяти',
-            'Host Group' => 'Группа узлов сети',
-            'System Name' => 'Имя системы',
-            'Architecture' => 'Архитектура',
-            'Operating System' => 'Операционная система',
-            'Kernel Version' => 'Версия ядра',
-            'Agent' => 'Агент',
-            'SNMP' => 'SNMP',
-            'IPMI' => 'IPMI',
-            'JMX' => 'JMX',
-            'No hosts found' => 'Узлы сети не найдены',
-            'Loading...' => 'Загрузка…',
-            'Search' => 'Поиск',
-            'Clear' => 'Очистить',
-            'Total Hosts' => 'Всего узлов сети',
-            'Host Groups' => 'Группы узлов сети',
-            'Host List' => 'Список узлов сети',
-            'Search host groups...' => 'Поиск групп узлов сети…',
-            'Enter group name' => 'Введите имя группы',
-            'Group Name' => 'Имя группы',
-            'Host Count' => 'Число узлов сети',
-            'Active Hosts' => 'Активные узлы сети',
-            'Search by group name' => 'Поиск по имени группы',
-            'Search groups...' => 'Поиск групп…',
-            'Status' => 'Состояние',
-            'No groups found' => 'Группы не найдены',
-            'Empty Group' => 'Пустая группа',
-            'Active Group' => 'Активная группа',
-            'Basic Group' => 'Основная группа',
-            'hosts' => 'узлов сети',
-            'cores' => 'ядер',
-            'Invalid input parameters.' => 'Недопустимые входные параметры.',
-            'Showing %d to %d of %d hosts' => 'Узлы сети с %d по %d из %d',
-            'First' => 'Первая',
-            'Prev' => 'Предыдущая',
-            'Next' => 'Следующая',
-            'Last' => 'Последняя',
-            'Per page' => 'На странице',
-            'Current Page' => 'Текущая страница',
-            'Item Configuration' => 'Настройка элементов данных',
-            'Rules are evaluated from top to bottom; the first match wins. Item name and key rules can be mixed in any order.' => 'Правила проверяются сверху вниз до первого совпадения. Правила для имени и ключа можно располагать в любом порядке.',
-            'Fuzzy matching is case-insensitive and supports substrings and the * wildcard. Exact matching is case-sensitive. If multiple enabled items match one rule, the item with the lowest itemid is selected.' => 'Нечёткое совпадение игнорирует регистр и поддерживает подстроки и символ *. Точное совпадение учитывает регистр. Если правилу соответствует несколько включённых элементов, выбирается элемент с наименьшим itemid.',
-            'CPU total is measured in cores, memory total in bytes, and usage in %. For idle or available percentages, select “100 − value”. An empty rule list disables the metric.' => 'Число ядер ЦП задаётся в ядрах, объём памяти — в байтах, а использование — в %. Для доли простоя или свободного ресурса выберите «100 − значение». Если список правил пуст, метрика отключается.',
-            'Match Field' => 'Поле для сравнения',
-            'Match Type' => 'Тип совпадения',
-            'Item Name / Key' => 'Имя или ключ элемента данных',
-            'Value Conversion' => 'Преобразование значения',
-            'Order / Actions' => 'Порядок и действия',
-            'Add Rule' => 'Добавить правило',
-            'Save Configuration' => 'Сохранить конфигурацию',
-            'Back to Host List' => 'К списку узлов сети',
-            'Item Name' => 'Имя элемента данных',
-            'Exact Match' => 'Точное совпадение',
-            'Fuzzy Match' => 'Нечёткое совпадение',
-            'Item name or key' => 'Имя или ключ элемента данных',
-            'Original Value' => 'Исходное значение',
-            '100 − value' => '100 − значение',
-            'Move Up' => 'Переместить вверх',
-            'Move Down' => 'Переместить вниз',
-            'Delete' => 'Удалить',
-            'Rules' => 'правил',
-            'No rules configured' => 'Правила не настроены',
-            'Add the first rule to enable this metric.' => 'Добавьте первое правило, чтобы включить эту метрику.',
-            'Invalid security token. Refresh the page and try again.' => 'Недействительный токен безопасности. Обновите страницу и повторите попытку.',
-            'The configuration is too large.' => 'Превышен допустимый размер конфигурации.',
-            'The configuration must be a JSON object.' => 'Конфигурация должна быть объектом JSON.',
-            'Configuration saved. The host list and group statistics now use the new rules.' => 'Конфигурация сохранена. В списке узлов сети и статистике групп применяются новые правила.',
-            'Cannot read CMDB data/item_rules.json, or the JSON is invalid.' => 'Не удалось прочитать CMDB data/item_rules.json или файл содержит недопустимый JSON.',
-            'Each metric must have a rule list with at most 100 rules.' => 'Для каждой метрики укажите список из не более чем 100 правил.',
-            'Invalid rule: enter an item name or key of 1–255 bytes and select valid matching and conversion options.' => 'Недопустимое правило. Введите имя или ключ длиной от 1 до 255 байт и выберите допустимые параметры сопоставления и преобразования.',
-            'Cannot save: grant the web service user write access to the CMDB data directory.' => 'Не удалось сохранить. Предоставьте пользователю веб-сервера право записи в каталог данных CMDB.',
-            'Cannot save: check write permissions on the CMDB data directory.' => 'Не удалось сохранить. Проверьте права записи в каталог данных CMDB.',
-            'Invalid JSON configuration.' => 'Недопустимая конфигурация JSON.',
-            'Available' => 'Доступен',
-            'Unavailable' => 'Недоступен',
-            'Unknown' => 'Неизвестно',
-            'Disabled' => 'Отключено',
-            'Maintenance' => 'Обслуживание',
-            'host' => 'узел сети',
-            'core' => 'ядро',
-        ],
         'pt_BR' => [
+            '%s Week %s' => '%s, semana %s',
             'CMDB' => 'CMDB',
             'Configuration Management Database' => 'Banco de dados de gerenciamento de configuração',
             'Search hosts...' => 'Pesquisar hosts...',
@@ -394,22 +205,22 @@ class LanguageManager {
     ];
 
     /**
-     * 检测当前语言（对齐 Zabbix 源码逻辑）
-     * 优先级：
-     * 1) 用户语言（users.lang），如果为 'default' 则继承系统默认
-     * 2) 系统默认语言（settings.default_lang），读取失败则回退到 ZBX 默认
-     * 3) Zabbix 默认语言（en_US）
+     * Detect the current language (aligned with the Zabbix source logic)
+     * Priority:
+     * 1) User language (users.lang); 'default' inherits the system default
+     * 2) System default language (settings.default_lang); falls back to the Zabbix default if it cannot be read
+     * 3) Zabbix default language (en_US)
      */
     public static function detectLanguage() {
         if (self::$currentLanguage !== null) {
             return self::$currentLanguage;
         }
         
-        // 1) 用户语言
+        // 1) User language
         $userLang = self::getUserLanguageFromZabbix();
         if (!empty($userLang)) {
             $mapped = self::mapZabbixLangToOurs($userLang);
-            // 'default' 表示继承系统默认
+            // 'default' means inherit the system default
             if ($mapped === self::LANG_DEFAULT) {
                 $sys = self::getSystemDefaultLanguage();
                 self::$currentLanguage = self::ensureSupportedOrFallback($sys);
@@ -419,61 +230,61 @@ class LanguageManager {
             return self::$currentLanguage;
         }
 
-        // 2) 系统默认语言
+        // 2) System default language
         $sys = self::getSystemDefaultLanguage();
         if (!empty($sys)) {
             self::$currentLanguage = self::ensureSupportedOrFallback($sys);
             return self::$currentLanguage;
         }
 
-        // 3) Zabbix 默认语言
+        // 3) Zabbix default language
         self::$currentLanguage = self::ensureSupportedOrFallback(self::ZBX_DEFAULT_LANG);
         return self::$currentLanguage;
     }
 
     /**
-     * 尝试从Zabbix系统中获取当前用户的语言设置
+     * Try to get the current user's language setting from Zabbix
      */
     private static function getUserLanguageFromZabbix() {
-        // 方法0: 优先使用 Zabbix 官方封装 CWebUser
+        // Method 0: prefer the official Zabbix wrapper CWebUser
         try {
             if (class_exists('CWebUser') || class_exists('\\CWebUser')) {
-                // 静态 get 方法（较新版本）
+                // Static get method (newer versions)
                 if (method_exists('CWebUser', 'get')) {
                     $lang = \CWebUser::get('lang');
                     if (!empty($lang)) {
                         return $lang;
                     }
                 }
-                // 旧版本静态数据容器
+                // Static data container of older versions
                 if (isset(\CWebUser::$data) && is_array(\CWebUser::$data) && isset(\CWebUser::$data['lang']) && !empty(\CWebUser::$data['lang'])) {
                     return \CWebUser::$data['lang'];
                 }
             }
         } catch (\Throwable $e) {
-            // 忽略并继续其他方式
+            // Ignore and continue with other methods
         }
 
-        // 方法1: 尝试通过全局变量获取CWebUser信息
+        // Method 1: try to get CWebUser information through global variables
         try {
-            // 检查$GLOBALS中是否有CWebUser相关信息
+            // Check whether $GLOBALS contains CWebUser information
             if (isset($GLOBALS['USER_DETAILS']) && isset($GLOBALS['USER_DETAILS']['lang'])) {
                 return $GLOBALS['USER_DETAILS']['lang'];
             }
         } catch (\Throwable $e) {
-            // 继续其他方法
+            // Continue with other methods
         }
         
-        // 方法2: 尝试从全局变量中获取（安装流程/页面初始化缓存）
+        // Method 2: try global variables (installation flow / page initialization cache)
         try {
             if (isset($GLOBALS['ZBX_LOCALES']) && isset($GLOBALS['ZBX_LOCALES']['selected'])) {
                 return $GLOBALS['ZBX_LOCALES']['selected'];
             }
         } catch (\Throwable $e) {
-            // 继续其他方法
+            // Continue with other methods
         }
         
-        // 方法3: 从Session中获取（Zabbix 前端会在登录后设置）
+        // Method 3: from the session (set by the Zabbix frontend after login)
         if (isset($_SESSION['zbx_lang']) && !empty($_SESSION['zbx_lang'])) {
             return $_SESSION['zbx_lang'];
         }
@@ -481,19 +292,19 @@ class LanguageManager {
             return $_SESSION['lang'];
         }
 
-        // 方法4: 尝试直接访问数据库获取用户语言设置
+        // Method 4: try to read the user language setting directly from the database
         return self::getUserLanguageFromDatabase();
     }
 
     /**
-     * 尝试通过API获取用户语言设置
+     * Try to get the user language setting through the API
      */
     private static function getUserLanguageFromAPI() {
         try {
-            // 获取当前用户ID
+            // Get the current user ID
             $userid = null;
 
-            // 从Session中获取用户ID
+            // Get the user ID from the session
             if (isset($_SESSION['userid'])) {
                 $userid = $_SESSION['userid'];
             } elseif (isset($_SESSION['user']) && is_array($_SESSION['user']) && isset($_SESSION['user']['userid'])) {
@@ -504,7 +315,7 @@ class LanguageManager {
                 return null;
             }
 
-            // 尝试使用不同的API类名（兼容不同版本）
+            // Try different API class names (compatibility with different versions)
             $apiClass = null;
             if (class_exists('API') || class_exists('\API')) {
                 $apiClass = '\API';
@@ -528,21 +339,21 @@ class LanguageManager {
                 }
             }
         } catch (\Throwable $e) {
-            // API不可用或出错
+            // API unavailable or failed
         }
 
         return null;
     }
 
     /**
-     * 尝试直接从数据库获取当前用户的语言设置
+     * Try to read the current user's language setting directly from the database
      */
     private static function getUserLanguageFromDatabase() {
         try {
-            // 获取当前用户ID
+            // Get the current user ID
             $userid = null;
 
-            // 从Session中获取用户ID
+            // Get the user ID from the session
             if (isset($_SESSION['userid'])) {
                 $userid = $_SESSION['userid'];
             } elseif (isset($_SESSION['user']) && is_array($_SESSION['user']) && isset($_SESSION['user']['userid'])) {
@@ -553,7 +364,7 @@ class LanguageManager {
                 return null;
             }
 
-            // 尝试连接数据库（需要Zabbix的数据库配置）
+            // Try to connect to the database (requires the Zabbix database configuration)
             if (defined('DB_HOST') && defined('DB_NAME') && defined('DB_USER')) {
                 $pdo = new \PDO(
                     'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8',
@@ -570,18 +381,18 @@ class LanguageManager {
                 }
             }
         } catch (\Throwable $e) {
-            // 数据库连接失败或其他错误
+            // Database connection failed or other error
         }
 
         return null;
     }
 
     /**
-     * 读取系统默认语言（settings.default_lang 或 config.default_lang）
+     * Read the system default language (settings.default_lang or config.default_lang)
      */
     private static function getSystemDefaultLanguage() {
         try {
-            // 方式0：优先使用 Zabbix 官方封装 CSettingsHelper
+            // Method 0: prefer the official Zabbix wrapper CSettingsHelper
             if (class_exists('CSettingsHelper') || class_exists('\\CSettingsHelper')) {
                 if (method_exists('CSettingsHelper', 'get')) {
                     $val = \CSettingsHelper::get('default_lang');
@@ -598,7 +409,7 @@ class LanguageManager {
                     defined('DB_PASSWORD') ? DB_PASSWORD : ''
                 );
 
-                // 先查 settings 表（Zabbix 6/7 使用）
+                // Query the settings table first (used by Zabbix 6/7)
                 $stmt = $pdo->prepare("SELECT value_str FROM settings WHERE name='default_lang' LIMIT 1");
                 if ($stmt->execute()) {
                     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -607,7 +418,7 @@ class LanguageManager {
                     }
                 }
 
-                // 兼容旧版本：config 表
+                // Compatibility with older versions: config table
                 $stmt2 = $pdo->query("SHOW TABLES LIKE 'config'");
                 $hasConfig = $stmt2 && $stmt2->fetch();
                 if ($hasConfig) {
@@ -619,90 +430,49 @@ class LanguageManager {
                 }
             }
         } catch (\Throwable $e) {
-            // 忽略并回退
+            // Ignore and fall back
         }
 
         return self::ZBX_DEFAULT_LANG;
     }
 
     /**
-     * 将Zabbix语言代码映射到我们的语言代码
+     * Map the Zabbix language code to our language code
      */
     private static function mapZabbixLangToOurs($zabbixLang) {
-        // 先转换为小写进行比较，以处理大小写不一致的情况
-        $lowerLang = strtolower(trim($zabbixLang));
-
-        if (preg_match('/^ru(?:[-_]|$)/i', trim($lowerLang))) {
-            return 'ru_RU';
+        $lang = strtolower(str_replace('-', '_', trim((string) $zabbixLang)));
+        if ($lang === self::LANG_DEFAULT) {
+            return self::LANG_DEFAULT;
         }
-        if (preg_match('/^pt(?:[-_]|$)/i', trim($lowerLang))) {
+        // Supported languages: Brazilian Portuguese (pt*) and English (everything else).
+        if (preg_match('/^pt(?:_|$)/', $lang)) {
             return 'pt_BR';
         }
 
-        $langMap = [
-            // 中文的各种变体
-            'zh_cn' => 'zh_CN',
-            'zh-cn' => 'zh_CN',
-            'zh_tw' => 'zh_CN', // 繁体中文也使用简体中文翻译
-            'zh-tw' => 'zh_CN',
-            'zh' => 'zh_CN',
-            'chinese' => 'zh_CN',
-            'china' => 'zh_CN',
-            'cn' => 'zh_CN',
-
-            // 英文的各种变体
-            'en_us' => 'en_US',
-            'en-us' => 'en_US',
-            'en_gb' => 'en_US',
-            'en-gb' => 'en_US',
-            'en' => 'en_US',
-            'english' => 'en_US',
-            'us' => 'en_US',
-            'gb' => 'en_US',
-
-            // 默认
-            'default' => self::LANG_DEFAULT
-        ];
-
-        // 如果找到直接映射，返回结果
-        if (isset($langMap[$lowerLang])) {
-            return $langMap[$lowerLang];
-        }
-
-        // 如果没有找到，尝试部分匹配
-        if (strpos($lowerLang, 'zh') === 0 || strpos($lowerLang, 'cn') !== false || strpos($lowerLang, 'chinese') !== false) {
-            return 'zh_CN';
-        }
-
-        if (strpos($lowerLang, 'en') === 0 || strpos($lowerLang, 'english') !== false) {
-            return 'en_US';
-        }
-
-        // 默认使用英语
-        return self::ZBX_DEFAULT_LANG;
+        return 'en_US';
     }
 
     /**
-     * 检查并回退到受支持语言
+     * Check and fall back to a supported language
      */
     private static function ensureSupportedOrFallback($lang) {
         $mapped = self::mapZabbixLangToOurs($lang);
         if (self::isSupportedLocale($mapped)) {
             return $mapped;
         }
-        // 支持 zh_CN、en_US 和 ru_RU
+        // Supports en_US and pt_BR
         return self::ZBX_DEFAULT_LANG;
     }
 
     /**
-     * 仅将我们已提供翻译的语言视为可用
+     * Only languages for which we provide translations count as available
      */
     private static function isSupportedLocale($lang) {
         return in_array($lang, array_keys(self::$translations), true);
     }
 
     /**
-     * 获取翻译文本
+     * Get the translated text
      */
     public static function t($key) {
         $lang = self::detectLanguage();
@@ -711,17 +481,17 @@ class LanguageManager {
             return self::$translations[$lang][$key];
         }
 
-        // 如果当前语言没有翻译，尝试使用英语
+        // If the current language has no translation, try English
         if ($lang !== 'en_US' && isset(self::$translations['en_US'][$key])) {
             return self::$translations['en_US'][$key];
         }
 
-        // 如果都没有，返回原键值
+        // If neither exists, return the key itself
         return $key;
     }
 
     /**
-     * 获取带参数的翻译文本
+     * Get translated text with parameters
      */
     public static function tf($key, ...$args) {
         $translation = self::t($key);
@@ -729,21 +499,21 @@ class LanguageManager {
     }
 
     /**
-     * 获取当前语言
+     * Get the current language
      */
     public static function getCurrentLanguage() {
         return self::detectLanguage();
     }
 
     /**
-     * 重置语言缓存（主要用于测试）
+     * Reset the language cache (mainly for tests)
      */
     public static function resetLanguage() {
         self::$currentLanguage = null;
     }
 
     /**
-     * 获取语言检测信息（用于调试）
+     * Get language detection information (for debugging)
      */
     public static function getLanguageDetectionInfo() {
         return [
@@ -756,79 +526,53 @@ class LanguageManager {
     }
 
     /**
-     * 检查当前是否为中文语言
+     * Chinese is no longer supported; kept for backward compatibility.
      */
     public static function isChinese() {
-        return self::detectLanguage() === 'zh_CN';
+        return false;
     }
 
     /**
-     * 格式化日期时间（根据语言）
+     * Format a date and time for the current language.
      */
     public static function formatDateTime($timestamp, $format = null) {
         if ($format === null) {
-            $format = self::isChinese() ? 'Y年m月d日 H:i:s' : 'Y-m-d H:i:s';
+            $format = self::detectLanguage() === 'pt_BR' ? 'd/m/Y H:i:s' : 'Y-m-d H:i:s';
         }
 
         return date($format, $timestamp);
     }
 
     /**
-     * 格式化日期（根据语言）
+     * Format a date for the current language.
      */
     public static function formatDate($timestamp, $format = null) {
         if ($format === null) {
-            $format = self::isChinese() ? 'Y年m月d日' : 'Y-m-d';
+            $format = self::detectLanguage() === 'pt_BR' ? 'd/m/Y' : 'Y-m-d';
         }
 
         return date($format, $timestamp);
     }
 
     /**
-     * 格式化周期（根据语言）
+     * Format a report period (day, week or month) for the current language.
      */
     public static function formatPeriod($type, $dateString) {
-        // 将日期字符串转换为时间戳
-        if (is_string($dateString)) {
-            $timestamp = strtotime($dateString);
-        } else {
-            $timestamp = $dateString;
-        }
+        $timestamp = is_string($dateString) ? strtotime($dateString) : $dateString;
 
         if ($timestamp === false) {
-            return $dateString; // 如果转换失败，返回原字符串
+            return $dateString; // Return the original string if it cannot be parsed.
         }
 
-        if (self::isChinese()) {
-            switch ($type) {
-                case 'day':
-                case 'daily':
-                    return date('Y年m月d日', $timestamp);
-                case 'week':
-                case 'weekly':
-                    $year = date('Y', $timestamp);
-                    $week = date('W', $timestamp);
-                    return $year . '年第' . $week . '周';
-                case 'month':
-                case 'monthly':
-                    return date('Y年m月', $timestamp);
-                default:
-                    return date('Y-m-d', $timestamp);
-            }
-        } else {
-            switch ($type) {
-                case 'day':
-                case 'daily':
-                    return date('Y-m-d', $timestamp);
-                case 'week':
-                case 'weekly':
-                    return date('Y', $timestamp) . ' Week ' . date('W', $timestamp);
-                case 'month':
-                case 'monthly':
-                    return date('Y-m', $timestamp);
-                default:
-                    return date('Y-m-d', $timestamp);
-            }
+        switch ($type) {
+            case 'week':
+            case 'weekly':
+                return self::tf('%s Week %s', date('Y', $timestamp), date('W', $timestamp));
+            case 'month':
+            case 'monthly':
+                return date(self::detectLanguage() === 'pt_BR' ? 'm/Y' : 'Y-m', $timestamp);
+            default:
+                return self::formatDate($timestamp);
         }
     }
 }

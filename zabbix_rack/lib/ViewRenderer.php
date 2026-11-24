@@ -1,7 +1,7 @@
 <?php
 /**
- * 视图渲染器
- * 兼容 Zabbix 6.0/7.0/7.4
+ * View renderer
+ * Compatible with Zabbix 6.0/7.0/7.4
  */
 
 namespace Modules\ZabbixRack\Lib;
@@ -9,10 +9,10 @@ namespace Modules\ZabbixRack\Lib;
 class ViewRenderer {
     
     /**
-     * 渲染页面
+     * Render the page
      */
     public static function render($title, $styleTag, $content, $headScript = null) {
-        // Zabbix 7.0+ 使用 CHtmlPage
+        // Zabbix 7.0+ uses CHtmlPage
         if (class_exists('CHtmlPage')) {
             $page = new \CHtmlPage();
             if ($title) {

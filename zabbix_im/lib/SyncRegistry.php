@@ -3,7 +3,7 @@
 namespace Modules\ZabbixIm\Lib;
 
 /**
- * 记录由模块创建/管理的用户组与用户，避免误删系统或手工对象
+ * Records user groups and users created/managed by the module, so system or manual objects are never deleted by mistake
  */
 class SyncRegistry {
 

@@ -4,68 +4,13 @@ namespace Modules\ZabbixGraphTrees\Lib;
 
 class LanguageManager {
     /**
-     * 与 Zabbix 前端保持一致的标识与默认值
+     * Identifiers and defaults consistent with the Zabbix frontend
      */
     private const LANG_DEFAULT = 'default';
     private const ZBX_DEFAULT_LANG = 'en_US';
     
     private static $currentLanguage = null;
     private static $translations = [
-        'zh_CN' => [
-            'Graph Trees' => '图表树',
-            'Resource Tree' => '资源树',
-            'Host Groups' => '主机分组',
-            'Hosts' => '主机',
-            'Search...' => '搜索...',
-            'Expand All' => '展开全部',
-            'Collapse All' => '收起全部',
-            'Time Range' => '时间范围',
-            'Last 10 Minutes' => '最近10分钟',
-            'Last 30 Minutes' => '最近30分钟',
-            'Last Hour' => '最近1小时',
-            'Last 3 Hours' => '最近3小时',
-            'Last 6 Hours' => '最近6小时',
-            'Last 12 Hours' => '最近12小时',
-            'Last 24 Hours' => '最近24小时',
-            'Last 2 Days' => '最近2天',
-            'Last 7 Days' => '最近7天',
-            'Last 30 Days' => '最近30天',
-            'Columns' => '列数',
-            'Auto Refresh' => '自动刷新',
-            'Off' => '关闭',
-            'seconds' => '秒',
-            'Refresh' => '刷新',
-            'All Graphs' => '所有图表',
-            'Other' => '其他',
-            'No graphs available' => '暂无图表',
-            'No categories found' => '未找到分类',
-            'Select a host to view graphs' => '选择主机查看图表',
-            'Loading...' => '加载中...',
-            'Failed to load data' => '加载数据失败',
-            'Close' => '关闭',
-            'Pre-configured' => '预配置',
-            'Auto-generated' => '自动生成',
-            'graphs' => '个图表',
-            'No data' => '暂无数据',
-            'Custom' => '自定义',
-            'From' => '从',
-            'To' => '到',
-            'Apply' => '应用',
-            'Cancel' => '取消',
-            'Quick Select' => '快速选择',
-            'Custom Range' => '自定义范围',
-            'Start time' => '开始时间',
-            'End time' => '结束时间',
-            'Time zone' => '时区',
-            'Select a valid start and end time.' => '请选择有效的开始和结束时间。',
-            'Start time must be earlier than end time.' => '开始时间必须早于结束时间。',
-            'Export image' => '导出图片',
-            'Exporting...' => '正在导出...',
-            'Failed to export image. Please try again.' => '导出图片失败，请重试。',
-            'Time range must be at least one minute.' => '时间范围不能少于一分钟。',
-            'Time range exceeds the maximum allowed by Zabbix.' => '时间范围超过 Zabbix 允许的最大跨度。',
-            'Failed to validate time range. Please try again.' => '时间范围校验失败，请重试。'
-        ],
         'en_US' => [
             'Graph Trees' => 'Graph Trees',
             'Resource Tree' => 'Resource Tree',
@@ -120,61 +65,6 @@ class LanguageManager {
             'Time range must be at least one minute.' => 'Time range must be at least one minute.',
             'Time range exceeds the maximum allowed by Zabbix.' => 'Time range exceeds the maximum allowed by Zabbix.',
             'Failed to validate time range. Please try again.' => 'Failed to validate time range. Please try again.'
-        ],
-        'ru_RU' => [
-            'Graph Trees' => 'Дерево графиков',
-            'Resource Tree' => 'Дерево ресурсов',
-            'Host Groups' => 'Группы узлов сети',
-            'Hosts' => 'Узлы сети',
-            'Search...' => 'Поиск…',
-            'Expand All' => 'Развернуть всё',
-            'Collapse All' => 'Свернуть всё',
-            'Time Range' => 'Период',
-            'Last 10 Minutes' => 'Последние 10 минут',
-            'Last 30 Minutes' => 'Последние 30 минут',
-            'Last Hour' => 'Последний час',
-            'Last 3 Hours' => 'Последние 3 часа',
-            'Last 6 Hours' => 'Последние 6 часов',
-            'Last 12 Hours' => 'Последние 12 часов',
-            'Last 24 Hours' => 'Последние 24 часа',
-            'Last 2 Days' => 'Последние 2 дня',
-            'Last 7 Days' => 'Последние 7 дней',
-            'Last 30 Days' => 'Последние 30 дней',
-            'Columns' => 'Столбцы',
-            'Auto Refresh' => 'Автообновление',
-            'Off' => 'Выкл.',
-            'seconds' => 'с',
-            'Refresh' => 'Обновить',
-            'All Graphs' => 'Все графики',
-            'Other' => 'Прочее',
-            'No graphs available' => 'Нет доступных графиков',
-            'No categories found' => 'Категории не найдены',
-            'Select a host to view graphs' => 'Выберите узел сети для просмотра графиков',
-            'Loading...' => 'Загрузка…',
-            'Failed to load data' => 'Не удалось загрузить данные',
-            'Close' => 'Закрыть',
-            'Pre-configured' => 'Настроенные',
-            'Auto-generated' => 'Созданные автоматически',
-            'graphs' => 'графиков',
-            'No data' => 'Нет данных',
-            'Custom' => 'Пользовательский',
-            'From' => 'С',
-            'To' => 'По',
-            'Apply' => 'Применить',
-            'Cancel' => 'Отмена',
-            'Quick Select' => 'Быстрый выбор',
-            'Custom Range' => 'Произвольный период',
-            'Start time' => 'Время начала',
-            'End time' => 'Время окончания',
-            'Time zone' => 'Часовой пояс',
-            'Select a valid start and end time.' => 'Выберите допустимое время начала и окончания.',
-            'Start time must be earlier than end time.' => 'Время начала должно предшествовать времени окончания.',
-            'Export image' => 'Экспортировать изображение',
-            'Exporting...' => 'Экспорт…',
-            'Failed to export image. Please try again.' => 'Не удалось экспортировать изображение. Повторите попытку.',
-            'Time range must be at least one minute.' => 'Период должен составлять не менее одной минуты.',
-            'Time range exceeds the maximum allowed by Zabbix.' => 'Период превышает ограничение Zabbix.',
-            'Failed to validate time range. Please try again.' => 'Не удалось проверить период. Повторите попытку.',
         ],
         'pt_BR' => [
             'Graph Trees' => 'Árvores de gráficos',
@@ -234,22 +124,22 @@ class LanguageManager {
     ];
     
     /**
-     * 检测当前语言（对齐 Zabbix 源码逻辑）
-     * 优先级：
-     * 1) 用户语言（users.lang），如果为 'default' 则继承系统默认
-     * 2) 系统默认语言（settings.default_lang），读取失败则回退到 ZBX 默认
-     * 3) Zabbix 默认语言（en_US）
+     * Detect the current language (aligned with the Zabbix source logic)
+     * Priority:
+     * 1) User language (users.lang); 'default' inherits the system default
+     * 2) System default language (settings.default_lang); falls back to the Zabbix default if it cannot be read
+     * 3) Zabbix default language (en_US)
      */
     public static function detectLanguage() {
         if (self::$currentLanguage !== null) {
             return self::$currentLanguage;
         }
         
-        // 1) 用户语言
+        // 1) User language
         $userLang = self::getUserLanguageFromZabbix();
         if (!empty($userLang)) {
             $mapped = self::mapZabbixLangToOurs($userLang);
-            // 'default' 表示继承系统默认
+            // 'default' means inherit the system default
             if ($mapped === self::LANG_DEFAULT) {
                 $sys = self::getSystemDefaultLanguage();
                 self::$currentLanguage = self::ensureSupportedOrFallback($sys);
@@ -259,61 +149,61 @@ class LanguageManager {
             return self::$currentLanguage;
         }
 
-        // 2) 系统默认语言
+        // 2) System default language
         $sys = self::getSystemDefaultLanguage();
         if (!empty($sys)) {
             self::$currentLanguage = self::ensureSupportedOrFallback($sys);
             return self::$currentLanguage;
         }
 
-        // 3) Zabbix 默认语言
+        // 3) Zabbix default language
         self::$currentLanguage = self::ensureSupportedOrFallback(self::ZBX_DEFAULT_LANG);
         return self::$currentLanguage;
     }
 
     /**
-     * 尝试从Zabbix系统中获取当前用户的语言设置
+     * Try to get the current user's language setting from Zabbix
      */
     private static function getUserLanguageFromZabbix() {
-        // 方法0: 优先使用 Zabbix 官方封装 CWebUser
+        // Method 0: prefer the official Zabbix wrapper CWebUser
         try {
             if (class_exists('CWebUser') || class_exists('\\CWebUser')) {
-                // 静态 get 方法（较新版本）
+                // Static get method (newer versions)
                 if (method_exists('CWebUser', 'get')) {
                     $lang = \CWebUser::get('lang');
                     if (!empty($lang)) {
                         return $lang;
                     }
                 }
-                // 旧版本静态数据容器
+                // Static data container of older versions
                 if (isset(\CWebUser::$data) && is_array(\CWebUser::$data) && isset(\CWebUser::$data['lang']) && !empty(\CWebUser::$data['lang'])) {
                     return \CWebUser::$data['lang'];
                 }
             }
         } catch (\Throwable $e) {
-            // 忽略并继续其他方式
+            // Ignore and continue with other methods
         }
 
-        // 方法1: 尝试通过全局变量获取CWebUser信息
+        // Method 1: try to get CWebUser information through global variables
         try {
-            // 检查$GLOBALS中是否有CWebUser相关信息
+            // Check whether $GLOBALS contains CWebUser information
             if (isset($GLOBALS['USER_DETAILS']) && isset($GLOBALS['USER_DETAILS']['lang'])) {
                 return $GLOBALS['USER_DETAILS']['lang'];
             }
         } catch (\Throwable $e) {
-            // 继续其他方法
+            // Continue with other methods
         }
         
-        // 方法2: 尝试从全局变量中获取（安装流程/页面初始化缓存）
+        // Method 2: try global variables (installation flow / page initialization cache)
         try {
             if (isset($GLOBALS['ZBX_LOCALES']) && isset($GLOBALS['ZBX_LOCALES']['selected'])) {
                 return $GLOBALS['ZBX_LOCALES']['selected'];
             }
         } catch (\Throwable $e) {
-            // 继续其他方法
+            // Continue with other methods
         }
         
-        // 方法3: 从Session中获取（Zabbix 前端会在登录后设置）
+        // Method 3: from the session (set by the Zabbix frontend after login)
         if (isset($_SESSION['zbx_lang']) && !empty($_SESSION['zbx_lang'])) {
             return $_SESSION['zbx_lang'];
         }
@@ -321,12 +211,12 @@ class LanguageManager {
             return $_SESSION['lang'];
         }
 
-        // 方法4: 尝试直接访问数据库获取用户语言设置
+        // Method 4: try to read the user language setting directly from the database
         return self::getUserLanguageFromDatabase();
     }
     
     /**
-     * 通过API获取用户语言设置
+     * Get the user language setting through the API
      */
     private static function getUserLanguageByAPI($userid) {
         try {
@@ -349,21 +239,21 @@ class LanguageManager {
                 }
             }
         } catch (\Throwable $e) {
-            // API不可用或出错
+            // API unavailable or failed
         }
         
         return null;
     }
     
     /**
-     * 尝试直接从数据库获取当前用户的语言设置
+     * Try to read the current user's language setting directly from the database
      */
     private static function getUserLanguageFromDatabase() {
         try {
-            // 获取当前用户ID
+            // Get the current user ID
             $userid = null;
             
-            // 从Session中获取用户ID
+            // Get the user ID from the session
             if (isset($_SESSION['userid'])) {
                 $userid = $_SESSION['userid'];
             } elseif (isset($_SESSION['user']) && is_array($_SESSION['user']) && isset($_SESSION['user']['userid'])) {
@@ -374,7 +264,7 @@ class LanguageManager {
                 return null;
             }
             
-            // 尝试连接数据库（需要Zabbix的数据库配置）
+            // Try to connect to the database (requires the Zabbix database configuration)
             if (defined('DB_HOST') && defined('DB_NAME') && defined('DB_USER')) {
                 $pdo = new \PDO(
                     'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8',
@@ -391,18 +281,18 @@ class LanguageManager {
                 }
             }
         } catch (\Throwable $e) {
-            // 数据库连接失败或其他错误
+            // Database connection failed or other error
         }
         
         return null;
     }
 
     /**
-     * 读取系统默认语言（settings.default_lang 或 config.default_lang）
+     * Read the system default language (settings.default_lang or config.default_lang)
      */
     private static function getSystemDefaultLanguage() {
         try {
-            // 方式0：优先使用 Zabbix 官方封装 CSettingsHelper
+            // Method 0: prefer the official Zabbix wrapper CSettingsHelper
             if (class_exists('CSettingsHelper') || class_exists('\\CSettingsHelper')) {
                 if (method_exists('CSettingsHelper', 'get')) {
                     $val = \CSettingsHelper::get('default_lang');
@@ -419,7 +309,7 @@ class LanguageManager {
                     defined('DB_PASSWORD') ? DB_PASSWORD : ''
                 );
 
-                // 先查 settings 表（Zabbix 6/7 使用）
+                // Query the settings table first (used by Zabbix 6/7)
                 $stmt = $pdo->prepare("SELECT value_str FROM settings WHERE name='default_lang' LIMIT 1");
                 if ($stmt->execute()) {
                     $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -428,7 +318,7 @@ class LanguageManager {
                     }
                 }
 
-                // 兼容旧版本：config 表
+                // Compatibility with older versions: config table
                 $stmt2 = $pdo->query("SHOW TABLES LIKE 'config'");
                 $hasConfig = $stmt2 && $stmt2->fetch();
                 if ($hasConfig) {
@@ -440,90 +330,49 @@ class LanguageManager {
                 }
             }
         } catch (\Throwable $e) {
-            // 忽略并回退
+            // Ignore and fall back
         }
 
         return self::ZBX_DEFAULT_LANG;
     }
 
     /**
-     * 将Zabbix语言代码映射到我们的语言代码
+     * Map the Zabbix language code to our language code
      */
     private static function mapZabbixLangToOurs($zabbixLang) {
-        // 先转换为小写进行比较，以处理大小写不一致的情况
-        $lowerLang = strtolower(trim($zabbixLang));
-
-        if (preg_match('/^ru(?:[-_]|$)/i', trim($lowerLang))) {
-            return 'ru_RU';
+        $lang = strtolower(str_replace('-', '_', trim((string) $zabbixLang)));
+        if ($lang === self::LANG_DEFAULT) {
+            return self::LANG_DEFAULT;
         }
-        if (preg_match('/^pt(?:[-_]|$)/i', trim($lowerLang))) {
+        // Supported languages: Brazilian Portuguese (pt*) and English (everything else).
+        if (preg_match('/^pt(?:_|$)/', $lang)) {
             return 'pt_BR';
         }
-        
-        $langMap = [
-            // 中文的各种变体
-            'zh_cn' => 'zh_CN',
-            'zh-cn' => 'zh_CN',
-            'zh_tw' => 'zh_CN', // 繁体中文也使用简体中文翻译
-            'zh-tw' => 'zh_CN',
-            'zh' => 'zh_CN',
-            'chinese' => 'zh_CN',
-            'china' => 'zh_CN',
-            'cn' => 'zh_CN',
-            
-            // 英文的各种变体
-            'en_us' => 'en_US',
-            'en-us' => 'en_US',
-            'en_gb' => 'en_US',
-            'en-gb' => 'en_US',
-            'en' => 'en_US',
-            'english' => 'en_US',
-            'us' => 'en_US',
-            'gb' => 'en_US',
-            
-            // 默认
-            'default' => self::LANG_DEFAULT
-        ];
-        
-        // 如果找到直接映射，返回结果
-        if (isset($langMap[$lowerLang])) {
-            return $langMap[$lowerLang];
-        }
-        
-        // 如果没有找到，尝试部分匹配
-        if (strpos($lowerLang, 'zh') === 0 || strpos($lowerLang, 'cn') !== false || strpos($lowerLang, 'chinese') !== false) {
-            return 'zh_CN';
-        }
-        
-        if (strpos($lowerLang, 'en') === 0 || strpos($lowerLang, 'english') !== false) {
-            return 'en_US';
-        }
-        
-        // 默认使用英语
-        return self::ZBX_DEFAULT_LANG;
+
+        return 'en_US';
     }
 
     /**
-     * 检查并回退到受支持语言
+     * Check and fall back to a supported language
      */
     private static function ensureSupportedOrFallback($lang) {
         $mapped = self::mapZabbixLangToOurs($lang);
         if (self::isSupportedLocale($mapped)) {
             return $mapped;
         }
-        // 支持 zh_CN、en_US 和 ru_RU
+        // Supports en_US and pt_BR
         return self::ZBX_DEFAULT_LANG;
     }
 
     /**
-     * 仅将我们已提供翻译的语言视为可用
+     * Only languages for which we provide translations count as available
      */
     private static function isSupportedLocale($lang) {
         return in_array($lang, array_keys(self::$translations), true);
     }
     
     /**
-     * 获取翻译文本
+     * Get the translated text
      */
     public static function t($key) {
         $lang = self::detectLanguage();
@@ -532,17 +381,17 @@ class LanguageManager {
             return self::$translations[$lang][$key];
         }
         
-        // 如果当前语言没有翻译，尝试使用英语
+        // If the current language has no translation, try English
         if ($lang !== 'en_US' && isset(self::$translations['en_US'][$key])) {
             return self::$translations['en_US'][$key];
         }
         
-        // 如果都没有，返回原键值
+        // If neither exists, return the key itself
         return $key;
     }
     
     /**
-     * 获取带参数的翻译文本
+     * Get translated text with parameters
      */
     public static function tf($key, ...$args) {
         $translation = self::t($key);
@@ -550,23 +399,23 @@ class LanguageManager {
     }
     
     /**
-     * 获取当前语言代码
+     * Get the current language code
      */
     public static function getCurrentLanguage() {
         return self::detectLanguage();
     }
     
     /**
-     * 重置语言缓存（主要用于测试）
+     * Reset the language cache (mainly for tests)
      */
     public static function resetLanguage() {
         self::$currentLanguage = null;
     }
     
     /**
-     * 判断是否为中文
+     * Whether the language is Chinese
      */
     public static function isChinese() {
-        return self::detectLanguage() === 'zh_CN';
+        return false; // Chinese is no longer supported.
     }
 }

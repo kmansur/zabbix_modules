@@ -10,17 +10,17 @@ use CRoleHelper;
 use Modules\Topomap\Lib\LanguageManager;
 
 /**
- * 自动拓扑图的数据接口。zabbix.php?action=topomap.data
+ * Data endpoint of the auto topology map. zabbix.php?action=topomap.data
  *
- * 数据直接落在 Zabbix 原生 sysmaps 里（map.create / map.update / map.delete），
- * 因此本模块创建的图在「监测 → 拓扑图」里同样可见，反之亦然。
- * 所有调用都走当前登录用户的会话，主机/拓扑图权限由 Zabbix 自身裁决。
+ * Data is stored directly in native Zabbix sysmaps (map.create / map.update / map.delete),
+ * so maps created here are also visible in Monitoring → Maps, and vice versa.
+ * All calls use the current user's session; host/map permissions are enforced by Zabbix itself.
  */
 class TopomapData extends CController {
 
 	private const JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE;
 
-	/** 地图元素（sysmaps_elements）允许回写的字段，其余一律丢弃。 */
+	/** Map element (sysmaps_elements) fields that may be written back; everything else is dropped. */
 	private const SELEMENT_FIELDS = [
 		'selementid', 'elementtype', 'elements', 'iconid_off', 'iconid_on', 'iconid_disabled',
 		'iconid_maintenance', 'label', 'label_location', 'x', 'y', 'use_iconmap', 'evaltype', 'tags',
@@ -30,26 +30,26 @@ class TopomapData extends CController {
 	private const LINK_FIELDS = ['linkid', 'selementid1', 'selementid2', 'color', 'drawtype', 'label', 'show_label'];
 
 	/**
-	 * 每链路「指标监控项」配置表。
+	 * Per-link "metric item" configuration table.
 	 *
-	 * sysmaps_links 只有 linkid/sysmapid/selementid1/selementid2/drawtype/color/label 七列，
-	 * 没有任何空余列可以放带宽/上行/下行监控项，所以模块自建一张表挂在 linkid 上。
-	 * 表在 get/save 路径上懒建（CREATE TABLE IF NOT EXISTS），只在首次请求时执行一次。
+	 * sysmaps_links only has seven columns: linkid/sysmapid/selementid1/selementid2/drawtype/color/label,
+	 * with no spare column for bandwidth/upstream/downstream items, so the module keeps its own table keyed by linkid.
+	 * The table is created lazily on the get/save path (CREATE TABLE IF NOT EXISTS), only once on the first request.
 	 */
 	private const LINK_METRICS_TABLE = 'topomap_link_metrics';
 
 	/**
-	 * 每链路「走线 / 折点」配置表。
+	 * Per-link "routing / waypoint" configuration table.
 	 *
-	 * routing: 0 自动曲线（默认）/ 1 自动直角 / 2 手动折点；
-	 * waypoints: JSON 数组 [{"x":120,"y":80}, ...]，仅 routing=2 时使用。
-	 * 和指标表一样挂在 linkid 上，在读写路径懒建。
+	 * routing: 0 automatic curve (default) / 1 automatic orthogonal / 2 manual waypoints;
+	 * waypoints: JSON array [{"x":120,"y":80}, ...], used only when routing=2.
+	 * Keyed by linkid like the metrics table and created lazily on the read/write path.
 	 */
 	private const LINK_PATHS_TABLE = 'topomap_link_paths';
 
 	/**
-	 * 模块级设置表（键值对）：目前只存「自动关联触发器的关键词」，一行一个。
-	 * 和指标表一样在读写路径上懒建。
+	 * Module-level settings table (key/value): currently only stores the keywords for automatic trigger linking, one per line.
+	 * Created lazily on the read/write path, like the metrics table.
 	 */
 	private const SETTINGS_TABLE = 'topomap_settings';
 
@@ -57,24 +57,24 @@ class TopomapData extends CController {
 	private static $pathsTableReady = false;
 	private static $settingsTableReady = false;
 
-	/** 本请求内缓存的关键词（null = 还没读过） */
+	/** Keywords cached for this request (null = not read yet) */
 	private static $triggerKeywords = null;
 
-	/** 自动发现连线的基础色（正常状态）。触发器进入问题态时用下面那个色。 */
+	/** Base color of automatically discovered links (normal state). The color below is used when a trigger is in problem state. */
 	private const DISCOVERY_LINK_COLOR = '00CC00';
 
-	/** 自动发现的连线绑定的端口状态类触发器，问题时的连线色。 */
+	/** Link color when the port status trigger bound to an automatically discovered link is in problem state. */
 	private const DISCOVERY_TRIGGER_COLOR = 'DD0000';
 
 	/**
-	 * 主机元素的默认标签：第一行主机名、第二行连接地址。
-	 * 存宏原文，渲染时展开，主机改名 / 接口变化后自动跟上最新值。
+	 * Default label of host elements: host name on the first line, connection address on the second.
+	 * Stores the raw macros and expands them at render time, so renamed hosts / changed interfaces are picked up automatically.
 	 */
 	private const DEFAULT_HOST_LABEL = "{HOST.NAME}\n{HOST.CONN}";
 
 	/**
-	 * 判定「端口状态类」触发器的关键词（与 aiops 项目 lldpDiscoveryService 保持一致）：
-	 * 描述里命中其中之一，且描述里出现该端口名，才认为这条触发器属于这条链路。
+	 * Keywords that identify "port status" triggers (kept in sync with the aiops project's lldpDiscoveryService):
+	 * a trigger belongs to a link only if its description contains one of them and also the port name.
 	 */
 	private const LINK_TRIGGER_KEYWORDS = [
 		'link down', 'link down on', 'is down', 'has changed status',
@@ -82,12 +82,12 @@ class TopomapData extends CController {
 	];
 
 	/**
-	 * 「触发器来源端」口径（每链路可配置，存在模块自建表的 trigger_source 列）：
-	 *   AUTO   自动：源端优先，源端匹配不到才回退本端（历史行为）
-	 *   SOURCE 仅源端：只按源端端口匹配，匹配不到就不关联
-	 *   TARGET 仅本端：只按本端端口匹配
-	 *   BOTH   两端：两端命中的触发器都关联
-	 *   NONE   不关联：忽略这条线
+	 * "Trigger source" scope (configurable per link, stored in the trigger_source column of the module table):
+	 *   AUTO   automatic: source end first, falls back to the local end only if the source does not match (legacy behavior)
+	 *   SOURCE source only: match the source port only; no match means no link
+	 *   TARGET local only: match the local port only
+	 *   BOTH   both ends: link triggers matched on either end
+	 *   NONE   none: ignore this link
 	 */
 	public const TRIGGER_SOURCE_AUTO = 0;
 	public const TRIGGER_SOURCE_SOURCE = 1;
@@ -109,8 +109,8 @@ class TopomapData extends CController {
 	}
 
 	protected function checkInput(): bool {
-		// getInput() 只读 validateInput() 填充过的白名单，这里必须逐个声明；
-		// 不标 required，缺参由 getInput 的默认值兜底。
+		// getInput() only reads the whitelist filled by validateInput(), so every field must be declared here;
+		// nothing is marked required; missing parameters fall back to getInput defaults.
 		$this->validateInput([
 			'mode' => 'string',
 			'sysmapid' => 'string',
@@ -120,21 +120,21 @@ class TopomapData extends CController {
 			'height' => 'string',
 			'payload' => 'string',
 			'search' => 'string',
-			// 自动发现：要扫描的主机（逗号分隔）、协议、单机 SNMP 超时（毫秒）
+			// Auto discovery: hosts to scan (comma-separated), protocol, per-host SNMP timeout (ms)
 			'hostids' => 'string',
 			'protocols' => 'string',
 			'timeout' => 'string',
-			// 监控项选择器里的「主机群组」过滤器（逗号分隔）
+			// "Host group" filter of the item selector (comma-separated)
 			'groupids' => 'string',
-			// 链接属性「触发器来源端」重匹配：两端主机 + 端口 + 口径
+			// Re-matching of the link "trigger source" property: hosts at both ends + ports + scope
 			'hostid1' => 'string',
 			'hostid2' => 'string',
 			'port1' => 'string',
 			'port2' => 'string',
 			'trigger_source' => 'string',
-			// 触发器选择器按 triggerid 反查已绑定触发器的名字
+			// Trigger selector: look up the names of already bound triggers by triggerid
 			'triggerids' => 'string',
-			// 自动关联触发器的关键词（一行一个，存在模块设置表里）
+			// Keywords for automatic trigger linking (one per line, stored in the module settings table)
 			'trigger_keywords' => 'string'
 		]);
 
@@ -225,18 +225,18 @@ class TopomapData extends CController {
 					break;
 
 				default:
-					throw new \Exception(LanguageManager::t('未知的操作'));
+					throw new \Exception(LanguageManager::t('Unknown operation'));
 			}
 		}
 		catch (\Throwable $e) {
 			$result = ['success' => false, 'error' => $e->getMessage()];
 		}
 
-		// layout.json 直接输出 main_block 这个字符串，不做 json_encode。
+		// layout.json outputs the main_block string directly, without json_encode.
 		$json = json_encode($result, self::JSON_FLAGS);
 
 		if ($json === false) {
-			$json = json_encode(['success' => false, 'error' => LanguageManager::t('结果编码为 JSON 失败：').json_last_error_msg()]);
+			$json = json_encode(['success' => false, 'error' => LanguageManager::t('Failed to encode the result as JSON: ').json_last_error_msg()]);
 		}
 
 		$this->setResponse(new CControllerResponseData([
@@ -245,7 +245,7 @@ class TopomapData extends CController {
 	}
 
 	// ------------------------------------------------------------------
-	// 权限
+	// Permissions
 	// ------------------------------------------------------------------
 
 	private function canEdit(): bool {
@@ -255,14 +255,14 @@ class TopomapData extends CController {
 			}
 		}
 		catch (\Throwable $e) {
-			// 落到下面的用户类型兜底
+			// Fall back to the user type below
 		}
 
 		return $this->getUserType() >= USER_TYPE_ZABBIX_ADMIN;
 	}
 
 	// ------------------------------------------------------------------
-	// 列表 / 详情
+	// List / details
 	// ------------------------------------------------------------------
 
 	private function modeList(): array {
@@ -293,28 +293,28 @@ class TopomapData extends CController {
 
 		$maps = API::Map()->get([
 			'sysmapids' => [$sysmapid],
-			// label_* 决定元素标签显示什么（0=自定义标签 1=IP 2=名称 3=状态 4=无 5=自定义宏模板），
-			// show_unack / expandproblem 决定「有问题」时写几行、写什么。原生地图就是按这些字段渲染的。
+			// label_* decides what the element label shows (0=custom label 1=IP 2=name 3=status 4=none 5=custom macro template),
+			// show_unack / expandproblem decide how many lines and what to write when there is a problem. Native maps render from these fields.
 			'output' => ['sysmapid', 'name', 'width', 'height', 'label_type', 'label_location',
 				'label_format', 'label_type_host', 'label_type_hostgroup', 'label_type_trigger',
 				'label_type_map', 'label_type_image',
 				'label_string_host', 'label_string_hostgroup', 'label_string_trigger',
 				'label_string_map', 'label_string_image',
 				'show_unack', 'expandproblem', 'iconmapid', 'backgroundid',
-				// 元素高亮开关：原生只有开了 highlight 才在图标后面画严重级别色的圆
+				// Element highlight switch: natively, the severity-colored circle behind the icon is drawn only when highlight is on
 				'highlight'
 			],
-			// selementid / sysmap_shapeid 必须显式列出：一旦指定 output，
-			// Zabbix 只返回白名单里的字段，缺了它前端就没法区分「已有元素」和「新元素」，
-			// 每次保存都会把老元素当成新元素再插一遍。
+			// selementid / sysmap_shapeid must be listed explicitly: once output is specified,
+			// Zabbix only returns whitelisted fields; without them the frontend cannot tell existing elements from new ones,
+			// and every save would insert the old elements again as new ones.
 			'selectSelements' => ['selementid', 'elementtype', 'elements', 'iconid_off', 'iconid_on',
 				'iconid_disabled', 'iconid_maintenance', 'label', 'label_location', 'x', 'y', 'use_iconmap',
 				'evaltype', 'tags', 'urls', 'elementsubtype', 'areatype', 'width', 'height', 'viewtype'
 			],
-			// linktriggers 是 selectLinks 的嵌套字段（7.0.28 的 CMap.php 按
-			// outputIsRequested('linktriggers', selectLinks) 判断），写死字段列表反而是把
-			// linktriggers 当成 sysmaps_links 的列去查、会报未知字段，所以这里必须用 extend。
-			// 自动发现会把端口状态类触发器绑在这里，报警时连线显示为 DD0000。
+			// linktriggers is a nested field of selectLinks (CMap.php in 7.0.28 checks
+			// outputIsRequested('linktriggers', selectLinks)); a hard-coded field list would query
+			// linktriggers as a sysmaps_links column and fail with an unknown field, so extend is required here.
+			// Auto discovery binds port status triggers here; on alarm the link is drawn in DD0000.
 			'selectLinks' => 'extend',
 			'selectShapes' => ['sysmap_shapeid', 'type', 'x', 'y', 'width', 'height', 'text', 'font',
 				'font_size', 'font_color', 'text_halign', 'text_valign', 'border_type', 'border_width',
@@ -323,7 +323,7 @@ class TopomapData extends CController {
 		]);
 
 		if (!$maps) {
-			throw new \Exception(LanguageManager::t('拓扑图不存在，或你没有查看权限'));
+			throw new \Exception(LanguageManager::t('Map does not exist or you do not have permission to view it'));
 		}
 
 		$map = $maps[0];
@@ -347,8 +347,8 @@ class TopomapData extends CController {
 
 		$map['hosts'] = $this->collectHosts(array_values($hostids));
 
-		// 每链路的带宽 / 上行 / 下行监控项配置（模块自建表 topomap_link_metrics）。
-		// 再把用到的监控项的最新值一次性取回来，前端在连线中点按「成员口求和」渲染指标小字。
+		// Per-link bandwidth / upstream / downstream item configuration (module table topomap_link_metrics).
+		// Then fetch the latest values of the items in use in one go; the frontend renders the metric labels at the link midpoint, summed over member ports.
 		$metric_map = $this->loadLinkMetrics($sysmapid);
 		$path_map = $this->loadLinkPaths($sysmapid);
 		$itemids = [];
@@ -359,18 +359,18 @@ class TopomapData extends CController {
 				'trigger_source' => self::TRIGGER_SOURCE_AUTO
 			];
 			$path = $path_map[(string) ($link['linkid'] ?? '')] ?? [
-				// 自动发现的连线（带两端端口名）默认「自动直角」，走树形布局的底中 → 顶中分叉；
-				// 手工连的线仍默认「自动曲线」。
+				// Auto-discovered links (with port names at both ends) default to "automatic orthogonal", branching from bottom-center to top-center in the tree layout;
+				// manually drawn links still default to "automatic curve".
 				'routing' => ($metrics['source_port'] !== '' || $metrics['target_port'] !== '') ? 1 : 0,
 				'waypoints' => []
 			];
 
-			// 指标小字、两端端口名（画在连线两端）以及「触发器来源端」口径一起带给前端
+			// Metric labels, the port names at both ends (drawn at the link ends) and the "trigger source" scope are sent to the frontend together
 			$link['metrics'] = ['bw' => $metrics['bw'], 'in' => $metrics['in'], 'out' => $metrics['out']];
 			$link['source_port'] = $metrics['source_port'];
 			$link['target_port'] = $metrics['target_port'];
 			$link['trigger_source'] = $metrics['trigger_source'];
-			// 走线模式与手动折点（模块自建表 topomap_link_paths）
+			// Routing mode and manual waypoints (module table topomap_link_paths)
 			$link['routing'] = $path['routing'];
 			$link['waypoints'] = $path['waypoints'];
 
@@ -393,8 +393,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 元素状态行用的颜色。和原生一致：正常/问题/已确认各有配置项，
-	 * 停用、维护是写死色（见 7.0.28 maps.inc.php getSelementInfo()）。
+	 * Colors of element status lines. As in the native map: normal/problem/acknowledged each have a setting,
+	 * while disabled and maintenance use fixed colors (see getSelementInfo() in 7.0.28 maps.inc.php).
 	 */
 	private function labelColors(): array {
 		$colors = [
@@ -417,19 +417,19 @@ class TopomapData extends CController {
 			$colors['problem_ack'] = ltrim((string) \CSettingsHelper::get(\CSettingsHelper::PROBLEM_ACK_COLOR), '#');
 		}
 		catch (\Throwable $e) {
-			// 取不到全局配置就用 Zabbix 默认色，不该让整张图打不开
+			// If the global settings cannot be read, use the Zabbix default colors; the map must still open
 		}
 
 		return $colors;
 	}
 
 	/**
-	 * 给连线上绑定的触发器打「当前是否处于问题态」的标记。
+	 * Marks whether each trigger bound to a link is currently in problem state.
 	 *
-	 * 原生 sysmap 的链路指示器本来就是「触发器报警时连线变色」，但那是原生地图在渲染时
-	 * 自己查的；本模块的画布是自绘的，所以要把问题态一并带回来，前端才能把线画成 DD0000。
+	 * Native sysmap link indicators already change the link color when a trigger fires, but the native map
+	 * queries that itself while rendering; this module draws its own canvas, so the problem state is returned too and the frontend can draw the link in DD0000.
 	 *
-	 * @param array $links selectLinks 拿到的链接（每条可能带 linktriggers）
+	 * @param array $links links returned by selectLinks (each may carry linktriggers)
 	 */
 	private function markLinkTriggerProblems(array $links): array {
 		$triggerids = [];
@@ -452,8 +452,8 @@ class TopomapData extends CController {
 
 		if ($triggerids) {
 			try {
-				// 原生 CMapHelper 只认「启用」的连线触发器（status == TRIGGER_STATUS_ENABLED），
-				// 禁用的触发器上残留的未恢复问题不该让连线变色。
+				// Native CMapHelper only considers enabled link triggers (status == TRIGGER_STATUS_ENABLED);
+				// unresolved problems left on disabled triggers must not change the link color.
 				$rows = API::Trigger()->get([
 					'output' => ['triggerid'],
 					'triggerids' => array_values($triggerids),
@@ -475,7 +475,7 @@ class TopomapData extends CController {
 				}
 			}
 			catch (\Throwable $e) {
-				// 查不到问题就当全部正常，连线保持基础色，不该因此打不开图
+				// If problems cannot be read, treat everything as normal and keep the base color; the map must still open
 			}
 		}
 
@@ -493,9 +493,9 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 主机名称/状态 + 当前未恢复问题的数量、未确认数量、最高级别与标题。
-	 * 预览时据此点亮「问题图标」、打角标，并在标签下方写「正常 / 问题 / 已停用 / 在维护中」——
-	 * 这几行就是原生拓扑图 element 标签里的第二段文字。
+	 * Host name/status + number of unresolved problems, unacknowledged count, highest severity and title.
+	 * In preview this lights the problem icon, adds the badge and writes "OK / Problem / Disabled / In maintenance" under the label —
+	 * these lines are the second part of the element label on native maps.
 	 */
 	private function collectHosts(array $hostids): array {
 		if (!$hostids) {
@@ -517,7 +517,7 @@ class TopomapData extends CController {
 			$result[$hostid] = [
 				'name' => $host['name'],
 				'ip' => $ip,
-				// {HOST.CONN} 的连接地址：优先主接口，其次 SNMP 接口，再按 useip 取 IP/DNS
+				// Connection address for {HOST.CONN}: main interface first, then the SNMP interface, then IP/DNS according to useip
 				'conn' => $this->hostConn($host),
 				'status' => (int) $host['status'],
 				'maintenance' => isset($host['maintenance_status']) ? (int) $host['maintenance_status'] : 0,
@@ -529,9 +529,9 @@ class TopomapData extends CController {
 		}
 
 		try {
-			// 和原生拓扑图一致（getSelementsInfo）：先只取「启用 + 受监控 + 当前处于问题态」的触发器，
-			// 再拉这些触发器的问题。之前直接按 hostids 拉问题，禁用触发器上残留的未恢复问题也被算进去，
-			// 于是原生显示 1 条、模块显示 2 条。
+			// Same as native maps (getSelementsInfo): first take only triggers that are enabled, monitored and currently in problem state,
+			// then fetch their problems. Fetching problems directly by hostids also counted unresolved problems left on disabled triggers,
+			// so the native map showed 1 while the module showed 2.
 			$triggers = API::Trigger()->get([
 				'output' => ['triggerid'],
 				'selectHosts' => ['hostid'],
@@ -543,7 +543,7 @@ class TopomapData extends CController {
 			]);
 		}
 		catch (\Throwable $e) {
-			// 取不到问题数据不该让整张图打不开
+			// Failing to read problem data must not prevent the map from opening
 			return $result;
 		}
 
@@ -560,7 +560,7 @@ class TopomapData extends CController {
 		}
 
 		try {
-			// 不带 recent: true —— 只算未恢复的问题（原生 countSelementProblems 只数 r_clock = 0 的）
+			// Without recent: true — only unresolved problems count (native countSelementProblems only counts r_clock = 0)
 			$problems = API::Problem()->get([
 				'output' => ['objectid', 'severity', 'name', 'acknowledged'],
 				'objectids' => array_keys($trigger_hosts)
@@ -591,7 +591,7 @@ class TopomapData extends CController {
 				$result[$hostid]['problems']++;
 				$result[$hostid]['unack'] += $unack;
 
-				// 只记最严重那条的标题，用于「显示单个问题」模式
+				// Only keep the title of the most severe one, for the "show single problem" mode
 				if ($severity > $result[$hostid]['severity']) {
 					$result[$hostid]['severity'] = $severity;
 					$result[$hostid]['title'] = $title;
@@ -603,7 +603,7 @@ class TopomapData extends CController {
 	}
 
 	// ------------------------------------------------------------------
-	// 增 / 改 / 删
+	// Create / update / delete
 	// ------------------------------------------------------------------
 
 	private function modeCreate(): array {
@@ -611,27 +611,27 @@ class TopomapData extends CController {
 		$width = $this->dimension('width') ?? 1000;
 		$height = $this->dimension('height') ?? 700;
 
-		// 拓扑图名称在 sysmaps 里是唯一的。7.0.28 的 map.create 遇到重名不抛异常，
-		// 而是直接返回 false（实测），不自己先查一遍的话前端只会拿到空的 sysmapid。
+		// Map names are unique in sysmaps. In 7.0.28, map.create does not throw on a duplicate name
+		// but simply returns false (verified), so without checking first the frontend only gets an empty sysmapid.
 		$exists = API::Map()->get([
 			'output' => ['sysmapid'],
 			'filter' => ['name' => $name]
 		]);
 
 		if ($exists) {
-			throw new \Exception(LanguageManager::tf('已存在名为「%1$s」的拓扑图，请换一个名称', $name));
+			throw new \Exception(LanguageManager::tf('A map named "%1$s" already exists; choose another name', $name));
 		}
 
-		// 前端 API wrapper 在 map.create 校验失败时只返回 false，错误消息另行登记；
-		// 记下调用前的消息条数，失败时把 Zabbix 的真实错误一起抛出去。
+		// The frontend API wrapper only returns false when map.create validation fails, and logs the error separately;
+		// remember the message count before the call and include the real Zabbix error when it fails.
 		$message_offset = $this->apiMessageCount();
 
 		$result = API::Map()->create([[
 			'name' => $name,
 			'width' => $width,
 			'height' => $height,
-			// label_type=0 时原生「拓扑图」也直接显示元素上的自定义标签，
-			// 两个入口看到的是同一份内容。
+			// With label_type=0 the native map also shows the custom element label directly,
+			// so both entry points show the same content.
 			'label_type' => 0,
 			'label_location' => 0,
 			'grid_show' => 0,
@@ -656,10 +656,10 @@ class TopomapData extends CController {
 			$detail = $this->apiErrorDetail($message_offset);
 
 			if ($detail !== '') {
-				throw new \Exception(LanguageManager::tf('创建「%1$s」失败：%2$s', $name, $detail));
+				throw new \Exception(LanguageManager::tf('Failed to create "%1$s": %2$s', $name, $detail));
 			}
 
-			throw new \Exception(LanguageManager::tf('创建「%1$s」失败：Zabbix 没有返回拓扑图 ID', $name));
+			throw new \Exception(LanguageManager::tf('Failed to create "%1$s": Zabbix did not return a map ID', $name));
 		}
 
 		return ['success' => true, 'sysmapid' => $sysmapid];
@@ -669,7 +669,7 @@ class TopomapData extends CController {
 		$sysmapid = $this->requireSysmapid();
 		$name = $this->requireName();
 
-		// 改名同样受「名称唯一」约束，先查一遍给出能看懂的提示
+		// Renaming is also subject to the unique-name rule; check first and give an understandable message
 		$exists = API::Map()->get([
 			'output' => ['sysmapid'],
 			'filter' => ['name' => $name]
@@ -677,7 +677,7 @@ class TopomapData extends CController {
 
 		foreach ($exists as $row) {
 			if ((string) $row['sysmapid'] !== $sysmapid) {
-				throw new \Exception(LanguageManager::tf('已存在名为「%1$s」的拓扑图，请换一个名称', $name));
+				throw new \Exception(LanguageManager::tf('A map named "%1$s" already exists; choose another name', $name));
 			}
 		}
 
@@ -686,7 +686,7 @@ class TopomapData extends CController {
 			'name' => $name
 		];
 
-		// 宽 / 高可选：不传就保持原值，避免老客户端把它悄悄改回 1000×700
+		// Width / height are optional: when omitted the current values are kept, so old clients cannot silently reset them to 1000×700
 		$width = $this->dimension('width');
 		$height = $this->dimension('height');
 
@@ -704,7 +704,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 删除一张（sysmapid）或一批（sysmapids，逗号分隔）拓扑图。
+	 * Delete one map (sysmapid) or several (sysmapids, comma-separated).
 	 */
 	private function modeDelete(): array {
 		$raw = trim((string) $this->getInput('sysmapids', ''));
@@ -724,12 +724,12 @@ class TopomapData extends CController {
 		}
 
 		if (!$ids) {
-			throw new \Exception(LanguageManager::t('缺少有效的拓扑图 ID'));
+			throw new \Exception(LanguageManager::t('Missing valid map ID'));
 		}
 
 		API::Map()->delete($ids);
 
-		// 图删了，模块自建表里挂在它下面的指标配置也要跟着清掉，否则会成为孤儿行
+		// When a map is deleted, its metric settings in the module tables must be removed too, otherwise they become orphan rows
 		$this->dropLinkMetricsForMaps($ids);
 		$this->dropLinkPathsForMaps($ids);
 
@@ -741,7 +741,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 删除若干张图的走线/折点配置（图被删除时清理，避免孤儿行）。
+	 * Delete the routing/waypoint settings of several maps (cleanup on map deletion, avoids orphan rows).
 	 *
 	 * @param string[] $sysmapids
 	 */
@@ -766,7 +766,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 删除若干张图的指标配置（图被删除时清理，避免孤儿行）。
+	 * Delete the metric settings of several maps (cleanup on map deletion, avoids orphan rows).
 	 *
 	 * @param string[] $sysmapids
 	 */
@@ -791,8 +791,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 导出拓扑图为 JSON（模块自有格式，可再导入回 sysmaps。
-	 * 不传 sysmapids 就导出全部可见的图）。
+	 * Export maps as JSON (module format that can be imported back into sysmaps.
+	 * Without sysmapids, all visible maps are exported).
 	 */
 	private function modeExport(): array {
 		$raw = trim((string) $this->getInput('sysmapids', ''));
@@ -839,7 +839,7 @@ class TopomapData extends CController {
 		], self::JSON_FLAGS);
 
 		if ($json === false) {
-			throw new \Exception(LanguageManager::t('导出内容编码失败'));
+			throw new \Exception(LanguageManager::t('Failed to encode the exported content'));
 		}
 
 		return [
@@ -857,7 +857,7 @@ class TopomapData extends CController {
 		$payload = json_decode($raw, true);
 
 		if (!is_array($payload)) {
-			throw new \Exception(LanguageManager::t('保存失败：提交的数据不是合法的 JSON'));
+			throw new \Exception(LanguageManager::t('Save failed: the submitted data is not valid JSON'));
 		}
 
 		$update = ['sysmapid' => $sysmapid];
@@ -866,8 +866,8 @@ class TopomapData extends CController {
 			$update['name'] = $this->normalizeName((string) $payload['name']);
 		}
 
-		// 画布尺寸由前端按内容算好后提交（拖拽时长大、保存时收紧），
-		// 这里只做范围钳制，避免出现 0 或超大的值。
+		// The frontend computes the canvas size from the content and submits it (grows while dragging, shrinks on save);
+		// here we only clamp the range to avoid 0 or huge values.
 		if (array_key_exists('width', $payload)) {
 			$update['width'] = max(100, min(10000, (int) $payload['width']));
 		}
@@ -885,11 +885,11 @@ class TopomapData extends CController {
 			$this->existingLinkIndicatorTypes($sysmapid)
 		);
 
-		// 7.0.x 的 CMapElement::checkLinkInput() 里把方法名写成了「updateLink」，
-		// 而实际调用传入的是 __FUNCTION__ = 「updateLinks」，于是「更新链接」这条路径
-		// 永远走成「新增链接」的校验分支，要求每条 link 必须带 sysmapid。
-		// 7.4/8.0 改走 CMap::validateLinkFields() 的字段白名单，白名单里没有 sysmapid，
-		// 带上去会报「无效的参数 "/1/links/1": "sysmapid" 参数异常」，所以只给旧版本补。
+		// In 7.0.x, CMapElement::checkLinkInput() spells the method name as "updateLink",
+		// while the actual call passes __FUNCTION__ = "updateLinks", so the "update links" path
+		// always takes the "create link" validation branch, which requires sysmapid on every link.
+		// 7.4/8.0 use the field whitelist of CMap::validateLinkFields(), which has no sysmapid;
+		// sending it fails with 'Invalid parameter "/1/links/1": unexpected parameter "sysmapid"', so it is only added for old versions.
 		if (self::linkSysmapidRequired()) {
 			foreach ($update['links'] as &$link) {
 				if (isset($link['linkid'])) {
@@ -910,22 +910,22 @@ class TopomapData extends CController {
 			$detail = $this->apiErrorDetail($message_offset);
 
 			if ($detail !== '') {
-				throw new \Exception(LanguageManager::tf('保存失败：%1$s', $detail));
+				throw new \Exception(LanguageManager::tf('Save failed: %1$s', $detail));
 			}
 
-			throw new \Exception(LanguageManager::t('保存失败：Zabbix 未确认保存结果'));
+			throw new \Exception(LanguageManager::t('Save failed: Zabbix did not confirm the result'));
 		}
 
-		// 保存后回读一次链接，把新建链路的真实 linkid 认领出来，再把每链路的
-		// 带宽/上行/下行监控项写进模块自建表。sysmaps_links 没有空余列，
-		// 指标配置只能挂在 linkid 上的独立表里。
+		// After saving, read the links back once to claim the real linkid of newly created links, then write each link's
+		// bandwidth/upstream/downstream items into the module table. sysmaps_links has no spare columns,
+		// so metric settings can only live in a separate table keyed by linkid.
 		$this->persistLinkMetrics(
 			$sysmapid,
 			isset($payload['link_metrics']) && is_array($payload['link_metrics']) ? $payload['link_metrics'] : [],
 			$update['links']
 		);
 
-		// 每链路的走线模式与手动折点（topomap_link_paths）
+		// Per-link routing mode and manual waypoints (topomap_link_paths)
 		$this->persistLinkPaths(
 			$sysmapid,
 			isset($payload['link_paths']) && is_array($payload['link_paths']) ? $payload['link_paths'] : [],
@@ -936,17 +936,17 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 把前端提交的每链路指标配置落库。
+	 * Persist the per-link metric settings submitted by the frontend.
 	 *
-	 * payload.link_metrics 每项形如：
+	 * Each payload.link_metrics entry looks like:
 	 *   {linkid: '123'|'', new_seq: 1|0, bw_itemids: [...], in_itemids: [...], out_itemids: [...]}
 	 *
-	 * 已有链路直接按 linkid 对上；新建链路没有 linkid，用 new_seq 认领：
-	 * Zabbix 按 payload.links 数组顺序插入新链接，自增 linkid 依次递增，
-	 * 所以回读后「排除已有 linkid、剩下按数值升序」的第 n 条就是 new_seq=n 的那条。
+	 * Existing links are matched directly by linkid; new links have no linkid and are claimed by new_seq:
+	 * Zabbix inserts new links in the order of the payload.links array, with increasing auto-increment linkids,
+	 * so after reading back, the n-th link (excluding existing linkids, sorted ascending) is the one with new_seq=n.
 	 *
 	 * @param array $raw_metrics payload.link_metrics
-	 * @param array $saved_links  刚提交的 $update['links']（用来区分「原有链路」和「新建链路」）
+	 * @param array $saved_links  the submitted $update['links'] (used to tell existing links from new ones)
 	 */
 	private function persistLinkMetrics(string $sysmapid, array $raw_metrics, array $saved_links): void {
 		$existing_ids = [];
@@ -1015,16 +1015,16 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 把前端提交的每链路走线 / 折点配置落库。
+	 * Persist the per-link routing / waypoint settings submitted by the frontend.
 	 *
-	 * payload.link_paths 每项形如：
+	 * Each payload.link_paths entry looks like:
 	 *   {linkid: '123'|'', new_seq: 1|0, routing: 0|1|2, waypoints: [{x,y}, ...]}
 	 *
-	 * linkid / new_seq 的认领规则与 persistLinkMetrics() 完全一致：
-	 * 新建链路按 payload.links 的出现顺序编号，回读后排除已有 id、按数值升序依次对应。
+	 * linkid / new_seq are claimed exactly as in persistLinkMetrics():
+	 * new links are numbered in payload.links order; after reading back, existing ids are excluded and the rest map in ascending order.
 	 *
 	 * @param array $raw_paths   payload.link_paths
-	 * @param array $saved_links 刚提交的 $update['links']
+	 * @param array $saved_links the submitted $update['links']
 	 */
 	private function persistLinkPaths(string $sysmapid, array $raw_paths, array $saved_links): void {
 		$existing_ids = [];
@@ -1089,7 +1089,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 折点归一：只保留 {x,y} 数字对，取整并钳制为非负（sysmaps 坐标同样不能为负）。
+	 * Normalize waypoints: keep only numeric {x,y} pairs, rounded and clamped to non-negative (sysmaps coordinates cannot be negative either).
 	 *
 	 * @param mixed $raw
 	 * @return array [{x:int,y:int}, ...]
@@ -1120,11 +1120,11 @@ class TopomapData extends CController {
 	}
 
 	// ------------------------------------------------------------------
-	// 图标 / 主机选择
+	// Icon / host selection
 	// ------------------------------------------------------------------
 
 	private function modeIcons(): array {
-		// imagetype 1 = IMAGE_TYPE_ICON（拓扑图图标库）
+		// imagetype 1 = IMAGE_TYPE_ICON (map icon library)
 		$images = API::Image()->get([
 			'output' => ['imageid', 'name'],
 			'filter' => ['imagetype' => 1],
@@ -1154,13 +1154,13 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 视图记忆：记住 / 忘记「上次打开的那张图」。
+	 * View memory: remember / forget the last opened map.
 	 *
-	 * 原生是「打开 map.view 写 web.maps.sysmapid，打开列表页 sysmaps.php 删掉它」，
-	 * 菜单项固定指 action=map.view，于是点菜单时能回到上次的视图。
-	 * 本模块列表和画布在同一个 action 里，所以「回列表」这次删除只能由前端触发。
+	 * Natively, opening map.view writes web.maps.sysmapid and opening the list page sysmaps.php deletes it;
+	 * the menu item always points to action=map.view, so clicking the menu returns to the last view.
+	 * Here the list and the canvas share one action, so the deletion on "back to list" can only be triggered by the frontend.
 	 *
-	 * sysmapid 传空（或 0）表示回到列表。
+	 * An empty (or 0) sysmapid means back to the list.
 	 */
 	private function modeRemember(): array {
 		$sysmapid = (int) $this->getInput('sysmapid', 0);
@@ -1188,8 +1188,8 @@ class TopomapData extends CController {
 			'limit' => 200
 		];
 
-		// 监控项选择器里的「主机」弹层：可按已选主机回显 / 按主机群组过滤。
-		// 自动发现只传 search，不传这两个参数。
+		// "Host" popup of the item selector: can echo selected hosts / filter by host group.
+		// Auto discovery only passes search, not these two parameters.
 		if ($hostids) {
 			$options['hostids'] = $hostids;
 			unset($options['limit']);
@@ -1212,7 +1212,7 @@ class TopomapData extends CController {
 				'name' => $host['name'],
 				'ip' => $this->hostIp($host),
 				'status' => (int) $host['status'],
-				// 有 SNMP 接口的才能作为自动发现的起点
+				// Only hosts with an SNMP interface can be discovery seeds
 				'snmp' => $this->snmpInterface($host) !== null
 			];
 		}
@@ -1221,7 +1221,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 监控项选择器里「主机群组」弹层的数据源：列出主机群组，可按名称搜。
+	 * Data source of the "host group" popup in the item selector: lists host groups, searchable by name.
 	 */
 	private function modeHostgroups(): array {
 		$search = trim((string) $this->getInput('search', ''));
@@ -1250,24 +1250,24 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 监控项选择器用的列表：给一批主机，按关键字模糊匹配「数值型」监控项。
+	 * List for the item selector: given a set of hosts, fuzzy-match numeric items by keyword.
 	 *
-	 * 只列 value_type 0（浮点）/ 3（无符号整数）两类：链路带宽、上下行流量都是数值型，
-	 * 而交换机模板上动辄几百条 net.if.alias / descr 文本项（value_type 1）会把列表淹掉。
+	 * Only value_type 0 (float) / 3 (unsigned integer) are listed: link bandwidth and up/down traffic are numeric,
+	 * while switch templates often have hundreds of net.if.alias / descr text items (value_type 1) that would flood the list.
 	 */
 	private function modeItems(): array {
 		$hostids = $this->parseIdList((string) $this->getInput('hostids', ''));
 
 		if (!$hostids) {
-			throw new \Exception(LanguageManager::t('没有指定要查询监控项的主机'));
+			throw new \Exception(LanguageManager::t('No host specified for the item query'));
 		}
 
 		$search = trim((string) $this->getInput('search', ''));
 
 		$options = [
 			'hostids' => $hostids,
-			// 只取数值型（0 浮点 / 3 无符号整数）：过滤放在 API 层而不是取回来再筛，
-			// 否则交换机主机上几百条文本项会先把 limit 占满，真正的带宽项根本轮不到。
+			// Numeric types only (0 float / 3 unsigned): filter in the API rather than after fetching,
+			// otherwise hundreds of text items on a switch fill up the limit and the real bandwidth items never show.
 			'filter' => ['value_type' => [0, 3]],
 			'output' => ['itemid', 'name', 'key_', 'units', 'value_type', 'lastvalue', 'lastclock', 'type', 'status'],
 			'selectHosts' => ['hostid', 'name'],
@@ -1276,7 +1276,7 @@ class TopomapData extends CController {
 			'limit' => 400
 		];
 
-		// 名称和 key 任一命中即可（searchByAny=true 是「或」）
+		// A match on either name or key is enough (searchByAny=true means OR)
 		if ($search !== '') {
 			$options['search'] = ['name' => $search, 'key_' => $search];
 			$options['searchByAny'] = true;
@@ -1304,10 +1304,10 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 触发器选择器用的列表：给一批主机（连线两端），按关键字列出它们的触发器。
+	 * List for the trigger selector: given a set of hosts (both link ends), list their triggers by keyword.
 	 *
-	 * 手工建的连线（比如新加的一台电脑接到交换机）没有 LLDP 端口信息，
-	 * 自动关键词匹配无从下手，这时只能由用户在这里手工挑。
+	 * Manually drawn links (e.g. a newly added PC connected to a switch) have no LLDP port information,
+	 * so keyword matching cannot work and the user has to pick triggers here.
 	 */
 	private function modeHostTriggers(): array {
 		$hostids = $this->parseIdList((string) $this->getInput('hostids', ''));
@@ -1328,14 +1328,14 @@ class TopomapData extends CController {
 			'limit' => 500
 		];
 
-		// 按 triggerid 反查（画布上已绑定的 chip 要名字）；否则按主机 / 主机群组列候选
+		// Look up by triggerid (bound chips on the canvas need names); otherwise list candidates by host / host group
 		if ($triggerids) {
 			$options['triggerids'] = $triggerids;
 			unset($options['limit']);
 		}
 		else {
-			// 主机群组是「过滤器」，语义是「所选主机 ∩ 所选群组」；
-			// 只选了群组没选主机时，就是这些群组下所有主机的触发器。
+			// Host groups act as a filter meaning "selected hosts ∩ selected groups";
+			// if only groups are selected, list the triggers of all hosts in those groups.
 			if ($groupids) {
 				$allowed = [];
 
@@ -1365,8 +1365,8 @@ class TopomapData extends CController {
 		$triggers = [];
 		$raw = API::Trigger()->get($options);
 
-		// 链接指示器里显示的是「主机名: 触发器名」，原生会用展开后的名称；
-		// 按 triggerid 反查时展开一次宏，避免重载后看到 {HOST.NAME}/{$CPU_UTIL_MAX} 原文。
+		// The link indicator shows "host name: trigger name", and native maps use the expanded name;
+		// expand macros once when looking up by triggerid, so {HOST.NAME}/{$CPU_UTIL_MAX} are not shown raw after a reload.
 		$resolved_names = [];
 
 		if ($triggerids && class_exists('CMacrosResolverHelper')) {
@@ -1407,10 +1407,10 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 按指定「触发器来源端」重新匹配一条链路的端口状态类触发器。
+	 * Re-match the port status triggers of one link with the given "trigger source" scope.
 	 *
-	 * 供链接属性弹窗改动「触发器来源」后即时生效（手动建的连线也适用，
-	 * 只要两端是 Zabbix 主机且端口名能从连线配置里取到）。
+	 * Lets a change of "trigger source" in the link properties dialog take effect immediately (also for manual links,
+	 * as long as both ends are Zabbix hosts and the port names are available in the link settings).
 	 */
 	private function modeLinkTriggers(): array {
 		$src_hostid = trim((string) $this->getInput('hostid1', ''));
@@ -1442,12 +1442,12 @@ class TopomapData extends CController {
 	}
 
 	// ------------------------------------------------------------------
-	// 每链路指标（带宽 / 上行 / 下行）配置：模块自建表
+	// Per-link metric (bandwidth / upstream / downstream) settings: module table
 	// ------------------------------------------------------------------
 
 	/**
-	 * 懒建指标表。模块自建表的主体是 zabbix 前端 DB 用户，CREATE TABLE IF NOT EXISTS
-	 * 幂等，所以每个请求最多执行一次，静态标记兜住同一请求内的重复调用。
+	 * Create the metrics table lazily. The module tables belong to the Zabbix frontend DB user; CREATE TABLE IF NOT EXISTS
+	 * is idempotent, so it runs at most once per request, with a static flag guarding repeated calls within the same request.
 	 */
 	private function ensureMetricsTable(): void {
 		if (self::$metricsTableReady) {
@@ -1456,10 +1456,10 @@ class TopomapData extends CController {
 
 		self::$metricsTableReady = true;
 
-		// 三个 ITEMIDS 列存逗号分隔的监控项 ID（聚合成员口就是多条）；
-		// source_port / target_port 记两端端口名（画在连线两端、也是触发器匹配的键），
-		// trigger_source 记「触发器来源端」口径。
-		// linkid 作主键：一条链路一行配置。
+		// The three ITEMIDS columns store comma-separated item IDs (aggregated member ports means several);
+		// source_port / target_port store the port names at both ends (drawn at the link ends and used as the trigger matching key),
+		// trigger_source stores the "trigger source" scope.
+		// linkid is the primary key: one settings row per link.
 		\DBexecute(
 			'CREATE TABLE IF NOT EXISTS '.self::LINK_METRICS_TABLE.' ('
 			.'linkid bigint NOT NULL,'
@@ -1474,7 +1474,7 @@ class TopomapData extends CController {
 			.')'
 		);
 
-		// 1.0.11 建的表没有后三列，补上（列已存在就跳过）。
+		// Tables created by 1.0.11 lack the last three columns; add them (skipped if they exist).
 		foreach ([
 			'source_port' => 'varchar(255) NULL',
 			'target_port' => 'varchar(255) NULL',
@@ -1486,7 +1486,7 @@ class TopomapData extends CController {
 		}
 	}
 
-	/** 模块自建表里某个列是否存在（用 information_schema 判断，兼容 MySQL / PostgreSQL）。 */
+	/** Whether a column exists in a module table (checked via information_schema, compatible with MySQL / PostgreSQL). */
 	private function metricsColumnExists(string $column): bool {
 		try {
 			$cursor = \DBselect(
@@ -1502,13 +1502,13 @@ class TopomapData extends CController {
 			}
 		}
 		catch (\Throwable $e) {
-			// 查不到就当作「不存在」，让 ALTER 去兜底；真出问题也只影响这几列
+			// If it cannot be determined, treat it as missing and let ALTER handle it; a real problem only affects these columns
 		}
 
 		return false;
 	}
 
-	/** 懒建走线 / 折点表（与指标表同一套做法，每个请求最多执行一次）。 */
+	/** Create the routing / waypoint table lazily (same approach as the metrics table, at most once per request). */
 	private function ensurePathsTable(): void {
 		if (self::$pathsTableReady) {
 			return;
@@ -1528,7 +1528,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 读一张图全部链路的走线 / 折点配置。
+	 * Read the routing / waypoint settings of all links of a map.
 	 *
 	 * @return array linkid => ['routing'=>int, 'waypoints'=>array]
 	 */
@@ -1561,9 +1561,9 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 重建一张图的走线 / 折点配置：先删整张图的行，再按当前链路写回。
-	 * 「自动曲线」也落库：自动发现的连线默认是自动直角，用户改成自动曲线后要能记住，
-	 * 否则每次都按默认值渲染回自动直角。
+	 * Rebuild a map's routing / waypoint settings: delete all rows of the map, then write back the current links.
+	 * "Automatic curve" is stored too: discovered links default to automatic orthogonal, and a user's change to automatic curve must be remembered,
+	 * otherwise it would render as automatic orthogonal by default every time.
 	 *
 	 * @param array $by_link linkid => ['routing'=>int, 'waypoints'=>array]
 	 */
@@ -1595,7 +1595,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 读一张图全部链路的指标配置。
+	 * Read the metric settings of all links of a map.
 	 *
 	 * @return array linkid => ['bw'=>string[], 'in'=>string[], 'out'=>string[], 'source_port'=>string, 'target_port'=>string, 'trigger_source'=>int]
 	 */
@@ -1630,8 +1630,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 重建一张图的指标配置：先删掉这张图的所有行，再按当前每条链路写回。
-	 * 指标、两端端口、触发器来源三样都为空的行不落库（保持表干净）。
+	 * Rebuild a map's metric settings: delete all rows of the map, then write back each current link.
+	 * Rows with empty metrics, empty port names and no trigger source are not stored (keeps the table clean).
 	 *
 	 * @param array $by_link linkid => ['bw'=>string[], 'in'=>string[], 'out'=>string[], 'source_port'=>string, 'target_port'=>string, 'trigger_source'=>int]
 	 */
@@ -1672,7 +1672,7 @@ class TopomapData extends CController {
 	}
 
 	// ------------------------------------------------------------------
-	// 模块设置（键值对）
+	// Module settings (key/value)
 	// ------------------------------------------------------------------
 
 	private function ensureSettingsTable(): void {
@@ -1692,12 +1692,12 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 读一组关键词设置。空 / 缺失时回退到默认常量。
+	 * Read a keyword setting. Falls back to the default constant when empty / missing.
 	 *
 	 * @return string[]
 	 */
 	private function loadTriggerKeywords(): array {
-		// 每条链路 × 每条触发器都会问一次关键词，同一次请求里只查一次库
+		// Keywords are requested for every link × trigger, so the database is queried only once per request
 		if (self::$triggerKeywords !== null) {
 			return self::$triggerKeywords;
 		}
@@ -1757,11 +1757,11 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 读某张拓扑图记录的树布局（根节点 + 方向）。没记录返回空数组。
+	 * Read the stored tree layout of a map (root node + direction). Returns an empty array when nothing is stored.
 	 *
-	 * 重新发现必须在同一张图上始终用同一个根、同一个方向，否则每次扫描起点
-	 * 一变，根就跟着漂移、画出来的「树」也就不是原来那棵了。所以首次生成时
-	 * 把根与方向写进设置表，之后一律以它为准（老图没记录时才做启发式推断）。
+	 * Rediscovery must always use the same root and direction for the same map; otherwise every time the scan start
+	 * changes, the root drifts and the drawn "tree" is no longer the original one. So on first generation
+	 * the root and direction are written to the settings table and used from then on (heuristics only for old maps without a record).
 	 *
 	 * @return array ['root_pkey' => string, 'direction' => string]
 	 */
@@ -1783,7 +1783,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 记下这张图的根与方向（sysmapid 变化即新图，不需要迁移旧记录）。
+	 * Remember the root and direction of this map (a new sysmapid means a new map; old records need no migration).
 	 */
 	private function saveMapLayout(string $sysmapid, string $root_pkey, string $direction): void {
 		$direction = $direction === 'horizontal' ? 'horizontal' : 'vertical';
@@ -1806,7 +1806,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 图删除时顺手清掉它的布局记录，避免设置表攒下无用行。
+	 * When a map is deleted, its layout record is removed too, so the settings table does not collect useless rows.
 	 */
 	private function dropMapLayout(string $sysmapid): void {
 		$this->ensureSettingsTable();
@@ -1825,8 +1825,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 保存设置。关键词用「一行一个」的纯文本传（textarea 直接提交），
-	 * 也能传数组（接口调用）。
+	 * Save settings. Keywords are sent as plain text, one per line (textarea submitted directly),
+	 * or as an array (API call).
 	 */
 	private function modeSaveSettings(): array {
 		$raw = $this->getInput('trigger_keywords', '');
@@ -1838,12 +1838,12 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 自动发现刚建好图时，按创建顺序把每条线的两端端口与「触发器来源端」落库。
+	 * Right after auto discovery creates a map, store each link's end ports and "trigger source" in creation order.
 	 *
-	 * map.create 不返回 linkid，所以回读一次 selectLinks：Zabbix 按 payload.links 数组顺序
-	 * 插入，自增 linkid 递增，回读结果（按 linkid 升序）第 n 条就是第 n 条 metadata。
+	 * map.create does not return linkids, so selectLinks is read back once: Zabbix inserts in the order of the payload.links array,
+	 * with increasing auto-increment linkids, so the n-th result (by linkid ascending) is the n-th metadata entry.
 	 *
-	 * @param array $link_meta 与创建时 links 数组同序的 ['source_port'=>, 'target_port'=>, 'trigger_source'=>]
+	 * @param array $link_meta ['source_port'=>, 'target_port'=>, 'trigger_source'=>] in the same order as the links array at creation
 	 */
 	private function persistDiscoveredLinks(string $sysmapid, array $link_meta): void {
 		if (!$link_meta) {
@@ -1886,7 +1886,7 @@ class TopomapData extends CController {
 		$this->saveLinkMetrics($sysmapid, $by_link);
 	}
 
-	/** 把任意输入收敛成合法的「触发器来源端」取值（0~4），非法值当 AUTO。 */
+	/** Coerce any input into a valid "trigger source" value (0–4); invalid values become AUTO. */
 	private function normalizeTriggerSource($raw): int {
 		$value = (int) $raw;
 
@@ -1896,7 +1896,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 归一化监控项 ID 列表：只保留纯数字，去重，保持顺序。
+	 * Normalize an item ID list: keep digits only, deduplicate, preserve order.
 	 *
 	 * @param string[]|string $raw
 	 *
@@ -1925,11 +1925,11 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 取一批监控项的元信息 + 最新值（连线指标显示用）。
+	 * Fetch metadata + latest values of a set of items (for link metric display).
 	 *
 	 * @param string[] $itemids
 	 *
-	 * @return array itemid => 元信息（含 lastvalue）
+	 * @return array itemid => metadata (including lastvalue)
 	 */
 	private function fetchMetricItems(array $itemids): array {
 		if (!$itemids) {
@@ -1962,18 +1962,18 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 自动发现第一步：扫描一批主机的 SNMP 邻居表（LLDP / CDP）。
+	 * Auto discovery step 1: scan the SNMP neighbor tables (LLDP / CDP) of a set of hosts.
 	 *
-	 * 前端按 BFS 逐批调用：一次最多 8 台（前端实际按 3 台一批），单台默认超时 1.2s。
-	 * 设备不通时单台要重试 2 次（约 10s），所以这里还有一层「整批总时间预算」，
-	 * 超预算的主机直接跳过，避免把 nginx 的 fastcgi_read_timeout 顶爆变成 502。
-	 * 返回的邻居已经和 Zabbix 主机做过匹配。
+	 * The frontend calls this in BFS batches: at most 8 hosts per call (the frontend actually uses batches of 3), default per-host timeout 1.2 s.
+	 * An unreachable device is retried twice (about 10 s), so there is also a total time budget per batch;
+	 * hosts over budget are skipped, so nginx's fastcgi_read_timeout is not exceeded and turned into a 502.
+	 * Returned neighbors are already matched against Zabbix hosts.
 	 */
 	private function modeDiscover(): array {
 		$hostids = $this->parseIdList((string) $this->getInput('hostids', ''));
 
 		if (!$hostids) {
-			throw new \Exception(LanguageManager::t('自动发现：没有指定要扫描的主机'));
+			throw new \Exception(LanguageManager::t('Discovery: no hosts specified to scan'));
 		}
 
 		$hostids = array_slice($hostids, 0, 8);
@@ -1989,20 +1989,20 @@ class TopomapData extends CController {
 		]);
 
 		if (!$hosts) {
-			throw new \Exception(LanguageManager::t('自动发现：指定的主机不存在或没有权限'));
+			throw new \Exception(LanguageManager::t('Discovery: the specified hosts do not exist or you have no permission'));
 		}
 
 		$macros = $this->hostMacros($hostids);
 		$index = $this->discoveryIndex();
 
-		// 类在模块自己的命名空间下，必须写全限定名：裸类名会被解析成当前命名空间的类。
+		// The class lives in the module's own namespace and needs its fully qualified name: a bare class name resolves to the current namespace.
 		$service = new \Modules\Topomap\Services\LldpDiscovery($timeout);
 
 		$result = [];
 
-		// 整批时间预算：设备不通时「重试 2 次 × 两个协议」约 10s，8 台就会超过 60s 的
-		// fastcgi_read_timeout（表现是整个发现请求 502）。超预算的直接跳过，
-		// 前端会把它记成「未扫到」，用户可以稍后重试。
+		// Per-batch time budget: an unreachable device costs about 10 s (2 retries × two protocols), so 8 hosts would exceed the 60 s
+		// fastcgi_read_timeout (the whole discovery request fails with 502). Hosts over budget are skipped,
+		// the frontend records them as "not scanned" and the user can retry later.
 		$deadline = microtime(true) + 20.0;
 
 		foreach ($hostids as $hostid) {
@@ -2010,7 +2010,7 @@ class TopomapData extends CController {
 				$result[] = [
 					'hostid' => (string) $hostid,
 					'ok' => false,
-					'error' => LanguageManager::t('主机不存在或没有权限'),
+					'error' => LanguageManager::t('Host does not exist or you have no permission'),
 					'neighbors' => []
 				];
 
@@ -2024,7 +2024,7 @@ class TopomapData extends CController {
 					'hostid' => (string) $hostid,
 					'name' => $host['name'],
 					'ok' => false,
-					'error' => LanguageManager::t('本批扫描超出时间预算，已跳过（请稍后重试）'),
+					'error' => LanguageManager::t('This batch exceeded the time budget and was skipped (please retry later)'),
 					'neighbors' => []
 				];
 
@@ -2038,7 +2038,7 @@ class TopomapData extends CController {
 					'hostid' => (string) $hostid,
 					'name' => $host['name'],
 					'ok' => false,
-					'error' => LanguageManager::t('没有 SNMP 接口'),
+					'error' => LanguageManager::t('No SNMP interface'),
 					'neighbors' => []
 				];
 
@@ -2056,7 +2056,7 @@ class TopomapData extends CController {
 					'name' => $host['name'],
 					'ip' => (string) $iface['ip'],
 					'ok' => false,
-					'error' => LanguageManager::t('SNMP 社区串未定义（检查 {$SNMP_COMMUNITY} 宏）'),
+					'error' => LanguageManager::t('SNMP community is not defined (check the {$SNMP_COMMUNITY} macro)'),
 					'neighbors' => []
 				];
 
@@ -2087,9 +2087,9 @@ class TopomapData extends CController {
 				}
 			}
 
-			// 同一台设备上报的邻居里，一个地址出现在多个「不同设备名」的邻居上 = 这不是邻居地址，
-			// 而是本机管理地址被回声进了所有端口的 lldpRemManAddr（H3C / 华为常见）。
-			// IP 是设备的唯一标识，一个地址不可能同时属于两台名字不同的设备 —— 这种直接判为无效。
+			// If, among the neighbors reported by one device, an address appears on neighbors with different device names, it is not a neighbor address
+			// but the local management address echoed into lldpRemManAddr of every port (common on H3C / Huawei).
+			// An IP identifies a device; one address cannot belong to two differently named devices at once, so such addresses are invalid.
 			$addr_names = [];
 
 			foreach ($scan['neighbors'] as $neighbor) {
@@ -2118,7 +2118,7 @@ class TopomapData extends CController {
 				$sysname = trim((string) $neighbor['sysname']);
 				$chassis = trim((string) ($neighbor['chassis'] ?? ''));
 
-				// 本机地址回声、以及「一个地址挂在多台设备名下」的地址，都不能当邻居地址用
+				// Echoed local addresses and addresses shared by several device names cannot be used as neighbor addresses
 				$neighbor_ip = trim((string) $neighbor['ip']);
 
 				if (in_array($neighbor_ip, $self_ips, true) || isset($bad_ips[$neighbor_ip])) {
@@ -2130,9 +2130,9 @@ class TopomapData extends CController {
 
 				$matched = $match['hostid'] !== '';
 
-				// 未纳管的邻居要有个名字：sysName 优先，其次 chassisId（终端 / AP / 打印机
-				// 往往只上报 MAC，sysName 为空），最后才是上报的管理 IP。
-				// 三个都没有才丢 —— 与 aiops 的 name || chassisId 逻辑一致。
+				// Unmanaged neighbors need a name: sysName first, then chassisId (endpoints / APs / printers
+				// often only report a MAC and an empty sysName), and only then the reported management IP.
+				// Dropped only when all three are missing — same as aiops' name || chassisId logic.
 				$display = $sysname !== '' ? $sysname : $chassis;
 
 				if ($display === '') {
@@ -2143,10 +2143,10 @@ class TopomapData extends CController {
 					continue;
 				}
 
-				// 对端端口是 MAC ⇒ 对面是终端网卡（PC / 打印机 / AP），不是交换机端口，
-				// 与 aiops 的 is_distribution 判断一致，据此选 Workstation 图标。
-				// 注意 Windows 的 sysDescr 会让 guessKind 把它判成 server，名字里没有
-				// server / 打印 / 摄像关键词时按 PC 处理（aiops 也是只看名字）。
+				// If the remote port is a MAC, the other side is an endpoint NIC (PC / printer / AP), not a switch port,
+				// matching aiops' is_distribution check, so the Workstation icon is chosen.
+				// Note: the Windows sysDescr makes guessKind classify it as server; without server / printer / camera
+				// keywords in the name it is treated as a PC (aiops also only looks at the name).
 				$kind = $this->guessKind((string) $neighbor['sysdesc'], $display);
 
 				if (!empty($neighbor['port_mac'])
@@ -2159,12 +2159,12 @@ class TopomapData extends CController {
 					'protocol' => $neighbor['protocol'],
 					'sysname' => $sysname,
 					'chassis' => $chassis,
-					// 匹配到主机就用「主机在 Zabbix 里的管理地址」，LLDP 上报的地址经常不准
+					// When a host matches, use the host's management address in Zabbix; addresses reported by LLDP are often inaccurate
 					'ip' => $matched ? (string) $match['ip'] : $neighbor_ip,
 					'kind' => $kind,
 					'local_port' => $neighbor['local_port'],
 					'port_id' => $neighbor['port_id'],
-					// 匹配到 Zabbix 主机时带上 hostid，前端据此建「主机元素」而不是图片元素
+					// When a Zabbix host matches, include its hostid so the frontend creates a host element instead of an image element
 					'hostid' => $match['hostid'],
 					'name' => $matched ? $match['name'] : $display,
 					'matched' => $match['how']
@@ -2186,15 +2186,15 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 把设备 / 链路整理成一棵生成树（链路按无向处理，BFS 定父子）。
+	 * Arrange devices / links into a spanning tree (links treated as undirected, BFS defines parent and child).
 	 *
-	 * 重新发现时前端给的 payload 边方向会随扫描起点变化（同一对设备这次 A→B、
-	 * 下次可能 B→A），照边方向取根会让树的根漂移；这里统一按无向图 + 指定根
-	 * 生成一棵树，根找不到时再退化成「入度为 0 / 连接最多」的节点。
+	 * On rediscovery the edge direction in the frontend payload changes with the scan start (the same pair may be A→B this time
+	 * and B→A next time); taking the root from edge direction would make it drift, so an undirected graph + a given root
+	 * is used to build the tree, falling back to the node with in-degree 0 / most connections when the root is not found.
 	 *
-	 * @param array  $order 节点 key，按 payload 顺序（决定邻接与兜底根的稳定顺序）
+	 * @param array  $order node keys in payload order (determines a stable order for adjacency and the fallback root)
 	 * @param array  $links payload.links
-	 * @param string $root_key 指定的根（为空则自动挑）
+	 * @param string $root_key the given root (chosen automatically when empty)
 	 *
 	 * @return array ['children' => [key => [key, ...]], 'parent' => [key => key], 'roots' => [key, ...]]
 	 */
@@ -2226,7 +2226,7 @@ class TopomapData extends CController {
 			$indegree[$target] = ($indegree[$target] ?? 0) + 1;
 		}
 
-		// 邻接表按 payload 顺序展开，保证同样的数据每次得到同样的树
+		// The adjacency list follows payload order, so the same data always yields the same tree
 		foreach ($adj as $key => $set) {
 			$neighbors = array_keys($set);
 			usort($neighbors, function (string $a, string $b) use ($rank): int {
@@ -2269,7 +2269,7 @@ class TopomapData extends CController {
 			$walk($root_key);
 		}
 
-		// 没连到主树的独立组件：各自成树，整体排在主树旁边（不丢节点）
+		// Independent components not connected to the main tree become their own trees, placed beside the main tree (no node is dropped)
 		foreach ($order as $key) {
 			if (!isset($visited[$key])) {
 				$walk($key);
@@ -2280,8 +2280,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 自动挑根：优先「没有入边的源节点」里连接最多的那个，其次全图连接最多的节点。
-	 * 用连接数兜底可以避免把一条没有邻居的孤点当成整张图的根。
+	 * Automatic root choice: the most connected node among sources without incoming edges, otherwise the most connected node overall.
+	 * Falling back to the connection count avoids making an isolated node without neighbors the root of the whole map.
 	 */
 	private function pickTreeRoot(array $order, array $adj, array $indegree): string {
 		$best_source = '';
@@ -2307,8 +2307,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 生成树在给定 payload 下的根 key（生成新图时用，保证落库后记下的根与
-	 * treeLayout() 实际采用的根一致）。
+	 * Root key of the spanning tree for a given payload (used when generating a new map, so the stored root
+	 * matches the root actually used by treeLayout()).
 	 */
 	private function treeRootKey(array $nodes, array $links): string {
 		$order = [];
@@ -2337,17 +2337,17 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 自动发现的树形布局（对齐 aiops 的 tidy tree）：
-	 *   - 指定根节点在最上方（direction=horizontal 时在最左侧）；
-	 *   - 子节点沿横轴排开，父节点居中于子节点；
-	 *   - 主方向按树深度逐层递增（垂直 = y 向下，水平 = x 向右）。
+	 * Tree layout for auto discovery (aligned with aiops' tidy tree):
+	 *   - the given root is at the top (leftmost when direction=horizontal);
+	 *   - children are spread along the cross axis, parents centered over their children;
+	 *   - the main axis increases level by level with tree depth (vertical = y downwards, horizontal = x to the right).
 	 *
 	 * @param array  $nodes payload.nodes
 	 * @param array  $links payload.links
-	 * @param string $root_key 指定根节点（重新发现时传老图的根，保证根不漂移）
-	 * @param string $direction vertical / horizontal，由老图的方向决定
+	 * @param string $root_key the given root node (rediscovery passes the old map's root so it does not drift)
+	 * @param string $direction vertical / horizontal, determined by the old map's direction
 	 *
-	 * @return array key => ['x' => int, 'y' => int]（x/y 是图标左上角，按默认 96 宽居中）
+	 * @return array key => ['x' => int, 'y' => int] (x/y is the top-left of the icon, centered for the default width of 96)
 	 */
 	private function treeLayout(array $nodes, array $links, string $root_key = '', string $direction = 'vertical'): array {
 		$order = [];
@@ -2372,10 +2372,10 @@ class TopomapData extends CController {
 
 		$structure = $this->treeStructure($order, $links, $root_key);
 		$horizontal = $direction === 'horizontal';
-		// 叶子槽宽：垂直树沿 x 排（96 图标 + 标签 + 间距）；水平树沿 y 排，
-		// 图标 96 + 下方名称/状态约 60，给到 170 才不会压住上一台的文字。
+		// Leaf slot width: a vertical tree spreads along x (96 icon + label + gap); a horizontal tree spreads along y,
+		// icon 96 + name/status below about 60; 170 keeps it from overlapping the text of the previous device.
 		$cross_gap = $horizontal ? 170 : 190;
-		// 层间距：垂直是 y 向下、水平是 x 向右，都要给主干/带宽框留出空间。
+		// Level spacing: y downwards for vertical, x to the right for horizontal; both leave room for trunk/bandwidth boxes.
 		$level_gap = 300;
 		$start = 80;
 		$cursor = $start;
@@ -2423,7 +2423,7 @@ class TopomapData extends CController {
 			$place($root, 0);
 		}
 
-		// 兜底：链路没涉及的孤立节点排在同一行最右边
+		// Fallback: isolated nodes not covered by any link are placed at the right end of the same row
 		foreach ($order as $key) {
 			if (!isset($pos[$key])) {
 				$pos[$key] = $horizontal
@@ -2437,16 +2437,16 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 从老图读出「根节点」和「树的方向」。
+	 * Read the "root node" and the "tree direction" from the old map.
 	 *
-	 * 优先用生成/上次重排时记下的布局元数据（root_pkey + direction），这样同一张
-	 * 图无论从哪台设备起扫，重新发现都会回到同一个根、同一个方向。
-	 * 老图没有元数据时按坐标推断（见 inferTreeLayout）。
+	 * Prefer the layout metadata stored at generation / last relayout (root_pkey + direction), so the same
+	 * map returns to the same root and direction on rediscovery whichever device the scan starts from.
+	 * Old maps without metadata are inferred from coordinates (see inferTreeLayout).
 	 *
-	 * @param string $sysmapid     当前拓扑图
-	 * @param array  $old_selements map.get 回来的旧元素
-	 * @param array  $old_links     旧的 links
-	 * @param array  $payload_pkeys 本次 payload 里出现的元素匹配键（只在这些元素里挑根）
+	 * @param string $sysmapid     current map
+	 * @param array  $old_selements old elements returned by map.get
+	 * @param array  $old_links     old links
+	 * @param array  $payload_pkeys element match keys present in this payload (the root is chosen only among them)
 	 *
 	 * @return array ['direction' => vertical|horizontal, 'root_pkey' => string]
 	 */
@@ -2461,7 +2461,7 @@ class TopomapData extends CController {
 
 		$root_pkey = (string) ($stored['root_pkey'] ?? '');
 
-		// 记下的根这次没扫到（设备下线 / 改名）⇒ 只剩方向可用，根按坐标重挑
+		// The stored root was not scanned this time (device offline / renamed) ⇒ only the direction is usable; the root is chosen again from coordinates
 		if ($root_pkey !== '' && $payload_pkeys && !isset($payload_pkeys[$root_pkey])) {
 			$root_pkey = '';
 		}
@@ -2479,15 +2479,15 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 老图没有布局元数据时，用坐标推断根与方向。
+	 * When an old map has no layout metadata, infer root and direction from coordinates.
 	 *
-	 * 方向：树是「整齐树」，同一层元素的主轴坐标完全对齐，所以主轴上的坐标簇
-	 * 数量远少于交叉轴，簇少的那根轴就是层级方向（y 少 = 自上而下；x 少 = 自左
-	 * 向右）。不能只看老链路走向：老图一旦被错误布局污染，横向对角连线会占多数，
-	 * 反而把方向带偏。
+	 * Direction: the tree is a tidy tree, so elements of one level are aligned on the main axis; coordinate clusters on the main axis
+	 * are far fewer than on the cross axis, and the axis with fewer clusters is the level direction (fewer y = top-down; fewer x = left
+	 * to right). Old link directions alone are not enough: once an old map was polluted by a wrong layout, diagonal links dominate
+	 * and would skew the direction.
 	 *
-	 * 根：取主轴最靠前那一层里、交叉轴最接近整图中心（整棵树根应居中于所有
-	 * 后代）的元素，同分取连接数多的；优先有连线的元素，全是孤点时退回最靠前。
+	 * Root: in the frontmost level on the main axis, the element closest to the map center on the cross axis (a tree root should be centered over all
+	 * descendants), ties broken by connection count; elements with links are preferred, and if all are isolated the frontmost one is used.
 	 *
 	 * @return array ['direction' => string, 'root_pkey' => string]
 	 */
@@ -2554,7 +2554,7 @@ class TopomapData extends CController {
 		}
 
 		$vertical = $direction !== 'horizontal';
-		// 有连线的元素才可能是树根，孤点（没被任何链路引用的旧元素）不参与
+		// Only elements with links can be a tree root; isolated old elements (not referenced by any link) are excluded
 		$linked = array_values(array_filter($candidates, function (array $c): bool {
 			return $c['degree'] > 0;
 		}));
@@ -2575,7 +2575,7 @@ class TopomapData extends CController {
 		}
 
 		foreach ($candidates as $c) {
-			// 用图标中心（左上角 +48）比较，根居中于整棵树时最接近整图中心
+			// Compare icon centers (top-left +48); a root centered over the tree is closest to the map center
 			$cross_values[] = ($vertical ? $c['x'] : $c['y']) + 48;
 		}
 
@@ -2589,7 +2589,7 @@ class TopomapData extends CController {
 		foreach ($linked as $c) {
 			$main = $vertical ? $c['y'] : $c['x'];
 
-			// 最靠前的一层：与最小值相差不到一个层间距
+			// Frontmost level: within one level spacing of the minimum
 			if ($main - $min_main > 150) {
 				continue;
 			}
@@ -2607,11 +2607,11 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 按坐标簇数量推断树的层级方向。
+	 * Infer the level direction of the tree from coordinate cluster counts.
 	 *
-	 * 整齐树同一层的元素主轴坐标对齐（簇数 ≈ 层数），交叉轴则一个元素一个位置
-	 * （簇数 ≈ 节点数）。簇数差距不明显时退回老链路整体走向，再不行按垂直树处理
-	 * （模块自动生成的图默认就是自上而下）。
+	 * In a tidy tree, elements of one level are aligned on the main axis (clusters ≈ levels), while on the cross axis each element has its own position
+	 * (clusters ≈ nodes). If the difference is not clear, fall back to the overall direction of old links, and otherwise assume a vertical tree
+	 * (maps generated by the module are top-down by default).
 	 */
 	private function inferTreeDirection(array $candidates, int $sum_dx, int $sum_dy): string {
 		$xs = [];
@@ -2637,7 +2637,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 数坐标聚成多少簇（相邻差值超过一个图标宽就视为新的一层）。
+	 * Count how many clusters the coordinates form (a gap larger than one icon width starts a new level).
 	 */
 	private function countCoordinateClusters(array $values): int {
 		if (!$values) {
@@ -2660,15 +2660,15 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 「保留现有坐标」的新元素增量摆放：
-	 *   - 老元素坐标一律不动；
-	 *   - 新元素按生成树挂到父节点「下方」（垂直树）/「右侧」（水平树），
-	 *     同一父节点下多台新设备沿横轴错开，避开已占位的元素；
-	 *   - 连不到已有树的独立新组件，整体排在已有图的下一层，不并进主树。
+	 * Incremental placement of new elements when "keep current positions" is chosen:
+	 *   - old elements never move;
+	 *   - new elements hang below (vertical tree) / to the right of (horizontal tree) their parent in the spanning tree,
+	 *     several new devices under one parent are spread along the cross axis, avoiding occupied positions;
+	 *   - independent new components not connected to the existing tree are placed together one level beyond the existing map, not merged into the main tree.
 	 *
 	 * @param array  $nodes         payload.nodes
-	 * @param array  $structure     treeStructure() 的结果
-	 * @param array  $old_selements 旧元素（取坐标占位）
+	 * @param array  $structure     result of treeStructure()
+	 * @param array  $old_selements old elements (their coordinates are occupied)
 	 * @param string $direction     vertical / horizontal
 	 *
 	 * @return array key => ['x' => int, 'y' => int]
@@ -2701,7 +2701,7 @@ class TopomapData extends CController {
 			}
 		}
 
-		// 老元素在树里的位置：pkey 对上的直接沿用原坐标
+		// Position of old elements in the tree: those matching a pkey keep their coordinates
 		$placed = [];
 
 		foreach ($pkey_of as $key => $pkey) {
@@ -2718,8 +2718,8 @@ class TopomapData extends CController {
 			$max_cross = max($max_cross, $vertical ? $point['x'] : $point['y']);
 		}
 
-		// 独立新组件（连不到已有图的）统一另起一行排在已有图下方 / 右侧，
-		// 不随主方向逐级下沉，否则多棵树会被摆成一条斜线
+		// Independent new components (not connected to the existing map) start a new row below / to the right of the existing map,
+		// instead of sinking level by level along the main direction, which would lay several trees out diagonally
 		$annex_main = $max_main + $level_gap;
 		$annex_cross = 40;
 
@@ -2759,8 +2759,8 @@ class TopomapData extends CController {
 				$parent_cross = ($vertical ? $parent['x'] : $parent['y']) + 48;
 				$parent_main = $vertical ? $parent['y'] : $parent['x'];
 
-				// 父节点正下方 / 正右侧开始，向两侧逐个让位：0、-1、+1、-2、+2 …
-				// 大扇出（一台交换机下挂几十台新设备）要留足步数，否则找不到空位会掉到图外
+				// Start right below / right of the parent and step aside alternately: 0, -1, +1, -2, +2 …
+				// Large fan-outs (dozens of new devices under one switch) need enough steps, otherwise no free slot is found and they land outside the map
 				for ($step = 0; $step < 40 && $point === null; $step++) {
 					$offset = (int) (ceil($step / 2) * $cross_gap) * ($step % 2 === 0 ? 1 : -1);
 					$cross = $parent_cross + $offset - 48;
@@ -2775,7 +2775,7 @@ class TopomapData extends CController {
 			}
 
 			if ($point === null) {
-				// 新组件（或父节点不在本次发现里）：沿主方向排到已有图之外
+				// New components (or parents not in this discovery): placed beyond the existing map along the main direction
 				for ($step = 0; $step < 40; $step++) {
 					$x = $vertical ? $annex_cross : $annex_main;
 					$y = $vertical ? $annex_main : $annex_cross;
@@ -2804,21 +2804,21 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 自动发现第二步：把前端算好的节点/链路写成一张新的拓扑图。
+	 * Auto discovery step 2: write the nodes/links computed by the frontend into a new map.
 	 *
-	 * 布局在这里按 aiops 的 tidy tree（整齐树）算：根在最上方，
-	 * 子节点横排、父节点居中于子节点之上，逐层向下。
+	 * The layout is computed here with aiops' tidy tree: root at the top,
+	 * children side by side with parents centered above them, level by level downwards.
 	 */
 	private function modeDiscoverSave(): array {
 		$raw = (string) $this->getInput('payload', '');
 		$payload = json_decode($raw, true);
 
 		if (!is_array($payload) || empty($payload['nodes']) || !is_array($payload['nodes'])) {
-			throw new \Exception(LanguageManager::t('自动发现：没有可生成的内容'));
+			throw new \Exception(LanguageManager::t('Discovery: nothing to generate'));
 		}
 
-		// 自动关联触发器的关键词：前端「自动发现」页面填的（一行一个）优先，
-		// 顺手存起来，之后链接属性里改「触发器来源」重匹配也用同一份。
+		// Keywords for automatic trigger linking: the ones entered on the frontend "auto discovery" page (one per line) take precedence,
+		// and are saved along the way, so re-matching after changing "trigger source" in link properties uses the same set.
 		if (!empty($payload['keywords']) && is_array($payload['keywords'])) {
 			$this->saveTriggerKeywords($payload['keywords']);
 		}
@@ -2826,7 +2826,7 @@ class TopomapData extends CController {
 		$name = trim((string) $this->getInput('name', ''));
 
 		if ($name === '') {
-			$name = LanguageManager::t('自动发现').' '.date('Y-m-d H:i');
+			$name = LanguageManager::t('Auto discovery').' '.date('Y-m-d H:i');
 		}
 
 		$name = $this->uniqueMapName($this->normalizeName($name));
@@ -2834,7 +2834,7 @@ class TopomapData extends CController {
 		$selements = [];
 		$host_of_node = [];
 		$payload_links = isset($payload['links']) && is_array($payload['links']) ? $payload['links'] : [];
-		// 生成时就把树根定下来并记进设置表，之后重新发现一律沿用这个根
+		// The tree root is fixed at generation time and stored in the settings table; later rediscoveries always reuse it
 		$root_key = $this->treeRootKey($payload['nodes'], $payload_links);
 		$positions = $this->treeLayout($payload['nodes'], $payload_links, $root_key);
 		$root_pkey = '';
@@ -2866,21 +2866,21 @@ class TopomapData extends CController {
 
 			$hostid = isset($node['hostid']) ? trim((string) $node['hostid']) : '';
 
-			// 主机元素的默认标签：名字一行、连接地址一行。库里存宏原文，
-			// 由渲染端按主机的当前值展开，主机改名后不用重新发现也能跟上。
+			// Default label of host elements: name on one line, connection address on another. Raw macros are stored
+			// and expanded by the renderer from the host's current values, so renamed hosts are reflected without rediscovery.
 			if ($hostid !== '' && ctype_digit($hostid) && $hostid !== '0') {
 				$label = self::DEFAULT_HOST_LABEL;
 			}
 
 			$selementid = (string) (count($selements) + 1);
-			// 按设备类型选图标：交换机 Switch_(128)、终端 Workstation_(128)（对齐 aiops）
+			// Choose the icon by device type: switch Switch_(128), endpoint Workstation_(128) (aligned with aiops)
 			$iconid = $this->iconForKind((string) ($node['kind'] ?? ''));
 
-			// 触发匹配要用节点对应的 Zabbix 主机（未纳管的邻居没有 hostid，只能靠对面一端匹配）
+			// Trigger matching needs the Zabbix host of the node (unmanaged neighbors have no hostid and can only match via the other end)
 			$host_of_node[$key] = ctype_digit($hostid) && $hostid !== '0' ? $hostid : '';
 
 			if ($hostid !== '' && ctype_digit($hostid) && $hostid !== '0') {
-				// 已纳管：主机元素，预览里能显示状态行、点开能进主机
+				// Managed: host element; the preview shows status lines and clicking opens the host
 				$selement = [
 					'selementid' => $selementid,
 					'elementtype' => 0,
@@ -2895,7 +2895,7 @@ class TopomapData extends CController {
 				];
 			}
 			else {
-				// 未纳管（对端设备没建主机）：用图片元素，只显示名字与 IP
+				// Unmanaged (no host created for the remote device): image element showing only name and IP
 				$selement = [
 					'selementid' => $selementid,
 					'elementtype' => 4,
@@ -2911,18 +2911,18 @@ class TopomapData extends CController {
 		}
 
 		if (!$selements) {
-			throw new \Exception(LanguageManager::t('自动发现：没有可生成的设备'));
+			throw new \Exception(LanguageManager::t('Discovery: no devices to generate'));
 		}
 
 		$links = [];
 		$pairs = [];
-		// 已建过的「有向设备对」：反向扫到的同一条物理链路整个丢掉（aiops 的做法）。
-		// 只靠端口对去重不够：设备被限流时两端的本地端口名可能解析不一致，
-		// 端口对就合不掉，会多出一条重复链路，并把对端不相干端口的 down 触发器绑进来。
+		// Directed device pairs already created: the same physical link scanned in reverse is dropped entirely (as aiops does).
+		// Deduplicating by port pair alone is not enough: when a device is rate-limited, the local port names at both ends may resolve differently,
+		// so the port pairs do not merge, an extra duplicate link appears and down triggers of unrelated remote ports get bound.
 		$directed = [];
-		// 落库后回读认领 linkid 用：按创建顺序记下每条线的两端端口与「触发器来源端」
+		// Used to claim linkids after reading back: record each link's end ports and "trigger source" in creation order
 		$link_meta = [];
-		// 每台主机的触发器列表只查一次（同一台交换机会出现在多条链路上）
+		// Each host's trigger list is queried only once (the same switch appears on many links)
 		$trigger_cache = [];
 		$trigger_total = 0;
 
@@ -2938,18 +2938,18 @@ class TopomapData extends CController {
 				continue;
 			}
 
-			// 反向重复（B→A 已经存在 A→B）一律跳过，见 $directed 的注释
+			// Reverse duplicates (B→A when A→B already exists) are always skipped; see the comment on $directed
 			if (isset($directed[$target.'|'.$source])) {
 				continue;
 			}
 
-			// 同一对设备之间可能有多条链路（堆叠 / 链路聚合的多个成员口），
-			// 所以去重键要带上「两端端口」：既保留聚合的多条成员线，
-			// 又能把同方向重复上报的线合并成一条。
-			// 端口为空时退化成「设备对」，与旧行为一致。
-			// 端口名要归一化后再比：核心交换机报的是 Comware 原始数字（已被 LldpDiscovery
-			// 还原成 GigabitEthernet1/0/11），对端报的是 Gi1/0/11，归一后都是 ge1011，
-			// 重复线才能合并，同时 LAG 的两个成员口各自成线。
+			// There may be several links between the same pair of devices (stacking / multiple members of a link aggregation),
+			// so the dedup key includes the ports at both ends: aggregated member links are kept,
+			// while links reported twice in the same direction are merged into one.
+			// Without ports it falls back to the device pair, as before.
+			// Port names are normalized before comparison: the core switch reports raw Comware numbers (already restored by LldpDiscovery
+			// to GigabitEthernet1/0/11) while the other end reports Gi1/0/11; both normalize to ge1011,
+			// so duplicates merge while the two LAG member ports each keep their own link.
 			$end_a = $source.'#'.$this->ifPortKey((string) ($link['source_port'] ?? ''));
 			$end_b = $target.'#'.$this->ifPortKey((string) ($link['target_port'] ?? ''));
 			$pair = $end_a < $end_b ? $end_a.'|'.$end_b : $end_b.'|'.$end_a;
@@ -2964,15 +2964,15 @@ class TopomapData extends CController {
 			$row = [
 				'selementid1' => $selements[$source]['selementid'],
 				'selementid2' => $selements[$target]['selementid'],
-				// 正常态用绿色，触发器报警时由绑定的链路指示器改成红色（原生 sysmap 机制）
+				// Green in normal state; on alarm the bound link indicator turns it red (native sysmap mechanism)
 				'color' => self::DISCOVERY_LINK_COLOR,
 				'drawtype' => 0
 			];
 
-			// 每条线可指定「触发器来源端」（源端 / 本端 / 两端 / 不关联），默认源端优先
+			// Each link can set its "trigger source" (source / local / both / none); by default the source end comes first
 			$trigger_source = $this->normalizeTriggerSource($link['trigger_source'] ?? self::TRIGGER_SOURCE_AUTO);
 
-			// 自动关联端口状态类触发器：命中后原生地图与模块画布都会在报警时把这条线画红
+			// Automatically link port status triggers: once matched, both the native map and the module canvas draw the link red on alarm
 			$triggerids = $this->matchLinkTriggers(
 				$host_of_node[$source] ?? '',
 				$host_of_node[$target] ?? '',
@@ -2993,8 +2993,8 @@ class TopomapData extends CController {
 					];
 				}
 
-				// Zabbix 8.0 只允许 indicator_type=1 的连线携带 linktriggers，
-				// 不写的话整张图会被 map.create 判为参数非法（8.0 之前的版本不写该字段）。
+				// Zabbix 8.0 only allows links with indicator_type=1 to carry linktriggers;
+				// without it map.create rejects the whole map as invalid (versions before 8.0 do not write this field).
 				$indicator_type = self::linkIndicatorType(true);
 
 				if ($indicator_type !== null) {
@@ -3052,14 +3052,14 @@ class TopomapData extends CController {
 			$detail = $this->apiErrorDetail($message_offset);
 
 			if ($detail !== '') {
-				throw new \Exception(LanguageManager::tf('自动发现：生成拓扑图失败：%1$s', $detail));
+				throw new \Exception(LanguageManager::tf('Discovery: failed to generate the map: %1$s', $detail));
 			}
 
-			throw new \Exception(LanguageManager::t('自动发现：Zabbix 没有返回拓扑图 ID'));
+			throw new \Exception(LanguageManager::t('Discovery: Zabbix did not return a map ID'));
 		}
 
-		// map.create 不返回 linkid：回读一次按创建顺序对应上，把每条线的两端端口与
-		// 「触发器来源端」写进模块自建表，前端才能在线上标注端口、按端重新匹配触发器。
+		// map.create does not return linkids: read back once and match in creation order, then write each link's end ports and
+		// "trigger source" into the module table, so the frontend can label ports on links and re-match triggers per end.
 		$this->persistDiscoveredLinks($sysmapid, $link_meta);
 		$this->saveMapLayout($sysmapid, $root_pkey, 'vertical');
 
@@ -3074,23 +3074,23 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 画布内「重新发现」：把本次重新扫到的节点/链路就地并入已有拓扑图。
+	 * In-canvas "rediscover": merge the nodes/links found in this scan into the existing map in place.
 	 *
-	 * 与 modeDiscoverSave() 的区别：
-	 *   - 复用已有元素的 selementid、已有链路的 linkid，从而保住 topomap_link_metrics
-	 *     里按 linkid 存的带宽 / 上行 / 下行监控项；
-	 *   - 用 map.update 提交合并后的全量 selements / links / shapes（未提交的已有项会被删除）；
-	 *   - 未扫到的设备与手工连线默认原样保留；只有 prune_links=1 时才移除未复用的自动连线。
+	 * Differences from modeDiscoverSave():
+	 *   - reuses existing selementids and linkids, which preserves the bandwidth / upstream / downstream items
+	 *     stored by linkid in topomap_link_metrics;
+	 *   - submits the merged full selements / links / shapes with map.update (existing items not submitted are deleted);
+	 *   - devices not scanned and manual links are kept by default; unused automatic links are removed only when prune_links=1.
 	 */
 	private function modeRediscover(): array {
 		$sysmapid = $this->requireSysmapid();
 		$payload = json_decode((string) $this->getInput('payload', ''), true);
 
 		if (!is_array($payload) || empty($payload['nodes']) || !is_array($payload['nodes'])) {
-			throw new \Exception(LanguageManager::t('重新发现：没有可更新的内容'));
+			throw new \Exception(LanguageManager::t('Rediscovery: nothing to update'));
 		}
 
-		// 关键词与自动发现共用一份设置
+		// Keywords share the same setting as auto discovery
 		if (!empty($payload['keywords']) && is_array($payload['keywords'])) {
 			$this->saveTriggerKeywords($payload['keywords']);
 		}
@@ -3110,7 +3110,7 @@ class TopomapData extends CController {
 		]);
 
 		if (!$maps) {
-			throw new \Exception(LanguageManager::t('拓扑图不存在，或你没有查看权限'));
+			throw new \Exception(LanguageManager::t('Map does not exist or you do not have permission to view it'));
 		}
 
 		$map = $maps[0];
@@ -3126,7 +3126,7 @@ class TopomapData extends CController {
 		$old_metrics = $this->loadLinkMetrics($sysmapid);
 		$old_paths = $this->loadLinkPaths($sysmapid);
 
-		// 老链路按 linkid 升序，保证「同设备对回退匹配」时优先复用编号最小的那条
+		// Old links sorted by linkid ascending, so the lowest number is reused first in the device-pair fallback match
 		usort($old_links, function (array $a, array $b): int {
 			return (int) ($a['linkid'] ?? 0) <=> (int) ($b['linkid'] ?? 0);
 		});
@@ -3135,8 +3135,8 @@ class TopomapData extends CController {
 		$keep_layout = (string) ($payload['layout'] ?? 'tree') === 'keep';
 		$prune_links = !empty($payload['prune_links']);
 
-		// 老图的方向与根节点：重排要沿用原来的根、原来的层级方向，不能因为
-		// 本次扫描方向变了就把根换掉、或把自上而下的树改成左右布局。
+		// Direction and root of the old map: the relayout must keep the original root and level direction, instead of
+		// switching the root or turning a top-down tree into a left-right layout just because this scan started elsewhere.
 		$payload_pkeys = [];
 		$node_keys = [];
 		$key_pkey = [];
@@ -3171,7 +3171,7 @@ class TopomapData extends CController {
 		}
 
 		$structure = $this->treeStructure($node_keys, $payload_links, $root_key);
-		// 记下实际生效的根（元数据里没有、由 BFS 兜底挑出来的也算）
+		// Record the root actually used (including one picked by the BFS fallback when the metadata has none)
 		$effective_root_key = $root_key !== '' ? $root_key : (string) ($structure['roots'][0] ?? '');
 		$root_pkey = (string) ($key_pkey[$effective_root_key] ?? '');
 		$positions = $this->treeLayout($payload['nodes'], $payload_links, $effective_root_key, $direction);
@@ -3180,12 +3180,12 @@ class TopomapData extends CController {
 		if ($keep_layout) {
 			$keep_positions = $this->keepLayoutPositions($payload['nodes'], $structure, $old_selements, $direction);
 		}
-		// 老图升级：旧元素如果还是自动发现给的默认图标，按类型换成 Switch_/Workstation；
-		// 用户手动选过其它图标的不动。这里先取一次默认图标做比较基准。
+		// Old map upgrade: old elements still using the default auto-discovery icon are switched to Switch_/Workstation by type;
+		// icons chosen manually by the user are left alone. The default icon is fetched first as the comparison baseline.
 		$default_iconid = $this->defaultIconId();
 
 		// ------------------------------------------------------------
-		// 元素：按 h:<hostid> / i:<标签首行> 匹配旧元素，命中则原地更新
+		// Elements: match old elements by h:<hostid> / i:<first label line> and update them in place on a match
 		// ------------------------------------------------------------
 
 		$old_by_pkey = [];
@@ -3203,8 +3203,8 @@ class TopomapData extends CController {
 		$selements = [];        // selementid => row
 		$node_selementid = [];  // payload node key => selementid
 		$node_pkey = [];        // payload node key => pkey
-		$host_of_node = [];     // payload node key => hostid（未纳管为空）
-		$matched = [];          // 已匹配的旧 selementid
+		$host_of_node = [];     // payload node key => hostid (empty if unmanaged)
+		$matched = [];          // Matched old selementid
 		$new_seq = 0;
 		$added_devices = 0;
 
@@ -3223,7 +3223,7 @@ class TopomapData extends CController {
 				$label = $label."\n".(string) $node['ip'];
 			}
 
-			// 新加进来的主机元素用两行宏标签（名字 / 连接地址）；未纳管图片仍写死名字与 IP
+			// Newly added host elements use two-line macro labels (name / connection address); unmanaged images still hard-code name and IP
 			if ($valid_host) {
 				$label = self::DEFAULT_HOST_LABEL;
 			}
@@ -3241,14 +3241,14 @@ class TopomapData extends CController {
 				$row = $old;
 				$row['elementtype'] = (int) ($old['elementtype'] ?? 0);
 
-				// 老图里还是自动发现给的默认图标（Server_(96)）时，按设备类型换成
-				// Switch_(128) / Workstation_(128)，免得上一次生成的图永远全是 Server；
-				// 手动改过图标的不覆盖。
+				// When the old map still has the default auto-discovery icon (Server_(96)), switch it by device type to
+				// Switch_(128) / Workstation_(128), so maps generated earlier are not stuck with Server everywhere;
+				// manually changed icons are not overwritten.
 				if ($node_icon !== '' && (string) ($row['iconid_off'] ?? '0') === $default_iconid) {
 					$row['iconid_off'] = $node_icon;
 				}
 
-				// 上次还是未纳管图片、这次对上主机了：就地升级成主机元素，保留图标与标签
+				// Was an unmanaged image last time and matches a host now: upgrade in place to a host element, keeping icon and label
 				if ($valid_host && $row['elementtype'] === 4) {
 					$row['elementtype'] = 0;
 					$row['elements'] = [['hostid' => $hostid]];
@@ -3292,7 +3292,7 @@ class TopomapData extends CController {
 				}
 
 				if ($keep_layout) {
-					// 老元素原地不动；新设备按生成树挂到父节点下方 / 右侧
+					// Old elements stay put; new devices hang below / to the right of their parent in the spanning tree
 					$point = $keep_positions[$key] ?? ['x' => 80, 'y' => 80];
 					$row['x'] = (int) $point['x'];
 					$row['y'] = (int) $point['y'];
@@ -3310,7 +3310,7 @@ class TopomapData extends CController {
 			$node_selementid[$key] = $selementid;
 		}
 
-		// 只增不减：本次没扫到的已有元素原样提交，避免 map.update 把它们删掉
+		// Add only, never remove: existing elements not scanned this time are submitted as is so map.update does not delete them
 		foreach ($old_selements as $se) {
 			$selementid = (string) ($se['selementid'] ?? '');
 
@@ -3322,7 +3322,7 @@ class TopomapData extends CController {
 		}
 
 		// ------------------------------------------------------------
-		// 链路：先按端口键精确匹配，再按设备对回退（主机换端口的情况）
+		// Links: exact match by port key first, then fall back to the device pair (when a host changed ports)
 		// ------------------------------------------------------------
 
 		$old_link_info = [];
@@ -3388,7 +3388,7 @@ class TopomapData extends CController {
 				continue;
 			}
 
-			// 与自动发现一致：反向重复（B→A 已存在 A→B）整条丢掉
+			// Same as auto discovery: reverse duplicates (B→A when A→B exists) are dropped entirely
 			if (isset($directed[$target.'|'.$source])) {
 				continue;
 			}
@@ -3423,7 +3423,7 @@ class TopomapData extends CController {
 				'selementid2' => $node_selementid[$target],
 				'color' => self::DISCOVERY_LINK_COLOR,
 				'drawtype' => 0,
-				// 命中的链路要按新端口重新绑定触发器（端口变了，旧的绑定就不对了）
+				// Matched links must rebind triggers for the new ports (when the ports change, the old binding is wrong)
 				'linktriggers' => []
 			];
 
@@ -3470,7 +3470,7 @@ class TopomapData extends CController {
 			}
 
 			if ($reuse !== '') {
-				// 复用旧 linkid：指标表里的带宽/流量配置原样保留，只更新端口与触发器来源
+				// Reuse the old linkid: bandwidth/traffic settings in the metrics table are kept; only ports and trigger source are updated
 				$used[$reuse] = true;
 				$old_row = $old_link_info[$reuse]['row'];
 				$row['linkid'] = $reuse;
@@ -3506,7 +3506,7 @@ class TopomapData extends CController {
 			}
 		}
 
-		// 未被本次发现的旧链路：手工线一律保留；自动线按用户选项保留或移除
+		// Old links not found in this discovery: manual links are always kept; automatic links are kept or removed per user option
 		foreach ($old_links as $ol) {
 			$linkid = (string) ($ol['linkid'] ?? '');
 
@@ -3524,7 +3524,7 @@ class TopomapData extends CController {
 		}
 
 		// ------------------------------------------------------------
-		// 一次性提交合并结果
+		// Submit the merged result in one go
 		// ------------------------------------------------------------
 
 		$width = 80;
@@ -3537,17 +3537,17 @@ class TopomapData extends CController {
 
 		$update = [
 			'sysmapid' => $sysmapid,
-			// 大图（上百台设备的树）会很宽，上限放到 60000，避免画布右侧的节点
-			// 被 10000 的旧上限截掉（8.0 API 实测接受 24000 的宽度）
+			// Large maps (trees with hundreds of devices) get very wide; the limit is raised to 60000 so nodes on the right of the canvas
+			// are not cut off by the old 10000 limit (the 8.0 API was verified to accept a width of 24000)
 			'width' => max(100, min(60000, max($width, (int) ($map['width'] ?? 0)))),
 			'height' => max(100, min(60000, max($height, (int) ($map['height'] ?? 0)))),
 			'selements' => $this->sanitizeSelements(array_values($selements)),
 			'links' => $this->sanitizeLinks($links, $this->existingLinkIndicatorTypes((string) $sysmapid)),
-			// 形状原样带回，避免 map.update 把用户画的框删掉
+			// Shapes are sent back unchanged so map.update does not delete boxes drawn by the user
 			'shapes' => $this->sanitizeShapes($old_shapes)
 		];
 
-		// 7.0.x 的链接更新校验要求带 sysmapid；7.4/8.0 的字段白名单不接受该字段（见 modeSave 的说明）
+		// 7.0.x link update validation requires sysmapid; the 7.4/8.0 field whitelist does not accept it (see the note in modeSave)
 		if (self::linkSysmapidRequired()) {
 			foreach ($update['links'] as &$link_row) {
 				if (isset($link_row['linkid'])) {
@@ -3564,14 +3564,14 @@ class TopomapData extends CController {
 			$detail = $this->apiErrorDetail($message_offset);
 
 			if ($detail !== '') {
-				throw new \Exception(LanguageManager::tf('重新发现：保存拓扑图失败：%1$s', $detail));
+				throw new \Exception(LanguageManager::tf('Rediscovery: failed to save the map: %1$s', $detail));
 			}
 
-			throw new \Exception(LanguageManager::t('重新发现：保存拓扑图失败'));
+			throw new \Exception(LanguageManager::t('Rediscovery: failed to save the map'));
 		}
 
 		// ------------------------------------------------------------
-		// 指标回写：新链路的 linkid 从回读结果里认领，其余沿用旧配置
+		// Metric write-back: new links claim their linkid from the read-back result; others keep their old settings
 		// ------------------------------------------------------------
 
 		$maps = API::Map()->get([
@@ -3630,8 +3630,8 @@ class TopomapData extends CController {
 
 		$this->saveLinkMetrics($sysmapid, $final);
 
-		// 走线 / 折点：复用 linkid 的链路原样保留；被移除的链路行随整表重建一起消失，
-		// 新链路默认自动曲线（没有行）。
+		// Routing / waypoints: links reusing a linkid are kept as is; rows of removed links disappear when the table is rebuilt,
+		// new links default to automatic curve (no row).
 		$final_paths = [];
 
 		foreach (array_keys($kept_ids) as $linkid) {
@@ -3641,7 +3641,7 @@ class TopomapData extends CController {
 		}
 
 		$this->saveLinkPaths($sysmapid, $final_paths);
-		// 布局元数据回写：下一次重新发现直接用同一个根 / 方向
+		// Layout metadata write-back: the next rediscovery uses the same root / direction directly
 		$this->saveMapLayout((string) $sysmapid, $root_pkey, $direction);
 
 		return [
@@ -3657,7 +3657,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 主接口 IP（没标 main 就用第一个接口）。选择主机后自动写标签要用它。
+	 * Main interface IP (the first interface when none is marked main). Used to write the label automatically after selecting a host.
 	 */
 	private function hostIp(array $host): string {
 		if (empty($host['interfaces'])) {
@@ -3674,9 +3674,9 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * {HOST.CONN} 的连接地址：优先主接口，其次 SNMP 接口，再退回到第一个可见接口。
-	 * 接口 useip=1 取 IP，否则优先 DNS；任一为空时回退到另一个。
-	 * 每次 modeGet 都会重新 host.get，所以主机改名/重新发现后取到的都是最新值。
+	 * Connection address for {HOST.CONN}: main interface first, then the SNMP interface, then the first visible interface.
+	 * Interfaces with useip=1 use the IP, otherwise DNS first; if either is empty, fall back to the other.
+	 * Every modeGet calls host.get again, so renamed hosts / rediscoveries always get the latest values.
 	 */
 	private function hostConn(array $host): string {
 		if (empty($host['interfaces'])) {
@@ -3719,11 +3719,11 @@ class TopomapData extends CController {
 	}
 
 	// ------------------------------------------------------------------
-	// 自动发现的辅助方法
+	// Auto discovery helpers
 	// ------------------------------------------------------------------
 
 	/**
-	 * 逗号分隔的 ID 列表 → 去重后的纯数字数组。
+	 * Comma-separated ID list → deduplicated array of digits.
 	 */
 	private function parseIdList(string $raw): array {
 		$ids = [];
@@ -3740,7 +3740,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * protocols=LLDP,CDP → ['LLDP', 'CDP']；非法值忽略，默认 LLDP。
+	 * protocols=LLDP,CDP → ['LLDP', 'CDP']; invalid values are ignored, default LLDP.
 	 */
 	private function parseProtocols(string $raw): array {
 		$allow = ['LLDP', 'CDP', 'EDP'];
@@ -3758,20 +3758,20 @@ class TopomapData extends CController {
 	}
 
 	// ------------------------------------------------------------------
-	// 自动发现：链路 ↔ 端口状态触发器的关联
+	// Auto discovery: linking links ↔ port status triggers
 	// ------------------------------------------------------------------
 
 	/**
-	 * 为一条自动发现的链路匹配「端口状态类」触发器（源端优先，源端未命中才回退目标端）。
+	 * Match "port status" triggers for an auto-discovered link (source end first; the target end only if the source has no match).
 	 *
-	 * 源端优先的理由和 aiops 一样：命中即只用源端，避免两端都绑导致条数翻倍；
-	 * 触发器只配置在对面设备上时，再回退到目标端。
+	 * Source-first for the same reason as aiops: a source match is used alone, so binding both ends does not double the count;
+	 * when the trigger is configured only on the other device, fall back to the target end.
 	 *
-	 * @param array $cache 按 hostid 缓存的触发器列表（引用传入，跨链路复用）
+	 * @param array $cache trigger lists cached by hostid (passed by reference, reused across links)
 	 *
-	 * @param int   $trigger_source 该链路的「触发器来源端」口径（见 TRIGGER_SOURCE_* 常量）
+	 * @param int   $trigger_source the link's "trigger source" scope (see the TRIGGER_SOURCE_* constants)
 	 *
-	 * @return string[] 命中的 triggerid
+	 * @return string[] matched triggerids
 	 */
 	private function matchLinkTriggers(string $src_hostid, string $tgt_hostid, string $src_port, string $tgt_port,
 			array &$cache, int $trigger_source = self::TRIGGER_SOURCE_AUTO): array {
@@ -3802,7 +3802,7 @@ class TopomapData extends CController {
 			return array_values($both);
 		}
 
-		// AUTO：源端优先，源端没有才回退本端（历史行为）
+		// AUTO: source end first, falls back to the local end only when the source has none (legacy behavior)
 		if ($src) {
 			return $src;
 		}
@@ -3811,9 +3811,9 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 取某主机上「描述里命中关键词、且包含该端口名」的触发器。
+	 * Get the host's triggers whose description matches a keyword and contains the port name.
 	 *
-	 * @param string $port 已归一化的端口名（如 ge006）
+	 * @param string $port normalized port name (e.g. ge006)
 	 *
 	 * @return string[]
 	 */
@@ -3838,13 +3838,13 @@ class TopomapData extends CController {
 				}
 			}
 			catch (\Throwable $e) {
-				// 取不到就当这台主机没有可用触发器
+				// If they cannot be read, treat the host as having no usable triggers
 			}
 
 			$cache[$hostid] = $list;
 		}
 
-		// 字母数字边界匹配：ge006 不得命中 ge0060 / ge0061…，否则 6 号口会绑上 60+ 号口的触发器
+		// Alphanumeric boundary match: ge006 must not match ge0060 / ge0061…, otherwise port 6 would get the triggers of ports 60+
 		$pattern = '/(?<![a-z0-9])'.preg_quote($port, '/').'(?![a-z0-9])/';
 		$out = [];
 
@@ -3874,9 +3874,9 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 端口名归一化键：去掉发现时附加的 " (描述)" 后缀，全称缩写 + 去分隔符，
-	 * 用于跨格式匹配（Gi0/0/6 ↔ ge0_0_6 ↔ GigabitEthernet0/0/6）。
-	 * 与 aiops 的 ifPortKey 保持一致。
+	 * Port name normalization key: strips the " (description)" suffix added during discovery, abbreviates full names and removes separators,
+	 * for cross-format matching (Gi0/0/6 ↔ ge0_0_6 ↔ GigabitEthernet0/0/6).
+	 * Kept consistent with aiops' ifPortKey.
 	 */
 	private function ifPortKey(string $s): string {
 		$s = preg_split('/\s*\(/', $s)[0] ?? '';
@@ -3890,7 +3890,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 拓扑元素匹配键：已纳管主机用 h:<hostid>，未纳管图片元素用 i:<标签首行小写>。
+	 * Topology element match key: h:<hostid> for managed hosts, i:<first label line in lowercase> for unmanaged image elements.
 	 */
 	private function elementPKey(array $selement): string {
 		$type = (int) ($selement['elementtype'] ?? -1);
@@ -3910,7 +3910,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 重新发现 payload 里节点的匹配键：与 elementPKey() 同口径。
+	 * Match key of nodes in the rediscovery payload: same scheme as elementPKey().
 	 */
 	private function nodePKey(array $node): string {
 		$hostid = trim((string) ($node['hostid'] ?? ''));
@@ -3925,8 +3925,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 链路匹配键：两端 (元素键 + 归一化端口) 排序后拼接；
-	 * 端口为空时自动退化成本设备对的键。
+	 * Link match key: both ends (element key + normalized port) sorted and joined;
+	 * falls back to the device-pair key when ports are empty.
 	 */
 	private function linkMatchKey(string $p1, string $p2, string $port1, string $port2): string {
 		$a = $p1.'#'.$this->ifPortKey($port1);
@@ -3936,7 +3936,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 主机的主 SNMP 接口（type=2）；没有就返回 null。
+	 * The host's main SNMP interface (type=2); null if there is none.
 	 */
 	private function snmpInterface(array $host): ?array {
 		$fallback = null;
@@ -3959,7 +3959,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 主机宏 + 全局宏（主机宏优先）。用来解析 SNMP 接口里填的 {$SNMP_COMMUNITY}。
+	 * Host macros + global macros (host macros take precedence). Used to resolve {$SNMP_COMMUNITY} in SNMP interfaces.
 	 */
 	private function hostMacros(array $hostids): array {
 		$global = [];
@@ -3976,7 +3976,7 @@ class TopomapData extends CController {
 			}
 		}
 		catch (\Throwable $e) {
-			// 取不到全局宏就只靠主机宏
+			// If global macros cannot be read, rely on host macros only
 		}
 
 		try {
@@ -3996,12 +3996,12 @@ class TopomapData extends CController {
 			}
 		}
 		catch (\Throwable $e) {
-			// 同上
+			// Same as above
 		}
 
-		// 每台主机都要拿到一份完整的宏表：全局宏垫底，主机宏覆盖。
-		// 只把全局宏挂在 $result[0] 上是错的 —— 主机没有自己的宏时取不到值，
-		// {$SNMP_COMMUNITY} 这种「只定义在全局」的宏会解析失败。
+		// Every host needs a complete macro table: global macros at the bottom, overridden by host macros.
+		// Attaching global macros only to $result[0] is wrong — hosts without their own macros would get no value,
+		// and macros defined only globally such as {$SNMP_COMMUNITY} would fail to resolve.
 		$result = [];
 
 		foreach ($hostids as $hostid) {
@@ -4023,12 +4023,12 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 全量主机索引：邻居设备名 / 管理 IP 都要能对回 Zabbix 主机。
-	 * 一台主机可能有多个接口 IP，全部进索引。
+	 * Full host index: neighbor device names / management IPs must map back to Zabbix hosts.
+	 * A host may have several interface IPs; all are indexed.
 	 *
-	 * entry 里带上主机自己的管理 IP：邻居匹配上主机后，节点要显示「主机在 Zabbix 里的地址」，
-	 * 而不是 LLDP 邻居上报的地址 —— 后者经常不准（H3C 会把本机管理地址回声给所有邻居口，
-	 * 表现就是一堆设备都显示成同一个 IP）。
+	 * The entry carries the host's own management IP: once a neighbor matches a host, the node shows the host's address in Zabbix
+	 * instead of the address reported by the LLDP neighbor — the latter is often wrong (H3C echoes its own management address to all neighbor ports,
+	 * so many devices show the same IP).
 	 */
 	private function discoveryIndex(): array {
 		$index = ['by_name' => [], 'by_ip' => []];
@@ -4042,7 +4042,7 @@ class TopomapData extends CController {
 		foreach ($hosts as $host) {
 			$entry = ['hostid' => (string) $host['hostid'], 'name' => $host['name'], 'ip' => ''];
 
-			// 展示用地址：主接口优先，其次任意一个可用接口
+			// Display address: main interface first, then any usable interface
 			$interfaces = $host['interfaces'] ?? [];
 			$fallback = '';
 
@@ -4089,11 +4089,11 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 邻居 → Zabbix 主机。先按设备名（sysName 通常等于 host name 或 host），
-	 * 再按管理 IP。都对不上就是未纳管设备，交给图片元素显示。
+	 * Neighbor → Zabbix host. Match by device name first (sysName usually equals the host name or host),
+	 * then by management IP. No match means an unmanaged device, shown as an image element.
 	 *
-	 * $self_ips 是当前这台交换机的接口 IP：有些设备（华为）把「自己的管理地址」
-	 * 填进所有端口的 lldpRemManAddr，不排除掉就会匹配到自己。
+	 * $self_ips are the interface IPs of the current switch: some devices (Huawei) put their own management address
+	 * into lldpRemManAddr of every port; without excluding them the switch would match itself.
 	 */
 	private function matchNeighbor(array $neighbor, array $index, array $self_ips = []): array {
 		$name = trim((string) ($neighbor['sysname'] ?? ''));
@@ -4105,7 +4105,7 @@ class TopomapData extends CController {
 				return $index['by_name'][$key] + ['how' => 'name'];
 			}
 
-			// LLDP sysName 常带域名后缀（sw01.example.com），去掉再试一次
+			// LLDP sysName often has a domain suffix (sw01.example.com); strip it and try again
 			$short = preg_replace('/\..*$/', '', $name);
 
 			if ($short !== '' && $short !== $name && isset($index['by_name'][mb_strtolower($short)])) {
@@ -4123,8 +4123,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 从 sysDescr / 设备名猜设备类型，前端据此挑图标。
-	 * 猜不准就按交换机处理 —— 自动发现本来就是从交换机出发的。
+	 * Guess the device type from sysDescr / device name; the frontend picks the icon from it.
+	 * When unsure, treat it as a switch — auto discovery starts from switches anyway.
 	 */
 	private function guessKind(string $sysdesc, string $sysname): string {
 		$text = mb_strtolower($sysdesc.' '.$sysname);
@@ -4150,8 +4150,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 拓扑图名称唯一：重名时自动加「 (2)」「 (3)」，
-	 * 而不是像创建按钮那样直接报错 —— 自动发现重复点几次很常见。
+	 * Map names are unique: on a duplicate name " (2)", " (3)" are appended automatically,
+	 * instead of failing like the create button — clicking auto discovery several times is common.
 	 */
 	private function uniqueMapName(string $name): string {
 		$candidate = $name;
@@ -4179,7 +4179,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 自动发现新建的元素图标：优先 Server_(96)，没有就用拓扑图图标库里的第一个。
+	 * Icon of elements created by auto discovery: Server_(96) if available, otherwise the first icon of the map icon library.
 	 */
 	private function defaultIconId(): string {
 		$images = API::Image()->get([
@@ -4204,12 +4204,12 @@ class TopomapData extends CController {
 		return (string) $images[0]['imageid'];
 	}
 
-	/** 图标名（小写）=> imageid，一次请求内复用 */
+	/** Icon name (lowercase) => imageid, reused within one request */
 	private $icon_ids = null;
 
 	/**
-	 * 按设备类型挑图标，对齐 aiops：
-	 * 交换机 Switch_(128)、终端 PC Workstation_(128)、服务器 Server_(96)。
+	 * Choose the icon by device type, aligned with aiops:
+	 * switch Switch_(128), endpoint PC Workstation_(128), server Server_(96).
 	 */
 	private function iconForKind(string $kind): string {
 		if ($this->icon_ids === null) {
@@ -4248,14 +4248,14 @@ class TopomapData extends CController {
 	}
 
 	// ------------------------------------------------------------------
-	// 入参校验 / 字段白名单
+	// Input validation / field whitelist
 	// ------------------------------------------------------------------
 
 	private function requireSysmapid(): string {
 		$sysmapid = trim((string) $this->getInput('sysmapid', ''));
 
 		if ($sysmapid === '' || !ctype_digit($sysmapid) || $sysmapid === '0') {
-			throw new \Exception(LanguageManager::t('缺少有效的拓扑图 ID'));
+			throw new \Exception(LanguageManager::t('Missing valid map ID'));
 		}
 
 		return $sysmapid;
@@ -4266,8 +4266,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 画布宽 / 高：与原生拓扑图共用 sysmaps.width / height，元素拖拽的边界就是它。
-	 * 不传返回 null（表示保持原值），避免把已有尺寸顺手改掉；传了就夹到 100..10000。
+	 * Canvas width / height: shared with native maps as sysmaps.width / height; it is the drag boundary for elements.
+	 * Returns null when not passed (keep the current value) so existing sizes are not changed by accident; otherwise clamped to 100..10000.
 	 */
 	private function dimension(string $key): ?int {
 		$raw = trim((string) $this->getInput($key, ''));
@@ -4283,36 +4283,36 @@ class TopomapData extends CController {
 		$name = trim($name);
 
 		if ($name === '') {
-			throw new \Exception(LanguageManager::t('拓扑图名称不能为空'));
+			throw new \Exception(LanguageManager::t('The map name cannot be empty'));
 		}
 
-		// sysmaps.name 的字段长度是 128
+		// The sysmaps.name field length is 128
 		if (mb_strlen($name) > 128) {
-			throw new \Exception(LanguageManager::t('拓扑图名称不能超过 128 个字符'));
+			throw new \Exception(LanguageManager::t('The map name cannot exceed 128 characters'));
 		}
 
 		return $name;
 	}
 
 	/**
-	 * 7.0.x 的链路更新校验要求每条带 linkid 的 link 补 sysmapid；
-	 * 7.4/8.0 的 CMap::validateLinkFields() 是严格字段白名单，不接受 sysmapid。
+	 * 7.0.x link update validation requires sysmapid on every link that has a linkid;
+	 * CMap::validateLinkFields() in 7.4/8.0 is a strict field whitelist that rejects sysmapid.
 	 */
 	private static function linkSysmapidRequired(): bool {
 		return !self::supportsLinkIndicatorType();
 	}
 
 	/**
-	 * Zabbix 8.0 起 map link 增加了 indicator_type（0=静态、1=触发器、2=监控项值），
-	 * 且只有 indicator_type=1 时才允许携带 linktriggers。7.x 没有该字段，写了反而会
-	 * 被当成未知参数，所以这里按常量是否存在做特性探测。
+	 * Since Zabbix 8.0 map links have indicator_type (0=static, 1=trigger, 2=item value),
+	 * and linktriggers are only allowed when indicator_type=1. 7.x has no such field and writing it would
+	 * be treated as an unknown parameter, so the feature is detected by checking whether the constant exists.
 	 */
 	private static function supportsLinkIndicatorType(): bool {
 		return defined('MAP_INDICATOR_TYPE_TRIGGER') && defined('MAP_INDICATOR_TYPE_STATIC_LINK');
 	}
 
 	/**
-	 * 返回当前版本应写入的 indicator_type；7.x 返回 null 表示不写。
+	 * Return the indicator_type to write for the current version; on 7.x null means do not write it.
 	 */
 	private static function linkIndicatorType(bool $has_triggers): ?int {
 		if (!self::supportsLinkIndicatorType()) {
@@ -4325,8 +4325,8 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 当前已登记的消息条数。Zabbix 前端的 API wrapper 出错时只返回 false，
-	 * 真正的错误被记进 CMessageHelper，这里用它把错误捞出来透传。
+	 * Number of messages currently registered. The Zabbix frontend API wrapper only returns false on error;
+	 * the real error is recorded in CMessageHelper, from which it is retrieved and passed on here.
 	 */
 	private function apiMessageCount(): int {
 		if (!class_exists('\CMessageHelper') || !method_exists('\CMessageHelper', 'getMessages')) {
@@ -4337,7 +4337,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 取 offset 之后新登记的 API 错误文本（多条用分号拼接）。
+	 * API error texts registered after offset (several are joined with semicolons).
 	 */
 	private function apiErrorDetail(int $offset): string {
 		if (!class_exists('\CMessageHelper') || !method_exists('\CMessageHelper', 'getMessages')) {
@@ -4387,14 +4387,14 @@ class TopomapData extends CController {
 			}
 
 			if ($row['elementtype'] === 4) {
-				// 图片元素不允许带 elements / 标签 / 自动图标
+				// Image elements may not carry elements / labels / automatic icons
 				unset($row['elements'], $row['tags'], $row['evaltype'], $row['use_iconmap']);
 			}
 			else {
 				$elements = [];
 
-				// 原生拓扑图里还会有触发器 / 主机组 / 嵌套图元素。本模块不编辑它们，
-				// 但保存时必须原样带回去（缺 elements 会被 API 拒收，丢字段会删掉这些元素）。
+				// Native maps can also have trigger / host group / nested map elements. This module does not edit them,
+				// but they must be sent back unchanged on save (the API rejects missing elements, and dropped fields would delete those elements).
 				if (isset($row['elements']) && is_array($row['elements'])) {
 					foreach ($row['elements'] as $element) {
 						if (!is_array($element)) {
@@ -4422,7 +4422,7 @@ class TopomapData extends CController {
 					}
 				}
 
-				// 没挂对象的元素 API 会拒收，直接跳过，避免整张图保存失败
+				// The API rejects elements without an attached object; skip them so the whole map save does not fail
 				if (!$elements) {
 					continue;
 				}
@@ -4482,7 +4482,7 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * 读取当前图上已有连线的 indicator_type（linkid => int）。7.x 没有该字段时返回空数组。
+	 * Read the indicator_type of the links currently on the map (linkid => int). Returns an empty array on 7.x where the field does not exist.
 	 */
 	private function existingLinkIndicatorTypes(string $sysmapid): array {
 		if (!self::supportsLinkIndicatorType()) {
@@ -4511,10 +4511,10 @@ class TopomapData extends CController {
 	}
 
 	/**
-	 * @param array $items                   前端提交的连线
-	 * @param array $existing_indicator_types 8.0 下已有连线的 indicator_type（linkid => int），
-	 *                                        用于在清空触发器时只把「触发器型」链路切回静态，
-	 *                                        不误伤用户在原生命中设置的「监控项值」链路。
+	 * @param array $items                   links submitted by the frontend
+	 * @param array $existing_indicator_types indicator_type of existing links on 8.0 (linkid => int),
+	 *                                        used so that clearing triggers only switches "trigger" links back to static
+	 *                                        without affecting "item value" links set up by the user in the native editor.
 	 */
 	private function sanitizeLinks(array $items, array $existing_indicator_types = []): array {
 		$result = [];
@@ -4543,7 +4543,7 @@ class TopomapData extends CController {
 			$row['selementid2'] = $s2;
 			$row['label'] = isset($row['label']) ? (string) $row['label'] : '';
 
-			// 原生链接属性里的「显示标签」：默认 -1 / 始终 1 / 自动隐藏 0
+			// "Show label" in the native link properties: default -1 / always 1 / auto-hide 0
 			$show_label = (int) ($row['show_label'] ?? -1);
 			$row['show_label'] = in_array($show_label, [-1, 0, 1], true) ? $show_label : -1;
 
@@ -4567,8 +4567,8 @@ class TopomapData extends CController {
 				$row['drawtype'] = $drawtype;
 			}
 
-			// 连线绑定的触发器（链路指示器）：自动发现建的线会带，保存时必须原样回写，
-			// 否则 map.update 重建 link 时会把它们丢掉（正常保存也会把绿线恢复成默认灰）。
+			// Triggers bound to the link (link indicators): links created by auto discovery carry them and they must be written back on save,
+			// otherwise map.update drops them when rebuilding the link (a normal save would also turn green links back to default gray).
 			if (isset($item['linktriggers']) && is_array($item['linktriggers'])) {
 				$linktriggers = [];
 
@@ -4583,7 +4583,7 @@ class TopomapData extends CController {
 						$lt_color = self::DISCOVERY_TRIGGER_COLOR;
 					}
 
-					// 每个链接指示器自己的线型：原生支持 0/2/3/4，强制写 0 会把用户选的线型丢掉
+					// Each link indicator has its own line style: native supports 0/2/3/4; forcing 0 would discard the style chosen by the user
 					$lt_drawtype = (int) ($lt['drawtype'] ?? 0);
 
 					if (!in_array($lt_drawtype, [0, 2, 3, 4], true)) {
@@ -4597,13 +4597,13 @@ class TopomapData extends CController {
 					];
 				}
 
-				// 空数组也要写：用户点「清空」时，只有把 linktriggers 明确传成 [] 才能让
-				// CMap::update 把库里已有的绑定删掉。
+				// An empty array must be written too: when the user clicks "clear", only passing linktriggers explicitly as [] makes
+				// CMap::update delete the bindings stored in the database.
 				$row['linktriggers'] = $linktriggers;
 
-				// 8.0 的校验是「indicator_type=1 才允许带 linktriggers」，反过来
-				// 「indicator_type=1 时 linktriggers 不能为空」。有触发器就必须写 1；
-				// 清空触发器时只把原本的「触发器型」链路切回静态，避免误伤监控项值链路。
+				// 8.0 validates that linktriggers are only allowed with indicator_type=1 and, conversely,
+				// that linktriggers cannot be empty when indicator_type=1. With triggers it must be 1;
+				// when triggers are cleared, only former "trigger" links switch back to static, so item value links are not affected.
 				if (self::linkIndicatorType(true) !== null) {
 					if ($linktriggers !== []) {
 						$row['indicator_type'] = (int) constant('MAP_INDICATOR_TYPE_TRIGGER');
@@ -4670,8 +4670,8 @@ class TopomapData extends CController {
 				$row['type'] = 0;
 			}
 
-			// 线的 x,y 是起点、width,height 是终点绝对坐标（与原生 sysmap_shape 一致），
-			// 允许为 0；矩形/椭圆是最小 1 的宽高。
+			// For lines, x,y is the start and width,height the absolute end coordinates (same as native sysmap_shape),
+			// 0 is allowed; rectangles/ellipses have a minimum width and height of 1.
 			if ($row['type'] === 2) {
 				$row['width'] = isset($row['width']) && $row['width'] >= 0 ? (int) $row['width'] : 0;
 				$row['height'] = isset($row['height']) && $row['height'] >= 0 ? (int) $row['height'] : 0;
@@ -4681,7 +4681,7 @@ class TopomapData extends CController {
 				$row['height'] = isset($row['height']) && $row['height'] > 0 ? (int) $row['height'] : 100;
 			}
 
-			// sysmap_shape.text 是短文本列，超长会被 DB 层直接拒收
+			// sysmap_shape.text is a short text column; overlong values are rejected by the DB layer
 			$row['text'] = isset($row['text']) ? mb_substr((string) $row['text'], 0, 255) : '';
 
 			$result[] = $row;

@@ -1,7 +1,7 @@
 <?php
 /**
- * 机柜配置管理器
- * 负责机房、机柜数据的存储和读取
+ * Rack configuration manager
+ * Stores and reads room and rack data
  */
 
 namespace Modules\ZabbixRack\Lib;
@@ -15,7 +15,7 @@ class RackConfig {
     private static $lastError = '';
     
     /**
-     * 获取配置文件路径
+     * Get the configuration file path
      */
     private static function getConfigFile(): string {
         if (self::$configFile === null) {
@@ -25,7 +25,7 @@ class RackConfig {
     }
     
     /**
-     * 确保数据目录存在
+     * Make sure the data directory exists
      */
     private static function ensureDataDir(): bool {
         $dataDir = dirname(self::getConfigFile());
@@ -38,7 +38,7 @@ class RackConfig {
     }
     
     /**
-     * 加载配置
+     * Load the configuration
      */
     public static function load(): array {
         if (self::$config !== null) {
@@ -61,7 +61,7 @@ class RackConfig {
     }
     
     /**
-     * 保存配置
+     * Save the configuration
      */
     public static function save(array $config): bool {
         self::$lastError = '';
@@ -112,7 +112,7 @@ class RackConfig {
     }
     
     /**
-     * 检查数据目录是否可写
+     * Check whether the data directory is writable
      */
     public static function isDataDirWritable(): bool {
         $dataDir = dirname(self::getConfigFile());
@@ -120,14 +120,14 @@ class RackConfig {
     }
     
     /**
-     * 获取数据目录路径
+     * Get the data directory path
      */
     public static function getDataDir(): string {
         return dirname(self::getConfigFile());
     }
     
     /**
-     * 获取默认配置
+     * Get the default configuration
      */
     private static function getDefaultConfig(): array {
         return [
@@ -195,7 +195,7 @@ class RackConfig {
     }
     
     /**
-     * 获取所有机房
+     * Get all rooms
      */
     public static function getRooms(): array {
         $config = self::load();
@@ -203,7 +203,7 @@ class RackConfig {
     }
     
     /**
-     * 获取机房
+     * Get rooms
      */
     public static function getRoom(string $roomId): ?array {
         $rooms = self::getRooms();
@@ -216,18 +216,18 @@ class RackConfig {
     }
     
     /**
-     * 添加/更新机房
+     * Add/update a room
      */
     public static function saveRoom(array $room): bool {
         $config = self::load();
         $room = RackPermission::applyRoomPermissions($room);
         if (empty($room['id'])) {
-            // 新建机房
+            // New room
             $room['id'] = self::generateId();
             $room['created_at'] = date('Y-m-d H:i:s');
             $config['rooms'][] = $room;
         } else {
-            // 更新机房
+            // Update the room
             $found = false;
             foreach ($config['rooms'] as &$existingRoom) {
                 if ($existingRoom['id'] === $room['id']) {
@@ -253,18 +253,18 @@ class RackConfig {
     }
     
     /**
-     * 删除机房
+     * Delete a room
      */
     public static function deleteRoom(string $roomId): bool {
         $config = self::load();
         
-        // 删除机房下的所有机柜
+        // Delete all racks in the room
         $config['racks'] = array_filter($config['racks'], function($rack) use ($roomId) {
             return $rack['room_id'] !== $roomId;
         });
         $config['racks'] = array_values($config['racks']);
         
-        // 删除机房
+        // Delete a room
         $config['rooms'] = array_filter($config['rooms'], function($room) use ($roomId) {
             return $room['id'] !== $roomId;
         });
@@ -280,7 +280,7 @@ class RackConfig {
     }
     
     /**
-     * 获取所有机柜
+     * Get all racks
      */
     public static function getRacks(?string $roomId = null): array {
         $config = self::load();
@@ -297,7 +297,7 @@ class RackConfig {
     }
     
     /**
-     * 获取机柜
+     * Get racks
      */
     public static function getRack(string $rackId): ?array {
         $racks = self::getRacks();
@@ -310,21 +310,21 @@ class RackConfig {
     }
     
     /**
-     * 添加/更新机柜
+     * Add/update a rack
      */
     public static function saveRack(array $rack): bool {
         $config = self::load();
         
         if (empty($rack['id'])) {
-            // 新建机柜
+            // New rack
             $rack['id'] = self::generateId();
             $rack['created_at'] = date('Y-m-d H:i:s');
             if (!isset($rack['height'])) {
-                $rack['height'] = 42; // 默认42U
+                $rack['height'] = 42; // Default 42U
             }
             $config['racks'][] = $rack;
         } else {
-            // 更新机柜
+            // Update the rack
             $found = false;
             foreach ($config['racks'] as &$existingRack) {
                 if ($existingRack['id'] === $rack['id']) {
@@ -344,7 +344,7 @@ class RackConfig {
     }
     
     /**
-     * 删除机柜
+     * Delete a rack
      */
     public static function deleteRack(string $rackId): bool {
         $config = self::load();
@@ -364,20 +364,20 @@ class RackConfig {
     }
     
     /**
-     * 生成唯一ID
+     * Generate a unique ID
      */
     private static function generateId(): string {
         return uniqid('', true);
     }
     
     /**
-     * 搜索机柜
+     * Search racks
      */
     public static function searchRacks(string $keyword): array {
         $racks = self::getRacks();
         $rooms = self::getRooms();
         
-        // 创建机房名称映射
+        // Build the room name map
         $roomNames = [];
         foreach ($rooms as $room) {
             $roomNames[$room['id']] = $room['name'];

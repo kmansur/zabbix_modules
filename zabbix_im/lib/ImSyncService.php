@@ -8,8 +8,8 @@ require_once __DIR__ . '/ZabbixApiHelper.php';
 require_once __DIR__ . '/LanguageManager.php';
 
 /**
- * 将 IM 部门与用户同步到 Zabbix 用户群组
- * 仅对模块注册表中的对象执行增删改，系统/手工对象不受影响
+ * Sync IM departments and users to Zabbix user groups
+ * Only objects in the module registry are created, changed or deleted; system/manual objects are not affected
  */
 class ImSyncService {
 
@@ -31,7 +31,7 @@ class ImSyncService {
     /** match key => userid */
     private $userMap = [];
 
-    /** userid => true（Zabbix 中实际存在的用户） */
+    /** userid => true (users that actually exist in Zabbix) */
     private $existingUserIds = [];
 
     /** im_user_id => userid (managed users) */
@@ -280,7 +280,7 @@ class ImSyncService {
     }
 
     /**
-     * 清理当前 IM 接口范围内已不存在的模块管理用户组/用户
+     * Clean up module-managed user groups/users that no longer exist within the current IM API scope
      */
     private function finalizeOrphanCleanup(array $activeDeptIds, array $activeImUserIds, bool $cleanupUsers): array {
         $groupsDeleted = 0;
@@ -636,8 +636,8 @@ class ImSyncService {
     }
 
     /**
-     * 构建受管用户索引。注册表里记录的用户若已被手动删除（不在 Zabbix 中），
-     * 视为陈旧记录并从注册表清除，避免后续把不存在的 userid 写入用户组。
+     * Build the index of managed users. Users recorded in the registry but deleted manually (not in Zabbix)
+     * are treated as stale and removed from the registry, so nonexistent userids are not written to user groups later.
      */
     private function buildManagedUserIndex(): void {
         $this->managedUserByImId = [];
@@ -951,7 +951,7 @@ class ImSyncService {
     }
 
     /**
-     * 更新模块管理用户组的成员：保留手工加入的用户，仅维护 IM 同步成员
+     * Update the members of module-managed user groups: keep manually added users and only maintain IM-synced members
      */
     private function updateManagedGroupUsers(string $usrgrpid, array $syncUserIds): bool {
         $this->lastGroupUpdateError = '';
@@ -979,7 +979,7 @@ class ImSyncService {
             if ($userid === 'preview' || $userid === '') {
                 continue;
             }
-            // 兜底：跳过 Zabbix 中已不存在的用户（例如被手动删除），避免整组更新失败
+            // Fallback: skip users that no longer exist in Zabbix (e.g. deleted manually) so the whole group update does not fail
             if (!empty($this->existingUserIds) && !isset($this->existingUserIds[$userid])) {
                 error_log('IM Sync: skip non-existent user ' . $userid . ' for group ' . $usrgrpid);
                 continue;
@@ -1230,7 +1230,7 @@ class ImSyncService {
     }
 
     /**
-     * 新同步用户统一使用 12 位大小写字母+数字随机密码。
+     * Newly synced users always get a random 12-character password of upper/lower case letters and digits.
      */
     private function resolveUserPassword(string $username, string $name): string {
         return $this->generateSyncPassword($username, $name);
@@ -1248,7 +1248,7 @@ class ImSyncService {
     }
 
     /**
-     * 生成 12 位大小写字母+数字密码，且不包含用户名/姓名子串。
+     * Generate a 12-character password of upper/lower case letters and digits that contains no substring of the username/name.
      */
     private function generateSyncPassword(string $username, string $name): string {
         $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -1372,7 +1372,7 @@ class ImSyncService {
         return $deleted;
     }
 
-    /** 清理 IM 中已不存在的关联用户（仅移除注册记录，不删除账号） */
+    /** Clean up linked users that no longer exist in the IM (only the registry entry is removed; the account is not deleted) */
     private function cleanupLinkedUsers(array $activeImUserIds): void {
         $active = array_fill_keys($activeImUserIds, true);
 

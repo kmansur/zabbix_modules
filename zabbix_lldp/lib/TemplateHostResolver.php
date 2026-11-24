@@ -8,7 +8,7 @@ require_once __DIR__ . '/ConfigManager.php';
 require_once __DIR__ . '/ZabbixVersion.php';
 
 /**
- * 按 LLDP 模板过滤主机与主机分组
+ * Filter hosts and host groups by the LLDP template
  */
 class TemplateHostResolver {
 

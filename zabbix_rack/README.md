@@ -1,91 +1,91 @@
-# Zabbix Rack 模块
+# Zabbix Rack Module
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-这是一个 Zabbix 前端模块，用于数据中心机柜可视化和主机位置管理。模块在 Zabbix Web 的资产记录菜单下新增机柜管理功能，支持机房和机柜的配置，以及主机的可视化分配。
+This is a Zabbix frontend module for data center rack visualization and host placement management. The module adds rack management functionality under the Inventory menu in Zabbix Web, supporting room and rack configuration, as well as visual host assignment.
 
 ![1](images/1.png)
 ![2](images/2.png)
 ![3](images/3.png)
 
-## 功能特性
+## Features
 
-- **机房管理**：
-  - 创建、编辑、删除机房
-  - 机房描述信息管理
-  - 为机房分配 Zabbix 用户组和用户（访问控制）
-- **访问权限**：
-  - 机房可关联 Zabbix 用户组与具体用户
-  - 配置权限时默认选中全部用户组与用户（表示全员可见）
-  - 机柜视图仅展示当前用户有权限的机房/机柜
-  - 未配置用户组与用户的机房对所有用户可见
-  - **Super Admin** 在机柜视图中可查看全部机房，不受机房权限限制
-- **机柜配置（管理页）**：
-  - 仅 **Super Admin** 可访问机柜配置页面及相关保存/删除接口
-  - 普通用户仅可使用机柜视图
-- **机柜管理**：
-  - 创建、编辑、删除机柜
-  - 配置机柜高度（支持 1-60U）
-  - 关联机房
-- **机柜可视化**：
-  - 42U 机柜垂直布局展示
-  - 支持**正面 / 背面**视图切换（同一 U 位正反面可独立放置主机）
-  - U 位占用状态实时显示
-  - 主机信息悬停提示
-  - 空闲 U 位点击分配
-- **主机分配**：
-  - 将 Zabbix 主机分配到机柜指定 U 位
-  - 支持按主机组过滤
-  - 支持主机名搜索
-  - U 位冲突检测
-- **搜索功能**：
-  - 按机柜名称搜索
-  - 按主机名称搜索
-  - 快速定位主机位置
-- **国际化支持**：支持中文、英文和俄语界面
-- **响应式设计**：适配不同屏幕尺寸
+- **Room Management**:
+  - Create, edit, and delete rooms
+  - Room description management
+  - Assign Zabbix user groups and users to rooms (access control)
+- **Access Control**:
+  - Rooms can be linked to Zabbix user groups and individual users
+  - Permission UI defaults to all user groups and users selected (visible to everyone)
+  - Rack view shows only rooms/racks the current user may access
+  - Rooms without user groups or users are visible to everyone
+  - **Super Admin** can view all rooms in rack view regardless of room permissions
+- **Rack Config (manage page)**:
+  - Only **Super Admin** can access the config page and related save/delete APIs
+  - Other users can use rack view only
+- **Rack Management**:
+  - Create, edit, and delete racks
+  - Configure rack height (supports 1-60U)
+  - Associate racks with rooms
+- **Rack Visualization**:
+  - 42U rack vertical layout display
+  - **Front / rear** view toggle (same U slot can host different devices on each side)
+  - Real-time U position occupancy status
+  - Host information hover tooltips
+  - Click on free U positions for assignment
+- **Host Assignment**:
+  - Assign Zabbix hosts to specific U positions in racks
+  - Filter by host groups
+  - Search by hostname
+  - U position conflict detection
+- **Search**:
+  - Search by rack name
+  - Search by hostname
+  - Quick host location lookup
+- **Internationalization**: English and Brazilian Portuguese interfaces
+- **Responsive Design**: Adapts to different screen sizes
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
 ```bash
-# Zabbix 6.0 / 7.0 部署方法
+# Zabbix 6.0 / 7.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/modules/
 
-# Zabbix 7.2+ / 7.4 / 8.0 部署方法
+# Zabbix 7.2+ / 7.4 / 8.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/ui/modules/
 ```
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
 
 ```bash
-# ⚠️ 如果使用Zabbix 6.0，修改manifest_version
+# ⚠️ For Zabbix 6.0, modify manifest_version
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_rack/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 转到 **Administration → General → Modules**。
-2. 点击 **Scan directory** 按钮扫描新模块。
-3. 找到 "Zabbix Rack" 模块，点击启用模块。
-4. 刷新页面，模块将在 **Inventory** 菜单下显示为 "机柜管理" 子菜单。
+1. Go to **Administration → General → Modules**.
+2. Click **Scan directory** to scan for new modules.
+3. Find the "Zabbix Rack" module and enable it.
+4. Refresh the page. The module will appear under the **Inventory** menu as "Rack Management" submenu.
 
-## 注意事项
+## Notes
 
-### 保存权限与 SELinux（2026-11-21 修复）
+### Storage permissions and SELinux (2026-11-21 fix)
 
-机房/机柜写入的是 **Web 前端服务器** 上的 `data/config.json`，并非 Zabbix Server 的目录。SELinux Enforcing 时，`usr_t` 标签会阻止 PHP-FPM 写入，即使文件已是 777。应按 Web PHP 进程账号（测试环境为 apache）设置归属和持久写标签：
+Room/rack configuration is stored in `data/config.json` on the **web frontend**. On SELinux-enforcing systems, ownership and chmod alone cannot make an `usr_t` file writable by PHP-FPM. Configure the web PHP pool owner (the test environment uses apache) and a persistent writable label:
 
 ```bash
 # Tested Zabbix 8 frontend; adjust the path and PHP pool user for your installation.
@@ -99,17 +99,17 @@ semanage fcontext -a -t httpd_sys_rw_content_t '/usr/share/zabbix/ui/modules/zab
 restorecon -RFv /usr/share/zabbix/ui/modules/zabbix_rack/data
 ```
 
-若规则已存在，使用 `semanage fcontext -m` 更新。不要使用 chmod 777 或关闭 SELinux；写标签仅限 data 目录。
+If the local fcontext rule already exists, use `semanage fcontext -m`. Do not use chmod 777 or disable SELinux. Keep writable labels restricted to the data directory.
 
-代码已改为临时文件写入后原子替换，失败保留旧文件及缓存，并将错误写入 PHP/Web 日志，避免 warning 破坏 AJAX JSON。已通过 Chromium 新增、刷新持久化、编辑、删除闭环，临时机房已清理；失败保护回归使用独立临时目录。
+Saving now writes a temporary file and atomically replaces the configuration. A failed write leaves the previous file/cache intact, logs an actionable error, and preserves valid AJAX JSON. Chromium create/refresh/edit/delete checks passed, and temporary rooms were removed. Storage failure tests use isolated temporary directories.
 
-- **性能考虑**：对于大型环境，建议适当限制查询结果数量。
-- **数据准确性**：显示的信息基于Zabbix数据库的当前状态。
-- **权限要求**：用户需要适当权限访问机柜视图。机柜视图按机房配置的 Zabbix 用户组/用户过滤可见范围；**Super Admin** 可查看全部机房。**机柜配置**页面仅 **Super Admin** 可访问。
+- **Performance**: For large environments, consider limiting query result quantities appropriately.
+- **Data Accuracy**: Displayed information is based on the current state of the Zabbix database.
+- **Permission Requirements**: Users need appropriate permissions to access rack view. Rack view is filtered by room-level settings; **Super Admin** can view all rooms. **Rack Config** is available to **Super Admin** only.
 
-### 机房访问权限（config.json）
+### Room access control (config.json)
 
-在 `data/config.json` 的机房条目中，可**可选**增加 `user_groups`、`users` 字段（字符串 ID 数组）。未配置时与旧版完全兼容，机房对所有用户可见：
+You may **optionally** add `user_groups` and `users` (arrays of string IDs) to each room in `data/config.json`. When omitted, behavior matches older versions and the room is visible to all users:
 
 ```json
 {
@@ -121,58 +121,60 @@ restorecon -RFv /usr/share/zabbix/ui/modules/zabbix_rack/data
 }
 ```
 
-- `user_groups`：允许访问的 Zabbix 用户组 ID 列表
-- `users`：允许访问的 Zabbix 用户 ID 列表
-- 两者均为空或未设置：全员可见
-- 任一匹配即可访问（用户组 **或** 用户）
-- 配置页保存时若选中全部用户组 **且** 全部用户，将自动规范化为全员可见（不写权限字段）
+- `user_groups`: Zabbix user group IDs allowed to access the room
+- `users`: Zabbix user IDs allowed to access the room
+- Empty or missing both fields: visible to all users
+- Access is granted if the user matches **either** a listed group **or** user
+- Saving with all groups **and** all users selected is normalized to public (no permission fields written)
 
-### 机柜正/背面（主机标签）
+### Rack front / rear (host tags)
 
-主机分配到机柜时，可通过 Zabbix 主机标签区分正/背面：
+Host placement can be tagged for front or rear side:
 
-| 标签名 | 值 | 说明 |
-|--------|-----|------|
-| `rack_side` | `back` | 机柜**背面**；未设置或非 `back` 均视为**正面** |
+| Tag | Value | Meaning |
+|-----|-------|---------|
+| `rack_side` | `back` | **Rear** side; missing tag or any other value means **front** |
 
-- 机柜视图顶部可切换「正面 / 背面」，同一 U 位在正反面可分别放置不同主机
-- 分配到正面时不写入 `rack_side` 标签（兼容旧数据）
-- 分配到背面时写入 `rack_side=back`
+- Use the **Front / Rear** toggle in rack view; the same U slot can host different devices on each side
+- Front assignments omit the `rack_side` tag (backward compatible)
+- Rear assignments write `rack_side=back`
 
-1. 删除机房会同时删除该机房下的所有机柜配置
-2. 从机柜移除主机只会删除主机上的机柜相关标签，不会删除主机本身
-3. 分配主机时会自动检测 U 位冲突
-4. 建议定期备份 `data/config.json` 文件
+### Important
 
-### 目录归属与保存提示
+1. Deleting a room will also delete all rack configurations under that room
+2. Removing a host from a rack only deletes the rack-related tags on the host; it does not delete the host itself
+3. U position conflicts are automatically detected when assigning hosts
+4. It is recommended to regularly back up the `data/config.json` file
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+### Directory ownership and save errors
 
-## 开发
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-插件基于Zabbix模块框架开发。文件结构：
+## Development
 
-- `manifest.json`：模块配置
-- `Module.php`：菜单注册
-- `actions/RackManage.php`：机柜管理业务逻辑处理
-- `actions/RackView.php`：机柜视图业务逻辑处理
-- `views/rack.manage.php`：机柜管理页面视图
-- `views/rack.view.php`：机柜视图页面视图
-- `lib/LanguageManager.php`：国际化语言管理
-- `lib/ViewRenderer.php`：视图渲染工具
-- `lib/ZabbixVersion.php`：版本兼容工具
-- `lib/RackConfig.php`：机柜配置管理
-- `lib/RackPermission.php`：机房访问权限（Zabbix 用户组/用户）
-- `lib/HostRackManager.php`：主机机柜关联管理
+The module is built on the Zabbix module framework. File structure:
 
-如需扩展，可参考[Zabbix模块开发文档](https://www.zabbix.com/documentation/7.0/en/devel/modules)。
+- `manifest.json`: Module configuration
+- `Module.php`: Menu registration
+- `actions/RackManage.php`: Rack management business logic
+- `actions/RackView.php`: Rack view business logic
+- `views/rack.manage.php`: Rack management page view
+- `views/rack.view.php`: Rack view page view
+- `lib/LanguageManager.php`: Internationalization language management
+- `lib/ViewRenderer.php`: View rendering utilities
+- `lib/ZabbixVersion.php`: Version compatibility utilities
+- `lib/RackConfig.php`: Rack configuration management
+- `lib/RackPermission.php`: Room access control (Zabbix user groups/users)
+- `lib/HostRackManager.php`: Host-rack association management
 
-## 模块配置
+For extensions, refer to [Zabbix module documentation](https://www.zabbix.com/documentation/7.0/en/devel/modules).
 
-### 界面主题
+## Module Configuration
 
-机柜视图和配置页面采用 Element Plus 风格，使用本地 CSS 和 JavaScript，无需 Vue 或外部 CDN。保留原生 select、现有表单校验及六级告警区分。升级时请同时复制 views 和 assets 目录；共享主题位于 assets/css/element.css，消息和确认框位于 assets/js/element.js。
+### UI theme
 
-## 许可证
+Rack view and configuration use an Element Plus-inspired theme with local CSS and JavaScript, without Vue or an external CDN. Native selects, form validation, and all six alarm levels are retained. Deploy both views and assets when upgrading. The shared theme is in assets/css/element.css; messages and confirmation dialogs are in assets/js/element.js.
 
-本项目遵循Zabbix的许可证。详情请见[Zabbix许可证](https://www.zabbix.com/license)。
+## License
+
+This project follows the Zabbix license. For details, see [Zabbix License](https://www.zabbix.com/license).

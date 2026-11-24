@@ -1,410 +1,410 @@
-# Zabbix Modules 集合
+# Zabbix Modules Collection
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
 <div>
   <img src="images/wechat.jpg" width="20%" alt="wechat">
   <img src="images/gongzhonghao.jpg" width="26%" alt="gongzhonghao">
 </div>
 
-## 自2026年11月15日起
+## Starting from November 15th, 2026
 
-![本项目被访问次数](https://zabbix.huoxingxiaoliu.com/api/visits?repository=zabbix_modules)
+![Project visits](https://zabbix.huoxingxiaoliu.com/api/visits?repository=zabbix_modules)
 
-## 描述
+## Description
 
-这是一个包含多个Zabbix模块的项目集合，每个模块都是独立的，为Zabbix监控系统提供额外的功能。
+This collection contains independent modules that extend the Zabbix monitoring system.
 
-## 界面语言
+## Interface language
 
-在 Zabbix 用户资料中选择 **Русский** 即可使用俄语界面，选择 **Português (pt_BR)** 即可使用巴西葡萄牙语界面。用户资料选择默认语言时，模块会继承 Zabbix 的系统默认语言（`default_lang`）。
+The modules are available in English and Brazilian Portuguese. Choose **Português (pt_BR)** in your Zabbix user profile to use them in Brazilian Portuguese; any other language uses English. If your profile uses the default language, the modules inherit the Zabbix system default (`default_lang`).
 
-## 模块列表
+## Modules
 
 ![1](images/1.png)
 
-| 序号 | 模块 | 版本号 | 功能介绍 |
+| No. | Module | Version | What it does |
 | ---: | --- | --- | --- |
-| 1 | [Zabbix Reports](./zabbix_reports/README.md) | `1.1.0` | 生成日报、周报、月报和自定义时段报表，支持在线预览、PDF 导出和邮件发送。 |
-| 2 | [Zabbix CMDB](./zabbix_cmdb/README.md) | `1.1.0` | 集中查看主机资产和配置信息，支持按主机名或 IP 地址搜索，并按主机组筛选。 |
-| 3 | [Zabbix Graph Trees](./zabbix_graphtrees/README.md) | `1.0.0` | 以树形结构浏览主机组和主机，按标签筛选监控项并查看自动刷新的图表。 |
-| 4 | [Zabbix Rack](./zabbix_rack/README.md) | `1.1.0` | 管理机房和机柜，以可视化方式将 Zabbix 主机分配到指定 U 位。 |
-| 5 | [Zabbix SNMP](./zabbix_snmp/README.md) | `1.0.0` | 浏览 MIB、执行 SNMP Walk 并解析 OID，可从结果创建监控项或批量生成 SNMP 模板。 |
-| 6 | [Zabbix JumpServer](./zabbix_jumpserver/README.md) | `1.0.0` | 将 Zabbix 主机和主机组同步到 JumpServer，自动创建缺失节点，并可从 Zabbix 直接打开资产连接。 |
-| 7 | [IM 同步助手（Zabbix IM）](./zabbix_im/README.md) | `1.0.0` | 同步企业微信、飞书或钉钉的部门和成员，创建或匹配 Zabbix 用户并加入对应用户组。 |
-| 8 | [Zabbix Clonehosts](./zabbix_clonehosts/README.md) | `1.3.0` | 通过 CSV 或在线表格批量克隆已有主机配置，支持导入预览、冲突检测、自动创建主机组和进度反馈。 |
-| 9 | [Zabbix IPAM](./zabbix_ipam/README.md) | `1.5.0` | 管理 IPv4 地址段，执行异步 ICMP 存活扫描，并按接口 IP 自动关联 Zabbix 主机。 |
-| 10 | [Zabbix Switch Visual](./zabbix_switch_visual/README.md) | `1.6.0` | 在仪表盘展示交换机机箱、RJ45/SFP 端口状态、速率、流量趋势和设备状态。 |
-| 11 | [Zabbix Auto Topology Map](./zabbix_auto_topology_map/README.md) | `1.0.37` | 通过 SNMP 读取 LLDP、CDP 和 EDP 邻居信息，自动发现网络链路并生成可编辑的 Zabbix 拓扑图。 |
-| 12 | [Zabbix 导入导出](./zabbix_export_import/README.md) | `1.3.1` | 通过 CSV 或 JSON 迁移主机、监控模板和主机本地监控项，支持导入预览和重复项处理。 |
-| 13 | [Zabbix Rebrand Logo（品牌设置）](./zabbix_rebrand_logo/README.md) | `1.1.0` | 更换登录页和侧边栏标志及浏览器图标，并自定义服务器名称、页脚和帮助链接。 |
-| 14 | [Zabbix Database Export（数据库导出）](./zabbix_database_export/README.md) | `3.0.4` | 自动识别 MySQL、MariaDB 或 PostgreSQL，显示数据库版本并导出表结构和数据，支持下载或服务器保存。 |
-| 15 | [Zabbix LLDP Topology](./zabbix_lldp/README.md) | `1.0.0-beta` | 根据 Zabbix 的 LLDP 发现监控项绘制设备邻居拓扑，支持按主机组或主机筛选和查看链路端口。 |
-| 16 | [Zabbix Backup and Restore（配置备份与还原）](./zabbix_backup_restore/README.md) | `1.1.0` | 按类别将主机、模板、用户和权限等 Zabbix 配置导出为 YAML，支持在目标实例预览并还原。 |
+| 1 | [Zabbix Reports](./zabbix_reports/README.md) | `1.1.0` | Generate daily, weekly, monthly, and custom-period reports with previews, PDF export, and email delivery. |
+| 2 | [Zabbix CMDB](./zabbix_cmdb/README.md) | `1.1.0` | View host inventory and configuration in one place, search by host name or IP address, and filter by host group. |
+| 3 | [Zabbix Graph Trees](./zabbix_graphtrees/README.md) | `1.0.0` | Browse host groups and hosts in a tree, filter monitoring items by tag, and view auto-refreshing charts. |
+| 4 | [Zabbix Rack](./zabbix_rack/README.md) | `1.1.0` | Manage server rooms and racks, and visually assign Zabbix hosts to individual rack units. |
+| 5 | [Zabbix SNMP](./zabbix_snmp/README.md) | `1.0.0` | Browse MIBs, run SNMP walks, resolve OIDs, and create monitoring items or build SNMP templates in bulk from the results. |
+| 6 | [Zabbix JumpServer](./zabbix_jumpserver/README.md) | `1.0.0` | Sync Zabbix hosts and host groups to JumpServer, create missing nodes, and open asset connections directly from Zabbix. |
+| 7 | [IM Sync Assistant (Zabbix IM)](./zabbix_im/README.md) | `1.0.0` | Sync departments and members from WeCom, Feishu, or DingTalk, then match or create Zabbix users and assign them to the corresponding user groups. |
+| 8 | [Zabbix Clonehosts](./zabbix_clonehosts/README.md) | `1.3.0` | Clone existing host configurations in bulk from CSV or an online table, with import previews, conflict detection, automatic host group creation, and progress updates. |
+| 9 | [Zabbix IPAM](./zabbix_ipam/README.md) | `1.5.0` | Manage IPv4 ranges, run asynchronous ICMP reachability scans, and match addresses to Zabbix hosts by interface IP. |
+| 10 | [Zabbix Switch Visual](./zabbix_switch_visual/README.md) | `1.6.0` | Visualize switch chassis, RJ45 and SFP port status, link speed, traffic trends, and device health in a dashboard widget. |
+| 11 | [Zabbix Auto Topology Map](./zabbix_auto_topology_map/README.md) | `1.0.37` | Discover network links from LLDP, CDP, and EDP neighbor data over SNMP and generate editable Zabbix topology maps. |
+| 12 | [Zabbix Import/Export](./zabbix_export_import/README.md) | `1.3.1` | Transfer hosts, monitoring templates, and host-level items via CSV or JSON, with import previews and options for handling duplicates. |
+| 13 | [Zabbix Rebrand Logo](./zabbix_rebrand_logo/README.md) | `1.1.0` | Replace the login and sidebar logos and browser favicon, and customize the server name, footer, and help link. |
+| 14 | [Zabbix Database Export](./zabbix_database_export/README.md) | `3.0.4` | Detect MySQL, MariaDB, or PostgreSQL, display the database version, and export structures and data to a SQL download or server file. |
+| 15 | [Zabbix LLDP Topology](./zabbix_lldp/README.md) | `1.0.0-beta` | Draw neighbor topology from Zabbix LLDP discovery items, filter by host group or host, and inspect link ports. |
+| 16 | [Zabbix Backup and Restore](./zabbix_backup_restore/README.md) | `1.1.0` | Export Zabbix configuration such as hosts, templates, users, and permissions to YAML by category, then preview and restore it on a target instance. |
 
-## 兼容性测试结果
+## Compatibility Test Results
 
-| 模块 | 页数/环境 | 6.0 | 7.0 | 8.0 | 详细说明 |
+| Module | Pages per environment | 6.0 | 7.0 | 8.0 | Details |
 | --- | ---: | --- |--- | --- | --- |
-| `zabbix_assets_export_import` | 1 | 通过 | 通过 | 通过 | [README](zabbix_assets_export_import/README.md) |
-| `zabbix_auto_topology_map` | 1 | 通过 | 通过 | 通过 | [README](zabbix_auto_topology_map/README.md) |
-| `zabbix_backup_restore` | 1 | 通过 | 通过 | 通过 | [README](zabbix_backup_restore/README.md) |
-| `zabbix_clonehosts` | 1 | 通过 | 通过 | 通过 | [README](zabbix_clonehosts/README.md) |
-| `zabbix_clouds` | 2 | 通过 | 通过 | 通过 | [README](zabbix_clouds/README.md) |
-| `zabbix_cmdb` | 3 | 通过 | 通过 | 通过 | [README](zabbix_cmdb/README.md) |
-| `zabbix_database_export` | 1 | 通过 | 通过 | 通过 | [README](zabbix_database_export/README.md) |
-| `zabbix_export_import` | 3 | 通过 | 通过 | 通过 | [README](zabbix_export_import/README.md) |
-| `zabbix_graphtrees` | 1 | 通过 | 通过 | 通过 | [README](zabbix_graphtrees/README.md) |
-| `zabbix_im` | 2 | 通过 | 通过 | 通过 | [README](zabbix_im/README.md) |
-| `zabbix_ipam` | 3 | 通过 | 通过 | 通过 | [README](zabbix_ipam/README.md) |
-| `zabbix_jumpserver` | 1 | 通过 | 通过 | 通过 | [README](zabbix_jumpserver/README.md) |
-| `zabbix_lldp` | 1 | 通过 | 通过 | 通过 | [README](zabbix_lldp/README.md) |
-| `zabbix_performance_report` | 2 | 通过 | 通过 | 通过 | [README](zabbix_performance_report/README.md) |
-| `zabbix_rack` | 2 | 通过 | 通过 | 通过 | [README](zabbix_rack/README.md) |
-| `zabbix_rebrand_logo` | 1 | 通过 | 通过 | 通过 | [README](zabbix_rebrand_logo/README.md) |
-| `zabbix_reports` | 4 | 通过 | 通过 | 通过 | [README](zabbix_reports/README.md) |
-| `zabbix_rightsizing` | 1 | 通过 | 通过 | 通过 | [README](zabbix_rightsizing/README.md) |
-| `zabbix_snmp` | 2 | 通过 | 通过 | 通过 | [README](zabbix_snmp/README.md) |
-| `zabbix_switch_backup` | 1 | 通过 | 通过 | 通过 | [README](zabbix_switch_backup/README.md) |
-| `zabbix_switch_visual` | 1 | 通过 | 通过 | 通过 | [README](zabbix_switch_visual/README.md) |
+| `zabbix_assets_export_import` | 1 | Pass | Pass | Pass | [README](zabbix_assets_export_import/README.md) |
+| `zabbix_auto_topology_map` | 1 | Pass | Pass | Pass | [README](zabbix_auto_topology_map/README.md) |
+| `zabbix_backup_restore` | 1 | Pass | Pass | Pass | [README](zabbix_backup_restore/README.md) |
+| `zabbix_clonehosts` | 1 | Pass | Pass | Pass | [README](zabbix_clonehosts/README.md) |
+| `zabbix_clouds` | 2 | Pass | Pass | Pass | [README](zabbix_clouds/README.md) |
+| `zabbix_cmdb` | 3 | Pass | Pass | Pass | [README](zabbix_cmdb/README.md) |
+| `zabbix_database_export` | 1 | Pass | Pass | Pass | [README](zabbix_database_export/README.md) |
+| `zabbix_export_import` | 3 | Pass | Pass | Pass | [README](zabbix_export_import/README.md) |
+| `zabbix_graphtrees` | 1 | Pass | Pass | Pass | [README](zabbix_graphtrees/README.md) |
+| `zabbix_im` | 2 | Pass | Pass | Pass | [README](zabbix_im/README.md) |
+| `zabbix_ipam` | 3 | Pass | Pass | Pass | [README](zabbix_ipam/README.md) |
+| `zabbix_jumpserver` | 1 | Pass | Pass | Pass | [README](zabbix_jumpserver/README.md) |
+| `zabbix_lldp` | 1 | Pass | Pass | Pass | [README](zabbix_lldp/README.md) |
+| `zabbix_performance_report` | 2 | Pass | Pass | Pass | [README](zabbix_performance_report/README.md) |
+| `zabbix_rack` | 2 | Pass | Pass | Pass | [README](zabbix_rack/README.md) |
+| `zabbix_rebrand_logo` | 1 | Pass | Pass | Pass | [README](zabbix_rebrand_logo/README.md) |
+| `zabbix_reports` | 4 | Pass | Pass | Pass | [README](zabbix_reports/README.md) |
+| `zabbix_rightsizing` | 1 | Pass | Pass | Pass | [README](zabbix_rightsizing/README.md) |
+| `zabbix_snmp` | 2 | Pass | Pass | Pass | [README](zabbix_snmp/README.md) |
+| `zabbix_switch_backup` | 1 | Pass | Pass | Pass | [README](zabbix_switch_backup/README.md) |
+| `zabbix_switch_visual` | 1 | Pass | Pass | Pass | [README](zabbix_switch_visual/README.md) |
 
-## 模块介绍
+## Module Overviews
 
 ### 1. Zabbix Reports
 
-**简介**：用于生成每日、周、月报表的Zabbix前端模块，支持报表预览、PDF导出和邮件推送功能。
+A Zabbix frontend module for generating daily, weekly, and monthly reports, with report previews, PDF export, and email delivery.
 
-**功能特性**：
+**Features**
 
-- 支持每日、周、月报表生成
-- 报警数量和状态统计
-- 显示报警最多的主机（前10名）
-- 显示CPU和内存使用率最高的主机（前10名）
-- 页面预览报表
-- 手动导出PDF
-- 邮件推送报表（HTML格式）
+- Generate daily, weekly, and monthly reports.
+- Summarize alert counts and statuses.
+- List the 10 hosts with the most alerts.
+- List the 10 hosts with the highest CPU and memory utilization.
+- Preview reports in the frontend.
+- Export reports to PDF manually.
+- Send HTML reports by email.
 
 ![1](zabbix_reports/images/1.png)
 ![2](zabbix_reports/images/2.png)
 
-**文档链接**：[zabbix_reports/README.md](./zabbix_reports/README.md)
+[Documentation](./zabbix_reports/README.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
 ### 2. Zabbix CMDB
 
-**简介**：用于配置管理数据库（CMDB）的Zabbix前端模块，提供主机信息的集中查看和管理功能。
+A configuration management database (CMDB) frontend module for viewing and managing host information in one place.
 
-**功能特性**：
+**Features**
 
-- 支持通过主机名或IP地址进行搜索
-- 支持按主机分组进行筛选
-- 显示主机名、IP地址、接口方式、CPU总量、内存总量、主机分组等信息
-- 支持中文、英文和俄语界面国际化
-- 响应式设计，适配不同屏幕尺寸
+- Search by host name or IP address.
+- Filter by host group.
+- View host names, IP addresses, interface types, CPU and memory totals, host groups, and other details.
+- Use the interface in English or Brazilian Portuguese.
+- Use the responsive layout on different screen sizes.
 
 ![1](zabbix_cmdb/images/1.jpg)
 ![2](zabbix_cmdb/images/2.png)
 ![3](zabbix_cmdb/images/3.jpg)
 
-**文档链接**：[zabbix_cmdb/README.md](./zabbix_cmdb/README.md)
+[Documentation](./zabbix_cmdb/README.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
 ### 3. Zabbix Graph Trees
 
-**简介**：用于以树形结构浏览监控数据的Zabbix前端模块，提供主机分组树形导航、监控项筛选和实时图表展示功能。
+A Zabbix frontend module for browsing monitoring data through a host-group tree, filtering items, and viewing live charts.
 
-**功能特性**：
+**Features**
 
-- 树形结构浏览主机分组和主机
-- 支持按标记（Tag）和标记值筛选监控项
-- 监控项多选下拉框，灵活选择要展示的图表
-- SVG折线图实时展示监控数据
-- 多图表tooltip同步显示
-- 图表放大全屏查看
-- 自动刷新功能（支持5/10/20/30/60秒间隔）
-- 多种时间范围选择（1小时至30天）
-- 支持中文、英文和俄语界面国际化
+- Browse host groups and hosts in a tree.
+- Filter items by tag and tag value.
+- Select multiple items from a drop-down list to choose which charts to display.
+- View live monitoring data in SVG line charts.
+- Synchronize tooltips across charts.
+- Expand charts to full screen.
+- Refresh automatically at intervals of 5, 10, 20, 30, or 60 seconds.
+- Select time ranges from 1 hour to 30 days.
+- Use the interface in English or Brazilian Portuguese.
 
 ![1](zabbix_graphtrees/images/1.png)
 ![2](zabbix_graphtrees/images/2.png)
 
-**文档链接**：[zabbix_graphtrees/README.md](./zabbix_graphtrees/README.md)
+[Documentation](./zabbix_graphtrees/README.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
 ### 4. Zabbix Rack
 
-**简介**：用于数据中心机柜可视化和主机位置管理的Zabbix前端模块，支持机房和机柜的配置，以及主机的可视化分配。
+A Zabbix frontend module for visualizing data center racks and tracking host locations. Configure server rooms and racks, then assign hosts visually.
 
-**功能特性**：
+**Features**
 
-- 机房管理：创建、编辑、删除机房
-- 机柜管理：创建、编辑、删除机柜，支持1-60U高度配置
-- 机柜可视化：42U机柜垂直布局，U位占用状态显示
-- 主机分配：将Zabbix主机分配到机柜指定U位
-- 搜索功能：按机柜或主机名称搜索
-- 支持中文、英文和俄语界面国际化
-- 响应式设计，适配不同屏幕尺寸
+- Create, edit, and delete server rooms.
+- Create, edit, and delete racks with configurable heights from 1U to 60U.
+- View occupied rack units in a vertical 42U rack layout.
+- Assign Zabbix hosts to specific rack units.
+- Search by rack or host name.
+- Use the interface in English or Brazilian Portuguese.
+- Use the responsive layout on different screen sizes.
 
 ![1](zabbix_rack/images/1.png)
 ![2](zabbix_rack/images/2.png)
 ![3](zabbix_rack/images/3.png)
 
-**文档链接**：[zabbix_rack/README.md](./zabbix_rack/README.md)
+[Documentation](./zabbix_rack/README.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
 ### 5. Zabbix SNMP
 
-**简介**：SNMP 辅助助手 Zabbix 前端模块，提供 MIB 浏览和 SNMP Walk 功能，支持解析 OID、一键创建监控项和批量创建 SNMP 模板。
+An SNMP assistant for the Zabbix frontend. Browse MIBs, run SNMP walks, resolve OIDs, create an item from a result, or build SNMP templates in bulk.
 
-**功能特性**：
+**Features**
 
-- MIB 浏览：自动扫描常见 MIB 目录，表格展示对象的 OID、解析 OID、语法/权限/状态，支持查看源码
-- SNMP Walk：自动读取主机 SNMP 连接参数（v1/v2c/v3），将结果解析为表格并支持客户端分页
-- 查看原数据、复制 snmpget 命令 / OID
-- 选中单条结果一键创建监控项（自动映射数据类型）
-- 勾选多条结果批量创建 SNMP 模板及监控项
-- 支持中文、英文和俄语界面国际化
+- Scan common MIB directories automatically. View OIDs, resolved OIDs, syntax, permissions, and status in a table, and open MIB source files.
+- Read the host's SNMP v1, v2c, or v3 connection settings automatically and display parsed walk results in a table with client-side pagination.
+- View raw results and copy `snmpget` commands or OIDs.
+- Create an item from a single result with automatic data-type mapping.
+- Select multiple results to create SNMP templates and items in bulk.
+- Use the interface in English or Brazilian Portuguese.
 
 ![1](zabbix_snmp/images/1.png)
 ![2](zabbix_snmp/images/2.png)
 ![3](zabbix_snmp/images/3.png)
 
-**文档链接**：[zabbix_snmp/README.md](./zabbix_snmp/README.md)
+[Documentation](./zabbix_snmp/README.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
 ### 6. Zabbix JumpServer
 
-**简介**：用于将 Zabbix 主机和主机分组同步到 JumpServer 堡垒机的 Zabbix 前端模块，支持批量推送、自动创建节点，并可从 Zabbix 一键跳转连接主机。
+A Zabbix frontend module for synchronizing hosts and host groups with the JumpServer bastion host. It can push assets in bulk, create missing nodes, and open a host connection directly from Zabbix.
 
-**功能特性**：
+**Features**
 
-- 顶部主机分组、主机、告警状态下拉框及 IP/主机名搜索，默认展示所有分组和主机
-- 一键「推送所有主机组」「推送所有主机」，缺失的 JumpServer 节点自动创建
-- 「获取 JumpServer 资产 ID」：从 JumpServer 按 IP 反向匹配并写回资产 ID 标记
-- 自动识别主机平台（Linux / Windows），创建或更新 JumpServer 资产；创建时可按账号模板自动关联登录账号
-- 告警状态列按严重度显示数量，行可展开查看全部告警明细
-- JumpServer 资产 ID 以标记形式写回 Zabbix 主机；已推送主机悬停可重新推送
-- 表格最后一列「连接」按钮，一键跳转到 JumpServer 主机连接页面
-- 支持中文、英文和俄语界面国际化
+- Filter by host group, host, or alert status, and search by IP address or host name. By default, all groups and hosts are shown.
+- Push all host groups or all hosts in one click and create missing JumpServer nodes automatically.
+- Use **Get JumpServer Asset ID** to match assets in JumpServer by IP address and write their IDs back to Zabbix as tags.
+- Detect Linux and Windows hosts and create or update JumpServer assets. When creating an asset, optionally associate a login account from an account template.
+- View alert counts by severity and expand a row for full alert details.
+- Store JumpServer asset IDs as tags on Zabbix hosts. Hover over an already-pushed host to push it again.
+- Use **Connect** in the last column to open the host's JumpServer connection page.
+- Use the interface in English or Brazilian Portuguese.
 
 ![1](zabbix_jumpserver/images/1.png)
 
-**文档链接**：[zabbix_jumpserver/README.md](./zabbix_jumpserver/README.md)
+[Documentation](./zabbix_jumpserver/README.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
-### 7. IM同步助手
+### 7. IM Sync Assistant
 
-**简介**：将**企业微信**、**飞书**、**钉钉**的组织架构同步到 Zabbix **用户组**，并将 IM 成员匹配或创建为 Zabbix 用户、加入对应用户组的 Zabbix 前端模块。
+A Zabbix frontend module that synchronizes the organizational structures of **WeCom**, **Feishu**, and **DingTalk** with Zabbix user groups. It matches members to existing Zabbix users or creates new users and adds them to the corresponding groups.
 
 ![1](zabbix_im/images/1.png)
 ![2](zabbix_im/images/2.png)
 ![3](zabbix_im/images/3.png)
 
-**功能特性**：
+**Features**
 
-- 多平台支持：企业微信（WeCom）、飞书（Feishu）、钉钉（DingTalk）
-- Web 界面管理同步凭据（**Users → 同步设置**），同一时间仅启用一套配置
-- 部门同步：按 IM 部门创建/更新 Zabbix 用户组，可选完整路径命名
-- 用户同步：匹配或自动创建 Zabbix 用户并加入用户组；新用户密码自动生成（12 位）并在结果中展示一次
-- 钉钉用户：无手机号时自动将姓名转为拼音作为 Zabbix 用户名
-- 预览模式：同步前预览部门与用户匹配情况
-- 支持中文、英文和俄语界面国际化
+- Support for WeCom, Feishu, and DingTalk.
+- Manage synchronization credentials through **Users → Sync Settings**, with one configuration active at a time.
+- Create or update Zabbix user groups by department, with an option to use full department paths as names.
+- Match or create Zabbix users and add them to the corresponding groups. New users receive automatically generated 12-character passwords, shown once in the results.
+- For DingTalk users without a phone number, convert their names to Pinyin for their Zabbix usernames.
+- Preview department and user matches before synchronization.
+- Use the interface in English or Brazilian Portuguese.
 
-**文档链接**：[zabbix_im/README.md](./zabbix_im/README.md)（[English](./zabbix_im/README_en.md)）
+[English documentation](./zabbix_im/README.md) · [Documentação em português](./zabbix_im/README_pt-BR.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
 ### 8. Zabbix Clonehosts
 
-**简介**：基于已有监控主机的配置批量克隆导入大量主机的 Zabbix 前端模块，支持 CSV 文件导入和在线表格录入两种方式，并提供预览、冲突检测、选择性导入和实时导入进度反馈功能。
+A Zabbix frontend module for creating hosts in bulk by cloning an existing monitored host. It supports CSV import and browser-based table entry, with previews, conflict detection, selective import, and live progress.
 
-**功能特性**：
+**Features**
 
-- 源主机克隆：选择任意已有监控主机作为克隆模板，其接口、群组、模板、标签、宏、TLS、IPMI、资产模式等全部配置均可被继承
-- 双模式数据录入：CSV 文件上传（UTF-8/GBK 自动识别，可下载模板）/ 在线表格录入（增删行、清空、实时校验）
-- 智能字段继承：仅主机名称和接口 IP 必填，其他字段留空时自动继承源主机配置
-- 主机群组自动创建：CSV 中指定的主机群组若不存在，自动调用 API 创建后再关联
-- 预览与冲突检测：导入前全面预览，自动检测主机名冲突、必填字段缺失、批次内重复、与已有主机/模板同名冲突；状态标识区分「已存在」「将新建」「未找到」「继承自源主机」
-- 选择性导入：预览页支持勾选/取消要导入的主机，冲突主机自动跳过，就绪主机可单独取消导入
-- 返回编辑：预览页可一键带着数据返回在线表格录入页，方便对非就绪主机进行编辑，不会清空已录入数据
-- 导入进度反馈：逐台 AJAX 创建主机，实时进度条和成功/失败计数
-- 结果报告导出：导入完成后可下载 CSV 格式的结果报告（含主机名、IP、主机ID、结果、错误信息）
-- 支持中文、英文和俄语界面国际化
+- Use any existing monitored host as the source and inherit its interfaces, groups, templates, tags, macros, TLS, IPMI, inventory mode, and other settings.
+- Upload a CSV file with automatic UTF-8 or GBK detection and a downloadable template, or enter data in the browser with row editing, clearing, and live validation.
+- Provide a host name and interface IP address. Blank optional fields inherit the source host's settings.
+- Automatically create missing host groups specified in the CSV through the Zabbix API and associate them with the new hosts.
+- Preview the import and detect host name conflicts, missing required fields, duplicates within the batch, and name collisions with existing hosts or templates. Status labels distinguish existing entries, entries to be created, missing entries, and values inherited from the source host.
+- Select which hosts to import in the preview. Conflicting hosts are skipped automatically, and ready hosts can be deselected individually.
+- Return from the preview to the table editor with the entered data intact to correct hosts that are not ready.
+- Create hosts individually through AJAX and show live progress with success and failure counts.
+- Download a CSV report with host name, IP address, host ID, result, and error details.
+- Use the interface in English or Brazilian Portuguese.
 
 ![1](zabbix_clonehosts/images/image.png)
 ![2](zabbix_clonehosts/images/image-1.png)
 ![3](zabbix_clonehosts/images/image-2.png)
 ![4](zabbix_clonehosts/images/image-3.png)
 
-**文档链接**：[zabbix_clonehosts/README.md](./zabbix_clonehosts/README.md)（[English](./zabbix_clonehosts/README_en.md)）
+[English documentation](./zabbix_clonehosts/README.md) · [Documentação em português](./zabbix_clonehosts/README_pt-BR.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
 ### 9. Zabbix IPAM
 
-**简介**：用于集中管理 IPv4 地址段并执行异步 ICMP 存活扫描的 Zabbix 前端模块，可按主机接口 IP 自动关联 Zabbix 主机。
+A Zabbix frontend module for managing IPv4 address ranges and running asynchronous ICMP host discovery. It can associate addresses with Zabbix hosts by interface IP.
 
-**功能特性**：
+**Features**
 
-- 支持 CIDR 和 IPv4 起止地址格式，单个地址段最多 65,536 个地址
-- 基于 `fping` 的 ICMP 存活扫描，不探测 TCP 端口
-- 大网段自动分片，PHP CLI 后台执行，支持 `pcntl` 多进程
-- 支持手动扫描与 crontab 定时扫描，并实时显示任务进度
-- IP 使用矩阵、地址明细、主机关联、筛选与分页
-- 支持中文、英文和俄语界面国际化
+- Accept CIDR notation and IPv4 start and end addresses, with up to 65,536 addresses per range.
+- Check host reachability over ICMP using `fping`, without TCP port probing.
+- Split large networks into batches and run scans in the background through PHP CLI, with support for `pcntl` multiprocessing.
+- Start scans manually or schedule them through crontab and view progress as they run.
+- View an IP usage matrix, address details, and host associations, with filtering and pagination.
+- Use the interface in English or Brazilian Portuguese.
 
 ![1](zabbix_ipam/images/1.png)
 ![2](zabbix_ipam/images/2.png)
 ![3](zabbix_ipam/images/3.png)
 
-**文档链接**：[zabbix_ipam/README.md](./zabbix_ipam/README.md)（[English](./zabbix_ipam/README_en.md)）
+[English documentation](./zabbix_ipam/README.md) · [Documentação em português](./zabbix_ipam/README_pt-BR.md)
 
-**兼容性**：Zabbix 6.0.x, 7.0.x, 7.4.x, 8.0.x
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x
 
 ### 10. Zabbix Switch Visual
 
-**简介**：交换机端口监控仪表盘组件，将 Zabbix 监控项呈现为交换机机箱、RJ45/SFP 端口、流量趋势和设备状态面板。
+A switch-port monitoring dashboard widget that presents Zabbix items as switch chassis, RJ45 and SFP ports, traffic trends, and device status.
 
-**功能特性**：
+**Features**
 
-- 选择单台主机或按主机群组展示多台交换机
-- 展示端口状态、速率、入/出流量、错误和告警，点击端口查看相关历史图表
-- 支持自动检测端口、堆叠成员、端口布局、SNMP 索引偏移、排除规则和手动别名
-- 展示端口及整机流量趋势，按配置显示 CPU、内存、温度、PoE、风扇等信息
-- 自定义端口样式、颜色、缩放和汇总栏，支持中文、英文和俄语界面
+- Select a single host or display multiple switches by host group.
+- View port status, speed, inbound and outbound traffic, errors, and alerts. Click a port to open its history graphs.
+- Detect ports automatically and configure stack members, port layout, SNMP index offsets, exclusions, and manual aliases.
+- View per-port and switch-wide traffic trends, with configurable CPU, memory, temperature, PoE, and fan metrics.
+- Customize port styles, colors, zoom, and the summary bar, with English and Brazilian Portuguese interfaces.
 
-![Zabbix Switch Visual 交换机端口面板](zabbix_switch_visual/images/1.png)
+![Zabbix Switch Visual switch-port panel](zabbix_switch_visual/images/1.png)
 
-**文档链接**：[zabbix_switch_visual/README.md](./zabbix_switch_visual/README.md)（[English](./zabbix_switch_visual/README_en.md)）
+[English documentation](./zabbix_switch_visual/README.md) · [Documentação em português](./zabbix_switch_visual/README_pt-BR.md)
 
-**兼容性**：当前主要面向 Zabbix 7.x；其他版本适配及验证状态见组件 README。
+**Compatibility** — Primarily targets Zabbix 7.x. See the widget README for adaptation and testing on other versions.
 
 ### 11. Zabbix Auto Topology Map
 
-**简介**：用于自动发现网络设备连接关系的 Zabbix 前端模块，通过 SNMP 读取 LLDP、CDP、EDP 邻居信息，生成可查看和编辑的网络拓扑图，与 Zabbix 原生拓扑图共用数据。
+A Zabbix frontend module that discovers network connections through LLDP, CDP, and EDP neighbor data collected over SNMP. It generates editable topology maps that share data with native Zabbix maps.
 
-**功能特性**：
+**Features**
 
-- 自动发现设备与端口链路，支持 1～10 层发现深度、未纳管设备和多端口连线
-- 支持拓扑图创建、搜索、排序、重命名、批量删除和 JSON 导出
-- 支持重新发现，可保留现有坐标、链路指标和走线配置
-- 可视化编辑主机、图片、形状和链接，支持自动曲线、直角避障和手动折点
-- 手动关联带宽及上行、下行流量监控项，支持多监控项求和与单位换算
-- 显示主机状态和问题，支持端口状态触发器匹配及报警连线变色
-- 预览画布每 60 秒刷新状态和指标，支持缩放、平移、适应窗口及原生主机菜单
-- 支持中文、英文和俄语界面国际化及深色、浅色主题
+- Discover devices and port links automatically, with a depth of 1 to 10 levels and support for unmanaged devices and multiple port links.
+- Create, search, sort, rename, bulk-delete, and export maps as JSON.
+- Rediscover the network while optionally preserving existing coordinates, link metrics, and routing settings.
+- Edit hosts, images, shapes, and links visually with automatic curves, orthogonal routing around obstacles, and manual waypoints.
+- Assign bandwidth, upstream traffic, and downstream traffic items manually, with summation across items and unit conversion.
+- Display host status and problems, match port status triggers, and change link colors when alerts occur.
+- Refresh status and metrics every 60 seconds in the preview, with zoom, pan, fit to window, and native host menus.
+- Use the interface in English or Brazilian Portuguese with light or dark themes.
 
-**文档链接**：[zabbix_auto_topology_map/README.md](./zabbix_auto_topology_map/README.md)（[English](./zabbix_auto_topology_map/README_en.md)）
+[English documentation](./zabbix_auto_topology_map/README.md) · [Documentação em português](./zabbix_auto_topology_map/README_pt-BR.md)
 
-**兼容性**：基于 Zabbix 7.0 开发，已在 7.0.28 验证；6.x 尚未实测，其他 7.x 及 8.x 版本需在目标环境验证。
+**Compatibility** — Developed for Zabbix 7.0 and verified on 7.0.28. Zabbix 6.x still needs testing, and other 7.x and 8.x versions need verification in the target environment.
 
 ### 12. Zabbix Import/Export
 
-**简介**：用于在 Zabbix 环境之间迁移主机、监控模板和主机本地监控项的前端模块，入口为「资产记录 → Zabbix 导入导出」。
+A frontend module for migrating hosts, monitoring templates, and host-level items between Zabbix environments. Open it from **Inventory → Zabbix Import/Export**.
 
-**功能特性**：
+**Features**
 
-- 支持主机、模板和监控项的 CSV / JSON 导入导出，模板页还支持 Zabbix 原生 JSON 导入
-- 支持分组筛选、跨页全选与按筛选结果导出，文件名时间跟随 Zabbix 用户时区
-- 导入前预览差异，支持重复处理策略，默认拦截脚本等执行类配置
-- 界面自动跟随 Zabbix 用户语言，内置简体中文、英文和俄语
+- Import and export hosts, templates, and items as CSV or JSON. The template page also supports native Zabbix JSON imports.
+- Filter by group, select across pages, and export filtered results. Filename timestamps use the Zabbix user's time zone.
+- Preview differences before importing and choose how to handle duplicates. Scripts and other executable configuration are blocked by default.
+- Follow the Zabbix user's language setting with built-in English and Brazilian Portuguese translations.
 
-![Zabbix Import/Export 主机导入导出](zabbix_export_import/images/hosts.jpg)
+![Zabbix Import/Export host transfer](zabbix_export_import/images/hosts.jpg)
 
-**文档链接**：[zabbix_export_import/README.md](./zabbix_export_import/README.md)（[English](./zabbix_export_import/README_en.md)）
+[English documentation](./zabbix_export_import/README.md) · [Documentação em português](./zabbix_export_import/README_pt-BR.md)
 
-**兼容性**：已在 Zabbix 7.0.32 验证；提供 6.0 / 7.4 适配，需在目标环境验证。
+**Compatibility** — Verified on Zabbix 7.0.32. Adaptations for 6.0 and 7.4 are available and need verification in the target environment.
 
-### 13. Zabbix Rebrand Logo（品牌 logo 设置）
+### 13. Zabbix Rebrand Logo
 
-**简介**：用于自定义 Zabbix 前端品牌外观，入口为「管理 → 品牌 logo 设置」。
+Customize the Zabbix frontend's branding under **Administration → Zabbix Rebrand Logo**.
 
-**功能特性**：
+**Features**
 
-- 更换登录页标志、侧边栏标志、折叠侧边栏图标和浏览器图标
-- 支持原位预览、图片裁剪及登录页标志 4:1 尺寸调整
-- 自定义服务器名称、页脚文本和帮助链接，支持中文、英文和俄语界面
+- Replace the login logo, sidebar logo, collapsed sidebar icon, and browser favicon.
+- Preview and crop images in place and resize the login logo to a 4:1 aspect ratio.
+- Customize the server name, footer text, and Help link, with English and Brazilian Portuguese interfaces.
 
-![Zabbix Rebrand Logo（品牌 logo 设置）](zabbix_rebrand_logo/images/1.png)
+![Zabbix Rebrand Logo settings](zabbix_rebrand_logo/images/1.png)
 
-**文档链接**：[zabbix_rebrand_logo/README.md](./zabbix_rebrand_logo/README.md)（[English](./zabbix_rebrand_logo/README_en.md)）
+[English documentation](./zabbix_rebrand_logo/README.md) · [Documentação em português](./zabbix_rebrand_logo/README_pt-BR.md)
 
-**兼容性**：已在 Zabbix 7.0 和 8.0 环境验证。
+**Compatibility** — Verified on Zabbix 7.0 and 8.0.
 
-### 14. Zabbix Database Export（数据库导出）
+### 14. Zabbix Database Export
 
-Zabbix 超级管理员可在「管理 → 数据库导出」将当前 Zabbix 的 MySQL、MariaDB 或 PostgreSQL 数据库导出为 SQL 文件，模块自动识别类型并显示数据库版本。
+Zabbix Super admins can export the current Zabbix MySQL, MariaDB, or PostgreSQL database as a SQL file from **Administration → Database export**. The module detects the database type and displays its version.
 
-- 查看各表的预估大小，按表名筛选并批量选择。
-- 支持导出表结构和数据、仅结构或仅数据。未选中的表保留建表语句，可勾选排除 `history` 开头的表数据。
-- 支持浏览器下载和服务器保存。选择浏览器下载时，超过 500 MB 的 SQL 文件自动保存到指定目录，默认为 `/tmp/zabbix`。
-- 支持中文、英文和俄语界面，文件名使用当前用户的时区，并包含数据库类型。
-  
-文件名分别为 `zabbix_database_backup_mysql_yyyy-mm-dd_hh-mm-ss.sql`、`zabbix_database_backup_mariadb_yyyy-mm-dd_hh-mm-ss.sql` 和 `zabbix_database_backup_postgresql_yyyy-mm-dd_hh-mm-ss.sql`。
+- View estimated table sizes, filter by name, and select tables in bulk.
+- Export table structure and data, structure only, or data only. Unselected tables retain their creation statements. An option excludes data from tables whose names start with `history`.
+- Download in the browser or save on the server. When browser download is selected, SQL files over 500 MB are saved automatically to the specified directory, which defaults to `/tmp/zabbix`.
+- Use the interface in English or Brazilian Portuguese. Filenames use the current user's time zone and include the database type.
+
+Filename formats are `zabbix_database_backup_mysql_yyyy-mm-dd_hh-mm-ss.sql`, `zabbix_database_backup_mariadb_yyyy-mm-dd_hh-mm-ss.sql`, and `zabbix_database_backup_postgresql_yyyy-mm-dd_hh-mm-ss.sql`.
 
 ![1](zabbix_database_export/images/1.png)
 
-支持 Zabbix 7.0 和 8.0，已在 7.0.32 和 8.0.0 验证。 [中文文档](./zabbix_database_export/README.md) · [English](./zabbix_database_export/README_en.md)
+Supports Zabbix 7.0 and 8.0, verified on 7.0.32 and 8.0.0. [English documentation](./zabbix_database_export/README.md) · [Documentação em português](./zabbix_database_export/README_pt-BR.md)
 
 ### 15. Zabbix LLDP Topology
 
-**简介**：读取 Zabbix 中已有的 LLDP 邻居监控数据，在「监测 → LLDP 拓扑」查看设备与端口的连接关系。
+Explore device and port connections using LLDP neighbor data already collected by Zabbix. Open **Monitoring → LLDP Topology**.
 
-**功能特性**
+**Features**
 
-- 按主机组或主机筛选，读取关联 `Lldp Discovery` 模板的主机上 `lldp.remote.info[*]` 监控项的最新值。
-- 在 SVG 拓扑图中分开展示互不连通的网络，默认显示三层，可展开查看更多节点。
-- 将指针悬停在链路上，可查看本地和对端设备、端口及数据更新时间。
+- Filter by host group or host. The module reads the latest values of `lldp.remote.info[*]` items on hosts linked to the `Lldp Discovery` template.
+- View disconnected networks separately in the SVG map. The map shows three levels by default and lets you expand nodes to see more.
+- Hover over a link to see the local and remote devices, their ports, and when the data was last updated.
 
-**兼容性**：Zabbix 6.0.x、7.0.x、7.4.x、8.0.x。
+**Compatibility** — Zabbix 6.0.x, 7.0.x, 7.4.x, and 8.0.x.
 
-[中文文档](./zabbix_lldp/README.md) · [English](./zabbix_lldp/README_en.md)
+[English documentation](./zabbix_lldp/README.md)
 
-### 16. Zabbix Backup and Restore（配置备份与还原）
+### 16. Zabbix Backup and Restore
 
-**简介**：Zabbix 超级管理员可在「管理 → 备份与还原」按类别导出配置，并在目标实例预览后还原。
+Zabbix Super admins can export configuration by category from **Administration → Backup and restore**, then preview and restore it on the target instance.
 
-**功能特性**
+**Features**
 
-- 将主机、模板、用户与权限、动作、维护计划、服务及 SLA 等配置导出为单个 YAML 文件。单文件导出和上传上限均为 500 MiB，实际上传上限取决于部署配置。
-- 还原前预览源版本、目标版本和记录数。还原时默认创建缺失对象，也可选择更新匹配对象。
-- 支持 Zabbix 7.0 → 7.0、7.0 → 8.0 和 8.0 → 8.0。还原失败时整批回滚。
+- Export hosts, templates, users and permissions, actions, maintenance periods, services, and SLAs to a single YAML file. The module supports exports and uploads up to 500 MiB per file. The effective upload limit depends on the deployment configuration.
+- Preview the source and target versions and record counts before restoring. By default, restore creates missing objects. You can also choose to update matching objects.
+- Restore from Zabbix 7.0 to 7.0, 7.0 to 8.0, or 8.0 to 8.0. If restore fails, the entire batch rolls back.
 
-![配置备份与还原界面](zabbix_backup_restore/images/1.png)
+![Configuration backup and restore interface](zabbix_backup_restore/images/1.png)
 
-[中文文档](./zabbix_backup_restore/README.md) · [English](./zabbix_backup_restore/README_en.md)
+[English documentation](./zabbix_backup_restore/README.md)
 
-## 安装说明
+## Installation
 
-以下为普通前端模块的通用部署步骤。Zabbix Switch Visual 请按其[独立安装说明](./zabbix_switch_visual/README.md#安装步骤)部署，并通过仪表盘编辑模式添加组件。
+The following steps apply to standard frontend modules. Install Zabbix Switch Visual using its dedicated instructions, then add the widget in dashboard edit mode. [Zabbix Switch Visual installation](./zabbix_switch_visual/README.md#installation)
 
-### 方式一：下载 Releases 压缩包（适合生产部署，按需选择）
+### Method 1. Download release archives for production deployment
 
-Releases 页面提供两种压缩包，无需安装 git：
+The Releases page provides two types of archives that can be installed without Git.
 
-- **整体打包压缩包**：`zabbix_modules-<版本号>.tar.gz`（包含所有模块，版本号格式：`模块数量.大版本.小版本`，如 `13.2.0`）
-- **单模块压缩包**：`zabbix_<模块名>-<版本号>.tar.gz`（按需下载单个模块）
+- **All-in-one archive** `zabbix_modules-<version>.tar.gz` contains all modules. The version format is `module_count.major.minor`, for example `13.2.0`.
+- **Single-module archive** `zabbix_<module-name>-<version>.tar.gz` contains an individual module.
 
-#### 选项 A：下载所有模块整体压缩包
+#### Option A. Download the all-in-one archive
 
-1. 前往 [Releases 页面](https://github.com/X-Mars/zabbix_modules/releases)，下载 `zabbix_modules-<版本号>.tar.gz` 文件（如 `zabbix_modules-13.2.0.tar.gz`）
-2. 上传到 Zabbix 服务器并解压到模块目录：
+1. Download `zabbix_modules-<version>.tar.gz`, for example `zabbix_modules-13.2.0.tar.gz`. [Releases](https://github.com/X-Mars/zabbix_modules/releases)
+2. Upload it to the Zabbix server and extract it into the modules directory.
 
 ```bash
 # Zabbix 6.0 / 7.0
-tar -xzf zabbix_modules-<版本号>.tar.gz -C /usr/share/zabbix/modules/
+tar -xzf zabbix_modules-<version>.tar.gz -C /usr/share/zabbix/modules/
 
 # Zabbix 6.4 / 7.2 / 7.4 / 8.0
-tar -xzf zabbix_modules-<版本号>.tar.gz -C /usr/share/zabbix/ui/modules/
+tar -xzf zabbix_modules-<version>.tar.gz -C /usr/share/zabbix/ui/modules/
 ```
 
-3. **如果使用 Zabbix 6.0，修改兼容 Zabbix 6.0 的普通模块的 manifest_version**
+3. **On Zabbix 6.0, change `manifest_version` for standard modules that support Zabbix 6.0.**
 
 ```bash
 for mod in /usr/share/zabbix/modules/zabbix_*/; do
@@ -413,48 +413,48 @@ for mod in /usr/share/zabbix/modules/zabbix_*/; do
 done
 ```
 
-如果使用 Zabbix 6.4、7.0+ 或 8.0+，则无需修改，保持默认值即可。
+Use the default value on Zabbix 6.4, 7.0+, or 8.0+.
 
-#### 选项 B：下载单个模块
+#### Option B. Download a single module
 
-1. 前往 [Releases 页面](https://github.com/X-Mars/zabbix_modules/releases)，下载所需模块的 `zabbix_<模块名>-<版本号>.tar.gz` 文件
-2. 上传到 Zabbix 服务器并解压到模块目录：
+1. Download the `zabbix_<module-name>-<version>.tar.gz` archive for the module you need. [Releases](https://github.com/X-Mars/zabbix_modules/releases)
+2. Upload it to the Zabbix server and extract it into the modules directory.
 
 ```bash
 # Zabbix 6.0 / 7.0
-tar -xzf zabbix_<模块名>-<版本号>.tar.gz -C /usr/share/zabbix/modules/
+tar -xzf zabbix_<module-name>-<version>.tar.gz -C /usr/share/zabbix/modules/
 
 # Zabbix 7.2+ / 7.4 / 8.0
-tar -xzf zabbix_<模块名>-<版本号>.tar.gz -C /usr/share/zabbix/ui/modules/
+tar -xzf zabbix_<module-name>-<version>.tar.gz -C /usr/share/zabbix/ui/modules/
 ```
 
-3. **如果使用 Zabbix 6.0，修改 manifest_version**
+3. **On Zabbix 6.0, change `manifest_version`.**
 
 ```bash
-sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' /usr/share/zabbix/modules/zabbix_<模块名>/manifest.json
+sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' /usr/share/zabbix/modules/zabbix_<module-name>/manifest.json
 ```
 
-如果使用 Zabbix 6.4、7.0+ 或 8.0+，则无需修改，保持默认值即可。
+Use the default value on Zabbix 6.4, 7.0+, or 8.0+.
 
-### 方式二：git clone 直接部署（适合开发/跟踪更新）
+### Method 2. Deploy with Git for development or tracking updates
 
-一次性部署所有模块：
+Deploy all modules together.
 
-1. **Zabbix 6.0 / 7.0 部署方法**
+1. **Zabbix 6.0 / 7.0**
 
 ```bash
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/modules/
 ```
 
-2. **Zabbix 7.2+ / 7.4 / 8.0 部署方法**
+2. **Zabbix 7.2+ / 7.4 / 8.0**
 
 ```bash
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/ui/modules/
 ```
 
-3. **如果使用Zabbix 6.0，修改manifest_version**
+3. **On Zabbix 6.0, change `manifest_version`.**
 
-批量修改普通模块（跳过仪表盘组件）：
+To update standard modules in bulk, skipping dashboard widgets:
 
 ```bash
 for mod in /usr/share/zabbix/modules/zabbix_*/; do
@@ -463,51 +463,51 @@ for mod in /usr/share/zabbix/modules/zabbix_*/; do
 done
 ```
 
-单独修改某个模块（如 zabbix_reports）：
+To update a single module, such as Zabbix Reports:
 
 ```bash
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' /usr/share/zabbix/modules/zabbix_reports/manifest.json
 ```
 
-如果使用 Zabbix 6.4、7.0+ 或 8.0+，则无需修改，保持默认值即可。
+Use the default value on Zabbix 6.4, 7.0+, or 8.0+.
 
-### 启用模块
+### Enable Modules
 
-完成文件部署后，在Zabbix Web界面中启用模块：
+After deploying the files, enable the modules in the Zabbix web interface.
 
-1. 进入Zabbix Web界面
-2. 导航到 **Administration → General → Modules**
-3. 点击 **Scan directory** 扫描新模块
-4. 找到并启用相应模块
+1. Open the Zabbix web interface.
+2. Go to **Administration → General → Modules**.
+3. Click **Scan directory** to discover new modules.
+4. Find and enable the modules you want to use.
 
 ![1](images/setting-1.png)
 ![2](images/setting-2.png)
 
-### 验证安装
+### Verify Installation
 
-刷新页面后，您将在相应菜单中看到新模块：
+Refresh the page and look for the modules in the corresponding menus.
 
-- **Reports → Zabbix Reports** (每日/周/月报表)
-- **Inventory → CMDB** (主机列表/主机分组)
-- **Monitoring → Graph Trees** (图表树)
-- **Inventory → Rack Management** (机柜管理)
-- **数据采集 → SNMP Assistant** (SNMP 助手：Zabbix Mibs / Zabbix Walk)
-- **资产记录 → JumpServer** (JumpServer 同步)
-- **Users → IM同步助手** (IM 同步 / 同步设置)
-- **数据采集 → 主机批量导入** (基于源主机批量克隆主机)
-- **Inventory → IPAM** (IP 管理 / IP 详情 / 任务管理)
-- **仪表盘 → 编辑 → 添加组件 → Zabbix Switch Visual**（交换机端口可视化）
-- **监测 → 自动拓扑图**（网络设备自动发现与拓扑图编辑）
-- **管理 → 数据库导出**（数据库 SQL 导出，仅超级管理员）
+- **Reports → Zabbix Reports** (daily, weekly, and monthly reports)
+- **Inventory → CMDB** (host list and host groups)
+- **Monitoring → Graph Trees** (chart tree)
+- **Inventory → Rack Management** (rack management)
+- **Data collection → SNMP Assistant** (Zabbix Mibs and Zabbix Walk)
+- **Inventory → JumpServer** (JumpServer synchronization)
+- **Users → IM Sync Assistant** (synchronization and settings)
+- **Data collection → Bulk Host Import** (clone hosts from an existing source host)
+- **Inventory → IPAM** (IP management, address details, and task management)
+- **Dashboard → Edit → Add widget → Zabbix Switch Visual** (switch-port visualization)
+- **Monitoring → Auto Topology Map** (network discovery and topology editing)
+- **Administration → Database export** (database SQL export for Super admins)
 
-### 单独安装模块
+### Install an Individual Module
 
-每个模块都有独立的安装说明，请参考各模块的README.md文件获取详细的安装和配置步骤。
+See each module's README for its installation and configuration instructions.
 
-## 贡献
+## Contributing
 
-欢迎提交问题报告和功能改进建议。请在相应模块的目录下提交问题。
+Issue reports and suggestions are welcome. Submit reports in the directory for the relevant module.
 
-## 许可证
+## License
 
-所有模块遵循Zabbix的许可证条款。详情请见 [Zabbix许可证](https://www.zabbix.com/license)。
+All modules follow the Zabbix license terms. [Zabbix License](https://www.zabbix.com/license)

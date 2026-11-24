@@ -1,6 +1,6 @@
 <?php
 /**
- * 分配主机到机柜控制器
+ * Controller that assigns hosts to racks
  */
 
 namespace Modules\ZabbixRack\Actions;
@@ -20,7 +20,7 @@ use Modules\ZabbixRack\Lib\HostRackManager;
 class HostAssign extends CController {
     
     protected function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -70,7 +70,7 @@ class HostAssign extends CController {
         $uEnd = $this->getInput('u_end');
         $side = HostRackManager::normalizeSide($this->getInput('side', HostRackManager::SIDE_FRONT));
         
-        // 获取机房和机柜信息
+        // Get the room and rack information
         $room = RackConfig::getRoom($roomId);
         $rack = RackConfig::getRack($rackId);
         
@@ -87,7 +87,7 @@ class HostAssign extends CController {
             RackPermission::denyAccessJson();
         }
         
-        // 验证U位范围
+        // Validate the U range
         if ($uStart < 1 || $uEnd < 1 || $uStart > $rack['height'] || $uEnd > $rack['height'] || $uStart > $uEnd) {
             header('Content-Type: application/json');
             echo json_encode([
@@ -123,12 +123,12 @@ class HostAssign extends CController {
             exit;
         }
 
-        // 自定义主机编辑时排除自身，避免原位置被判定为占用。
+        // When editing a custom host, exclude itself so its original position is not seen as occupied.
         $excludeHostId = ($hostType === 'custom' && $hostId !== '')
             ? HostRackManager::CUSTOM_HOST_PREFIX . HostRackManager::getCustomHostId($hostId)
             : null;
 
-        // 检查U位是否可用（同一机柜面内不可重叠）
+        // Check whether the U positions are free (no overlap within the same rack side)
         if (!HostRackManager::isPositionAvailable($room['name'], $rack['name'], $uStart, $uEnd, $excludeHostId, $side)) {
             header('Content-Type: application/json');
             echo json_encode([
@@ -138,7 +138,7 @@ class HostAssign extends CController {
             exit;
         }
         
-        // 分配 Zabbix 主机，或保存自定义主机。
+        // Assign a Zabbix host or save a custom host.
         $success = $hostType === 'custom'
             ? HostRackManager::assignCustomHost($hostId, $customName, $customIp, $roomId, $rackId, $uStart, $uEnd, $side)
             : HostRackManager::assignHost($hostId, $room['name'], $rack['name'], $uStart, $uEnd, $side);

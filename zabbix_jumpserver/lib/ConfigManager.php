@@ -3,11 +3,11 @@
 namespace Modules\ZabbixJumpserver\Lib;
 
 /**
- * 读取模块 data/config.json 中保存的 JumpServer 连接凭据
+ * Read the JumpServer connection credentials stored in the module's data/config.json
  */
 class ConfigManager {
 
-    /** 写回 Zabbix 主机的资产 ID 标记名 */
+    /** Name of the asset ID tag written back to Zabbix hosts */
     public const ASSET_TAG = 'jumpserver_asset_id';
 
     private static $config = null;
@@ -61,7 +61,7 @@ class ConfigManager {
     }
 
     /**
-     * 获取账号模板 ID（留空表示不自动关联账号）
+     * Get the account template ID (blank means accounts are not linked automatically)
      */
     public static function getAccountTemplateId(): string {
         $config = self::load();
@@ -69,7 +69,7 @@ class ConfigManager {
     }
 
     /**
-     * 根据模板和资产 ID 生成 JumpServer 连接地址
+     * Build the JumpServer connection URL from the template and the asset ID
      */
     public static function buildConnectUrl(string $assetId): string {
         $config = self::load();

@@ -1,6 +1,6 @@
 # Zabbix Rebrand Logo
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -23,7 +23,7 @@ Este módulo de frontend do Zabbix permite que usuários Super Admin troquem o l
 - **Tamanho do logo de login**: largura e altura mantêm a proporção 4:1. O padrão é 120 × 30 pixels e o máximo é 512 × 128 pixels, sujeito aos limites de upload do servidor. O recorte pode manter até o dobro da resolução de exibição quando a imagem de origem e o tamanho do arquivo permitem.
 - **Nome do servidor**: mantenha o padrão do Zabbix, informe um nome personalizado ou oculte o nome. A tela de login usa o padrão do Zabbix.
 - **Rodapé e link de Ajuda**: personalize o texto do rodapé e o link de Ajuda do menu do usuário. O link aceita URLs HTTP e HTTPS.
-- **Interface em chinês, inglês, russo e português do Brasil**: segue o idioma do usuário no Zabbix e suporta temas claro e escuro.
+- **Interface em inglês e português do Brasil**: segue o idioma do usuário no Zabbix e suporta temas claro e escuro.
 - **Armazenamento persistente**: as configurações e as cópias das imagens ficam em `local/conf/rebrand/`, para que possam ser preservadas entre atualizações.
 
 | Imagem | Tamanho recomendado | Formatos suportados |

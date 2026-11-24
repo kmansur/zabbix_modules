@@ -1,72 +1,69 @@
-# Zabbix LLDP 拓扑模块
+# Zabbix LLDP Topology Module
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-这是一个 Zabbix 前端模块，用于可视化 LLDP 邻居拓扑。模块读取关联 **Lldp Discovery** 模板的主机及其 `lldp.remote.info[*]` 监控项最新值，以 SVG 圆点与线段展示本地设备与对端设备的连接关系，悬停可查看端口详情。
+A Zabbix frontend module that visualizes LLDP neighbor topology. It reads hosts linked to the **Lldp Discovery** template and the latest values of `lldp.remote.info[*]` items, then renders local and remote devices as SVG circles connected by lines. Hover to see port details.
 
-模块在 Zabbix Web 的 **监测 (Monitoring)** 菜单下新增 **LLDP 拓扑** 子菜单。
+The module adds **LLDP Topology** under the **Monitoring** menu in Zabbix Web.
 
-## 功能特性
+## Features
 
-- **模板过滤**：仅展示关联 LLDP 模板的主机及其所在主机分组
-- **分组 / 主机筛选**：支持「所有分组」「所有主机」或指定范围
-- **按需查询**：页面初次加载不拉取拓扑，点击「查询」后加载
-- **拓扑可视化**：自动分隔互不连通的网络，按根节点的汇聚分支划块，默认显示三层
-- **悬停详情**：显示本地/对端设备名、端口及监控项更新时间
-- **统计信息**：展示主机数、链路数、设备数及跳过项计数
-- **可扩展设计**：节点 JSON 预留 `image` 字段，便于后续接入设备图标
-- **国际化支持**：支持中文、英文和俄语界面
+- **Template filtering**: Only hosts linked to the LLDP template and their host groups appear in dropdowns
+- **Group / host filters**: All groups, all hosts, or a specific scope
+- **On-demand query**: Topology is not loaded on first page visit; click **Query** to fetch data
+- **Topology view**: Local devices on the left, remote peers on the right, circles and lines
+- **Hover details**: Local/remote device names, ports, and last update time
+- **Statistics**: Host, link, and device counts plus skipped item count
+- **Extensible**: Node JSON includes a reserved `image` field for future device icons
+- **Localization**: English and Brazilian Portuguese
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
 ```bash
-# Zabbix 6.0 / 7.0 部署方法
+# Zabbix 6.0 / 7.0
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/modules/
 
-# Zabbix 7.4 / 8.0 部署方法
+# Zabbix 7.4 / 8.0
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/ui/modules/
 ```
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
 
 ```bash
-# ⚠️ 如果使用 Zabbix 6.0，修改 manifest_version
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_lldp/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 转到 **Administration → General → Modules**。
-2. 点击 **Scan directory** 按钮扫描新模块。
-3. 找到 "Zabbix LLDP Topology" 模块，点击启用。
-4. 刷新页面，模块将在 **Monitoring** 菜单下显示为 **LLDP 拓扑**（或 **LLDP Topology**）。
+1. Go to **Administration → General → Modules**.
+2. Click **Scan directory**.
+3. Enable **Zabbix LLDP Topology**.
+4. Refresh the UI; **LLDP Topology** appears under **Monitoring**.
 
-## 注意事项
+## Notes
 
-- 若未找到 LLDP 模板，请检查 `data/config.json` 中的 `template_name` 是否与 Zabbix 中模板名称一致。
-- 空 `lastvalue` 或格式不符合 `设备(端口)` 的监控项会被跳过，并在统计中计入「跳过项」。
-- 对端设备为 LLDP 上报的系统名，可能与 Zabbix 主机名不一致；同名对端会自动合并为一个节点。
-- 当前版本不包含设备图标、力导向布局、双向链路合并及 `REMOTE_SYS_DESC` 展示。
+- If the template is not found, verify `template_name` in `data/config.json`.
+- Items with empty `lastvalue` or values not matching `DEVICE(PORT)` are skipped and counted in statistics.
+- Remote device names come from LLDP and may differ from Zabbix host names; identical names are merged into one node.
+- Not in v1: device icons, force-directed layout, bidirectional link merge, or `REMOTE_SYS_DESC` in tooltips.
 
-### 目录归属与保存提示
+### Directory ownership and save errors
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-## 开发
-
-插件基于 Zabbix 模块框架开发。文件结构：
+## Development
 
 ```
 zabbix_lldp/
@@ -87,23 +84,23 @@ zabbix_lldp/
     └── LldpTopologyBuilder.php
 ```
 
-## 模块配置
+## Module Configuration
 
-### 模板依赖
+### Template Dependency
 
-本模块依赖名为 **Lldp Discovery** 的 Zabbix 模板（可在配置中修改）。模板应通过 LLD 发现 `lldp.remote.info[{#LOCAL_PORT}]` 监控项，其 `lastvalue` 格式为：
+The module expects a Zabbix template named **Lldp Discovery** (configurable). The template should discover items with key `lldp.remote.info[{#LOCAL_PORT}]` whose `lastvalue` looks like:
 
 ```
-对端设备名(对端端口)
+REMOTE_DEVICE(REMOTE_PORT)
 ```
 
-例如：`YJZHZX-LouCengHuiJu-S7510E(GigabitEthernet2/2/0/1)`
+Example: `YJZHZX-LouCengHuiJu-S7510E(GigabitEthernet2/2/0/1)`
 
-请将模板关联到需要展示 LLDP 拓扑的主机，并确保 LLD 已发现且监控项有最新数据。
+Link the template to hosts you want in the topology and ensure LLD items have recent data.
 
-### 配置
+### Configuration
 
-模块配置保存在 `data/config.json`：
+Settings are stored in `data/config.json`:
 
 ```json
 {
@@ -113,21 +110,20 @@ zabbix_lldp/
 }
 ```
 
-| 字段 | 说明 |
-|------|------|
-| `template_name` | LLDP 模板可见名称（也支持按 technical name 匹配） |
-| `item_key_prefix` | 监控项 key 前缀，用于查询 LLDP 邻居项 |
-| `root_hostid` | 可选，指定全网拓扑的根设备 Zabbix 主机 ID。未配置或该设备不在查询结果中时自动选择。 |
-| `discovery_key` | LLD 规则 key，预留供后续版本使用 |
+| Field | Description |
+|-------|-------------|
+| `template_name` | Visible template name (technical name is also tried) |
+| `item_key_prefix` | Item key prefix used to fetch LLDP neighbor items |
+| `root_hostid` | Optional Zabbix host ID to use as the root when present in the graph. |
+| `discovery_key` | LLD rule key, reserved for future use |
 
-### 使用方法
+### Usage
 
-1. 进入 **Monitoring → LLDP 拓扑**。
-2. 选择主机分组和主机（默认「所有分组」「所有主机」）。
-3. 点击 **查询**，等待拓扑加载。
-4. 点击节点旁的 `+N` 展开下一层，点击 `−` 收起。虚线表示布局主路径之外的链路。
-5. 将鼠标悬停在链路或节点上，查看端口与设备详情。
+1. Open **Monitoring → LLDP Topology**.
+2. Select host group and host (defaults: all groups, all hosts).
+3. Click **Query** to load the topology.
+4. Hover over links or nodes for port and device details.
 
-## 许可证
+## License
 
-本模块遵循 Zabbix 的许可证条款。详情请见 [Zabbix 许可证](https://www.zabbix.com/license)。
+This module follows the Zabbix license terms. See: https://www.zabbix.com/license

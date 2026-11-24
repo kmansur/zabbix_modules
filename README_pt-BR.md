@@ -1,6 +1,6 @@
 # Coleção de módulos para Zabbix
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 <div>
   <img src="images/wechat.jpg" width="20%" alt="wechat">
@@ -17,7 +17,7 @@ Esta coleção reúne módulos independentes que ampliam o sistema de monitorame
 
 ## Idioma da interface
 
-Os módulos seguem o idioma do perfil do usuário no Zabbix. Escolha **Português (pt_BR)** no seu perfil para usar os módulos em português do Brasil, ou **Русский** para russo. Se o perfil usar o idioma padrão, os módulos herdam o idioma padrão do sistema Zabbix (`default_lang`). Idiomas sem tradução própria usam o inglês.
+Os módulos seguem o idioma do perfil do usuário no Zabbix. Os módulos estão disponíveis em inglês e português do Brasil. Escolha **Português (pt_BR)** no seu perfil para usar os módulos em português; qualquer outro idioma usa o inglês. Se o perfil usar o idioma padrão, os módulos herdam o idioma padrão do sistema Zabbix (`default_lang`). Idiomas sem tradução própria usam o inglês.
 
 ## Módulos
 
@@ -46,11 +46,11 @@ Os módulos seguem o idioma do perfil do usuário no Zabbix. Escolha **Portuguê
 
 | Módulo | Páginas por ambiente | 6.0 | 7.0 | 8.0 | Detalhes |
 | --- | ---: | --- |--- | --- | --- |
-| `zabbix_assets_export_import` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_assets_export_import/README_en.md) |
+| `zabbix_assets_export_import` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_assets_export_import/README.md) |
 | `zabbix_auto_topology_map` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_auto_topology_map/README_pt-BR.md) |
 | `zabbix_backup_restore` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_backup_restore/README_pt-BR.md) |
 | `zabbix_clonehosts` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_clonehosts/README_pt-BR.md) |
-| `zabbix_clouds` | 2 | Aprovado | Aprovado | Aprovado | [README](zabbix_clouds/README_en.md) |
+| `zabbix_clouds` | 2 | Aprovado | Aprovado | Aprovado | [README](zabbix_clouds/README.md) |
 | `zabbix_cmdb` | 3 | Aprovado | Aprovado | Aprovado | [README](zabbix_cmdb/README_pt-BR.md) |
 | `zabbix_database_export` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_database_export/README_pt-BR.md) |
 | `zabbix_export_import` | 3 | Aprovado | Aprovado | Aprovado | [README](zabbix_export_import/README_pt-BR.md) |
@@ -59,13 +59,13 @@ Os módulos seguem o idioma do perfil do usuário no Zabbix. Escolha **Portuguê
 | `zabbix_ipam` | 3 | Aprovado | Aprovado | Aprovado | [README](zabbix_ipam/README_pt-BR.md) |
 | `zabbix_jumpserver` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_jumpserver/README_pt-BR.md) |
 | `zabbix_lldp` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_lldp/README_pt-BR.md) |
-| `zabbix_performance_report` | 2 | Aprovado | Aprovado | Aprovado | [README](zabbix_performance_report/README_en.md) |
+| `zabbix_performance_report` | 2 | Aprovado | Aprovado | Aprovado | [README](zabbix_performance_report/README.md) |
 | `zabbix_rack` | 2 | Aprovado | Aprovado | Aprovado | [README](zabbix_rack/README_pt-BR.md) |
 | `zabbix_rebrand_logo` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_rebrand_logo/README_pt-BR.md) |
 | `zabbix_reports` | 4 | Aprovado | Aprovado | Aprovado | [README](zabbix_reports/README_pt-BR.md) |
-| `zabbix_rightsizing` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_rightsizing/README_en.md) |
+| `zabbix_rightsizing` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_rightsizing/README.md) |
 | `zabbix_snmp` | 2 | Aprovado | Aprovado | Aprovado | [README](zabbix_snmp/README_pt-BR.md) |
-| `zabbix_switch_backup` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_switch_backup/README_en.md) |
+| `zabbix_switch_backup` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_switch_backup/README.md) |
 | `zabbix_switch_visual` | 1 | Aprovado | Aprovado | Aprovado | [README](zabbix_switch_visual/README_pt-BR.md) |
 
 ## Visão geral dos módulos
@@ -100,7 +100,7 @@ Módulo de frontend de banco de dados de gerenciamento de configuração (CMDB) 
 - Pesquisa por nome do host ou endereço IP.
 - Filtro por grupo de hosts.
 - Exibe nome do host, endereço IP, tipo de interface, total de CPU e de memória, grupos de hosts e outros detalhes.
-- Interface em chinês, inglês, russo ou português do Brasil.
+- Interface em inglês ou português do Brasil.
 - Layout responsivo para diferentes tamanhos de tela.
 
 ![1](zabbix_cmdb/images/1.jpg)
@@ -125,7 +125,7 @@ Módulo de frontend do Zabbix para navegar pelos dados de monitoramento em uma �
 - Expande gráficos para tela cheia.
 - Atualiza automaticamente a cada 5, 10, 20, 30 ou 60 segundos.
 - Períodos de 1 hora a 30 dias.
-- Interface em chinês, inglês, russo ou português do Brasil.
+- Interface em inglês ou português do Brasil.
 
 ![1](zabbix_graphtrees/images/1.png)
 ![2](zabbix_graphtrees/images/2.png)
@@ -145,7 +145,7 @@ Módulo de frontend do Zabbix para visualizar os racks do data center e controla
 - Mostra as unidades ocupadas em um layout vertical de rack de 42U.
 - Atribui hosts do Zabbix a unidades específicas do rack.
 - Pesquisa por rack ou nome do host.
-- Interface em chinês, inglês, russo ou português do Brasil.
+- Interface em inglês ou português do Brasil.
 - Layout responsivo para diferentes tamanhos de tela.
 
 ![1](zabbix_rack/images/1.png)
@@ -167,7 +167,7 @@ Assistente SNMP para o frontend do Zabbix. Navegue por MIBs, execute SNMP walks,
 - Mostra os resultados brutos e copia comandos `snmpget` ou OIDs.
 - Cria um item a partir de um único resultado, com mapeamento automático do tipo de dado.
 - Seleciona vários resultados para criar templates e itens SNMP em lote.
-- Interface em chinês, inglês, russo ou português do Brasil.
+- Interface em inglês ou português do Brasil.
 
 ![1](zabbix_snmp/images/1.png)
 ![2](zabbix_snmp/images/2.png)
@@ -190,7 +190,7 @@ Módulo de frontend do Zabbix para sincronizar hosts e grupos de hosts com o bas
 - Mostra a quantidade de alertas por severidade e expande a linha para ver os detalhes completos.
 - Guarda os IDs de ativos do JumpServer como tags nos hosts do Zabbix. Passe o mouse sobre um host já enviado para reenviá-lo.
 - O botão **Conectar** na última coluna abre a página de conexão do host no JumpServer.
-- Interface em chinês, inglês, russo ou português do Brasil.
+- Interface em inglês ou português do Brasil.
 
 ![1](zabbix_jumpserver/images/1.png)
 
@@ -214,9 +214,9 @@ Módulo de frontend do Zabbix que sincroniza a estrutura organizacional do **WeC
 - Associa ou cria usuários no Zabbix e os adiciona aos grupos correspondentes. Novos usuários recebem senhas de 12 caracteres geradas automaticamente, exibidas uma única vez nos resultados.
 - Para usuários do DingTalk sem número de telefone, converte o nome para Pinyin para formar o nome de usuário no Zabbix.
 - Pré-visualiza a correspondência de departamentos e usuários antes da sincronização.
-- Interface em chinês, inglês, russo ou português do Brasil.
+- Interface em inglês ou português do Brasil.
 
-[Documentação em chinês](./zabbix_im/README.md) · [Documentação em inglês](./zabbix_im/README_en.md) · [Documentação em português](./zabbix_im/README_pt-BR.md)
+[Documentação em inglês](./zabbix_im/README.md) · [Documentação em português](./zabbix_im/README_pt-BR.md)
 
 **Compatibilidade** — Zabbix 6.0.x, 7.0.x, 7.4.x e 8.0.x
 
@@ -235,14 +235,14 @@ Módulo de frontend do Zabbix para criar hosts em lote clonando um host já moni
 - Volta da pré-visualização para a tabela de edição mantendo os dados informados, para corrigir os hosts que não estão prontos.
 - Cria os hosts um a um via AJAX e mostra o progresso em tempo real com contagem de sucessos e falhas.
 - Baixa um relatório CSV com nome do host, endereço IP, ID do host, resultado e detalhes de erro.
-- Interface em chinês, inglês, russo ou português do Brasil.
+- Interface em inglês ou português do Brasil.
 
 ![1](zabbix_clonehosts/images/image.png)
 ![2](zabbix_clonehosts/images/image-1.png)
 ![3](zabbix_clonehosts/images/image-2.png)
 ![4](zabbix_clonehosts/images/image-3.png)
 
-[Documentação em chinês](./zabbix_clonehosts/README.md) · [Documentação em inglês](./zabbix_clonehosts/README_en.md) · [Documentação em português](./zabbix_clonehosts/README_pt-BR.md)
+[Documentação em inglês](./zabbix_clonehosts/README.md) · [Documentação em português](./zabbix_clonehosts/README_pt-BR.md)
 
 **Compatibilidade** — Zabbix 6.0.x, 7.0.x, 7.4.x e 8.0.x
 
@@ -257,13 +257,13 @@ Módulo de frontend do Zabbix para gerenciar faixas de endereços IPv4 e executa
 - Divide redes grandes em lotes e executa as varreduras em segundo plano via PHP CLI, com suporte a multiprocessamento por `pcntl`.
 - Inicia varreduras manualmente ou as agenda pelo crontab e mostra o progresso durante a execução.
 - Mostra a matriz de uso de IPs, os detalhes dos endereços e as associações com hosts, com filtros e paginação.
-- Interface em chinês, inglês, russo ou português do Brasil.
+- Interface em inglês ou português do Brasil.
 
 ![1](zabbix_ipam/images/1.png)
 ![2](zabbix_ipam/images/2.png)
 ![3](zabbix_ipam/images/3.png)
 
-[Documentação em chinês](./zabbix_ipam/README.md) · [Documentação em inglês](./zabbix_ipam/README_en.md) · [Documentação em português](./zabbix_ipam/README_pt-BR.md)
+[Documentação em inglês](./zabbix_ipam/README.md) · [Documentação em português](./zabbix_ipam/README_pt-BR.md)
 
 **Compatibilidade** — Zabbix 6.0.x, 7.0.x, 7.4.x e 8.0.x
 
@@ -277,11 +277,11 @@ Widget de dashboard para monitorar portas de switch, que apresenta os itens do Z
 - Mostra status, velocidade, tráfego de entrada e saída, erros e alertas de cada porta. Clique em uma porta para abrir os gráficos de histórico.
 - Detecta as portas automaticamente e permite configurar membros da pilha, layout das portas, deslocamento do índice SNMP, exclusões e aliases manuais.
 - Mostra tendências de tráfego por porta e do switch inteiro, com métricas configuráveis de CPU, memória, temperatura, PoE e ventiladores.
-- Personaliza estilo e cores das portas, zoom e a barra de resumo, com interface em chinês, inglês, russo e português do Brasil.
+- Personaliza estilo e cores das portas, zoom e a barra de resumo, com interface em inglês e português do Brasil.
 
 ![Painel de portas do Zabbix Switch Visual](zabbix_switch_visual/images/1.png)
 
-[Documentação em chinês](./zabbix_switch_visual/README.md) · [Documentação em inglês](./zabbix_switch_visual/README_en.md) · [Documentação em português](./zabbix_switch_visual/README_pt-BR.md)
+[Documentação em inglês](./zabbix_switch_visual/README.md) · [Documentação em português](./zabbix_switch_visual/README_pt-BR.md)
 
 **Compatibilidade** — Voltado principalmente ao Zabbix 7.x. Consulte o README do widget sobre adaptação e testes em outras versões.
 
@@ -298,9 +298,9 @@ Módulo de frontend do Zabbix que descobre as conexões de rede a partir dos dad
 - Atribui manualmente itens de largura de banda e de tráfego de subida e de descida, com soma entre itens e conversão de unidades.
 - Mostra o status e os incidentes dos hosts, associa triggers de status de porta e muda a cor dos enlaces quando há alertas.
 - Atualiza status e métricas a cada 60 segundos na pré-visualização, com zoom, deslocamento, ajuste à janela e menus nativos de host.
-- Interface em chinês, inglês, russo ou português do Brasil, com tema claro ou escuro.
+- Interface em inglês ou português do Brasil, com tema claro ou escuro.
 
-[Documentação em chinês](./zabbix_auto_topology_map/README.md) · [Documentação em inglês](./zabbix_auto_topology_map/README_en.md) · [Documentação em português](./zabbix_auto_topology_map/README_pt-BR.md)
+[Documentação em inglês](./zabbix_auto_topology_map/README.md) · [Documentação em português](./zabbix_auto_topology_map/README_pt-BR.md)
 
 **Compatibilidade** — Desenvolvido para o Zabbix 7.0 e verificado no 7.0.28. O Zabbix 6.x ainda precisa de testes, e outras versões 7.x e 8.x precisam ser verificadas no ambiente de destino.
 
@@ -313,11 +313,11 @@ Módulo de frontend para migrar hosts, templates de monitoramento e itens de hos
 - Importa e exporta hosts, templates e itens em CSV ou JSON. A página de templates também aceita importações em JSON nativo do Zabbix.
 - Filtra por grupo, seleciona registros em várias páginas e exporta os resultados filtrados. O carimbo de data/hora no nome do arquivo usa o fuso horário do usuário do Zabbix.
 - Pré-visualiza as diferenças antes de importar e permite escolher como tratar duplicados. Scripts e outras configurações executáveis são bloqueados por padrão.
-- Segue o idioma do usuário do Zabbix, com traduções embutidas em chinês simplificado, inglês, russo e português do Brasil.
+- Segue o idioma do usuário do Zabbix, com traduções embutidas em inglês e português do Brasil.
 
 ![Transferência de hosts no Zabbix Import/Export](zabbix_export_import/images/hosts.jpg)
 
-[Documentação em chinês](./zabbix_export_import/README.md) · [Documentação em inglês](./zabbix_export_import/README_en.md) · [Documentação em português](./zabbix_export_import/README_pt-BR.md)
+[Documentação em inglês](./zabbix_export_import/README.md) · [Documentação em português](./zabbix_export_import/README_pt-BR.md)
 
 **Compatibilidade** — Verificado no Zabbix 7.0.32. Há adaptações para 6.0 e 7.4 que precisam ser verificadas no ambiente de destino.
 
@@ -329,11 +329,11 @@ Personaliza a identidade visual do frontend do Zabbix em **Administração → Z
 
 - Substitui o logo da tela de login, o logo da barra lateral, o ícone da barra lateral recolhida e o favicon do navegador.
 - Pré-visualiza e recorta as imagens na própria página e redimensiona o logo de login na proporção 4:1.
-- Personaliza o nome do servidor, o texto do rodapé e o link de Ajuda, com interface em chinês, inglês, russo e português do Brasil.
+- Personaliza o nome do servidor, o texto do rodapé e o link de Ajuda, com interface em inglês e português do Brasil.
 
 ![Configurações do Zabbix Rebrand Logo](zabbix_rebrand_logo/images/1.png)
 
-[Documentação em chinês](./zabbix_rebrand_logo/README.md) · [Documentação em inglês](./zabbix_rebrand_logo/README_en.md) · [Documentação em português](./zabbix_rebrand_logo/README_pt-BR.md)
+[Documentação em inglês](./zabbix_rebrand_logo/README.md) · [Documentação em português](./zabbix_rebrand_logo/README_pt-BR.md)
 
 **Compatibilidade** — Verificado no Zabbix 7.0 e 8.0.
 
@@ -344,13 +344,13 @@ Usuários Super admin do Zabbix podem exportar o banco de dados MySQL, MariaDB o
 - Mostra o tamanho estimado das tabelas, filtra por nome e seleciona tabelas em lote.
 - Exporta estrutura e dados, somente estrutura ou somente dados. Tabelas não selecionadas mantêm suas instruções de criação. Uma opção exclui os dados das tabelas cujo nome começa com `history`.
 - Baixa no navegador ou salva no servidor. Quando o download pelo navegador está selecionado, arquivos SQL acima de 500 MB são salvos automaticamente no diretório informado, que por padrão é `/tmp/zabbix`.
-- Interface em chinês, inglês, russo ou português do Brasil. Os nomes de arquivo usam o fuso horário do usuário atual e incluem o tipo de banco.
+- Interface em inglês ou português do Brasil. Os nomes de arquivo usam o fuso horário do usuário atual e incluem o tipo de banco.
 
 Os formatos de nome de arquivo são `zabbix_database_backup_mysql_yyyy-mm-dd_hh-mm-ss.sql`, `zabbix_database_backup_mariadb_yyyy-mm-dd_hh-mm-ss.sql` e `zabbix_database_backup_postgresql_yyyy-mm-dd_hh-mm-ss.sql`.
 
 ![1](zabbix_database_export/images/1.png)
 
-Suporta Zabbix 7.0 e 8.0, verificado no 7.0.32 e 8.0.0. [Documentação em chinês](./zabbix_database_export/README.md) · [Documentação em inglês](./zabbix_database_export/README_en.md) · [Documentação em português](./zabbix_database_export/README_pt-BR.md)
+Suporta Zabbix 7.0 e 8.0, verificado no 7.0.32 e 8.0.0. [Documentação em inglês](./zabbix_database_export/README.md) · [Documentação em português](./zabbix_database_export/README_pt-BR.md)
 
 ### 15. Zabbix LLDP Topology
 
@@ -364,7 +364,7 @@ Explore as conexões entre dispositivos e portas usando os dados de vizinhança 
 
 **Compatibilidade** — Zabbix 6.0.x, 7.0.x, 7.4.x e 8.0.x.
 
-[Documentação em português](./zabbix_lldp/README_pt-BR.md) · [English documentation](./zabbix_lldp/README_en.md) · [中文](./zabbix_lldp/README.md)
+[Documentação em português](./zabbix_lldp/README_pt-BR.md) · [English documentation](./zabbix_lldp/README.md)
 
 ### 16. Zabbix Backup and Restore
 
@@ -378,7 +378,7 @@ Usuários Super admin do Zabbix podem exportar a configuração por categoria em
 
 ![Interface de backup e restauração da configuração](zabbix_backup_restore/images/1.png)
 
-[Documentação em português](./zabbix_backup_restore/README_pt-BR.md) · [English documentation](./zabbix_backup_restore/README_en.md) · [中文](./zabbix_backup_restore/README.md)
+[Documentação em português](./zabbix_backup_restore/README_pt-BR.md) · [English documentation](./zabbix_backup_restore/README.md)
 
 ## Instalação
 

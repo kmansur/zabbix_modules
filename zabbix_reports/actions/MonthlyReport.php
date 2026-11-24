@@ -16,7 +16,7 @@ use Modules\ZabbixReports\Lib\HostMetrics;
 class MonthlyReport extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -42,7 +42,7 @@ class MonthlyReport extends CController {
     protected function doAction(): void {
         $groupId = $this->getInput('groupid', '');
 
-        // 获取所有主机组（用于过滤下拉框）
+        // Get all host groups (for the filter dropdown)
         $allGroups = API::HostGroup()->get([
             'output' => ['groupid', 'name'],
             'sortfield' => 'name',
@@ -64,7 +64,7 @@ class MonthlyReport extends CController {
         $from = $monthStart;
         $till = $monthEnd;
 
-        // 获取主机（支持分组过滤）
+        // Get hosts (with group filter support)
         $hostOptions = [
             'output' => ['hostid', 'name'],
             'filter' => ['status' => HOST_STATUS_MONITORED]
@@ -74,10 +74,10 @@ class MonthlyReport extends CController {
         }
         $hosts = API::Host()->get($hostOptions);
 
-        // 获取过滤后的主机ID
+        // Get the filtered host IDs
         $filteredHostIds = array_column($hosts, 'hostid');
 
-        // 使用 ProblemFinder 获取与报表周期有交集的所有告警
+        // Use ProblemFinder to get all alarms that overlap the report period
         $problemResult = ProblemFinder::getProblemsInPeriod($from, $till, 500, $filteredHostIds);
         $problemCount = $problemResult['problemCount'];
         $resolvedCount = $problemResult['resolvedCount'];
@@ -86,7 +86,7 @@ class MonthlyReport extends CController {
         $triggerHostMap = $problemResult['triggerHostMap'];
         $triggerStatusMap = $problemResult['triggerStatusMap'] ?? [];
 
-        // 构建告警信息
+        // Build the alarm information
         $alertResult = ProblemFinder::buildAlertInfo(
             $problemEvents, $recoveryMap, $triggerHostMap,
             LanguageManager::t('Unknown Host'), $triggerStatusMap
@@ -119,7 +119,7 @@ class MonthlyReport extends CController {
             'filter_month' => $month
         ]);
         
-        // 显式设置响应标题（Zabbix 6.0 需要）
+        // Set the response title explicitly (required by Zabbix 6.0)
         $response->setTitle(LanguageManager::t('Monthly Report'));
 
         $this->setResponse($response);

@@ -3,14 +3,14 @@
 namespace Modules\ZabbixJumpserver\Lib;
 
 /**
- * JumpServer REST API 客户端
+ * JumpServer REST API client
  *
- * 使用 JumpServer AccessKey 的 HTTP Signature 认证方式（与 drf-httpsig 一致）：
- * - 签名头：(request-target) accept date
- * - 算法：hmac-sha256，签名结果 base64 编码
+ * Uses HTTP Signature authentication with the JumpServer AccessKey (consistent with drf-httpsig):
+ * - Signed headers: (request-target) accept date
+ * - Algorithm: hmac-sha256, signature base64-encoded
  * - Authorization: Signature keyId="...",algorithm="hmac-sha256",headers="(request-target) accept date",signature="..."
  *
- * 参考：https://docs.jumpserver.org/zh/v4/dev/rest_api/
+ * Reference: https://docs.jumpserver.org/zh/v4/dev/rest_api/
  */
 class JumpserverClient {
 
@@ -33,11 +33,11 @@ class JumpserverClient {
     }
 
     /**
-     * 执行一次 API 请求
+     * Perform one API request
      *
      * @param string     $method GET/POST/PATCH/DELETE
-     * @param string     $path   以 / 开头的 API 路径（可含 query string）
-     * @param array|null $body   请求体（将编码为 JSON）
+     * @param string     $path   API path starting with / (may include a query string)
+     * @param array|null $body   request body (encoded as JSON)
      * @return array ['ok' => bool, 'status' => int, 'data' => mixed, 'error' => string]
      */
     public function request(string $method, string $path, ?array $body = null): array {
@@ -45,7 +45,7 @@ class JumpserverClient {
         $date = gmdate('D, d M Y H:i:s \G\M\T');
         $accept = 'application/json';
 
-        // 构造签名串：request-target 必须与实际请求的 method + path 完全一致
+        // Build the signing string: request-target must exactly match the method + path of the actual request
         $requestTarget = strtolower($method) . ' ' . $path;
         $signingString = '(request-target): ' . $requestTarget . "\n"
             . 'accept: ' . $accept . "\n"
@@ -160,7 +160,7 @@ class JumpserverClient {
     }
 
     /**
-     * 获取分页/非分页列表的全部结果（JumpServer 可能返回数组或 {count,results}）
+     * Get all results of a paginated/non-paginated list (JumpServer may return an array or {count,results})
      */
     public function getAll(string $basePath): array {
         $sep = (strpos($basePath, '?') !== false) ? '&' : '?';
@@ -180,7 +180,7 @@ class JumpserverClient {
         return [];
     }
 
-    // ── 节点（资产分组） ──
+    // ── Nodes (asset groups) ──
 
     public function getNodes(): array {
         return $this->getAll('/api/v1/assets/nodes/');
@@ -194,13 +194,13 @@ class JumpserverClient {
         return null;
     }
 
-    // ── 平台 ──
+    // ── Platforms ──
 
     public function getPlatforms(): array {
         return $this->getAll('/api/v1/assets/platforms/');
     }
 
-    // ── 主机资产 ──
+    // ── Host assets ──
 
     public function getHosts(): array {
         return $this->getAll('/api/v1/assets/hosts/');
@@ -214,23 +214,23 @@ class JumpserverClient {
         return $this->request('PATCH', '/api/v1/assets/hosts/' . $assetId . '/', $data);
     }
 
-    // ── 账号 ──
+    // ── Accounts ──
 
     /**
-     * 获取账号模板列表（用于校验 / 展示）
+     * Get the account template list (for validation / display)
      */
     public function getAccountTemplates(): array {
         return $this->getAll('/api/v1/accounts/account-templates/');
     }
 
     /**
-     * 按账号模板为资产关联账号
+     * Link accounts to an asset through an account template
      *
-     * 使用批量接口 /api/v1/accounts/account-bulk/，模板会自动填充
-     * 用户名 / 密钥 / 密钥类型；on_invalid=skip 保证重复推送幂等
-     * （账号唯一键为 asset_id + username + secret_type）。
+     * Uses the bulk endpoint /api/v1/accounts/account-bulk/; the template fills in
+     * username / secret / secret type automatically; on_invalid=skip keeps repeated pushes idempotent
+     * (the account unique key is asset_id + username + secret_type).
      *
-     * @param bool $pushNow 是否在目标主机上推送创建账号（false 仅录入凭据）
+     * @param bool $pushNow whether to push and create the account on the target host (false only records the credentials)
      */
     public function associateAccountByTemplate(string $assetId, string $templateId, bool $pushNow = false): array {
         return $this->request('POST', '/api/v1/accounts/account-bulk/', [

@@ -5,11 +5,11 @@ namespace Modules\ZabbixIm\Lib;
 require_once __DIR__ . '/LanguageManager.php';
 
 /**
- * 飞书通讯录 API（企业自建应用）
- * - 获取部门信息列表：https://open.feishu.cn/document/server-docs/contact-v3/department/children
- * - 获取单个部门信息：https://open.feishu.cn/document/server-docs/contact-v3/department/get
- * - 获取部门直属用户列表：https://open.feishu.cn/document/server-docs/contact-v3/user/find_by_department
- * - 获取 tenant_access_token：https://open.feishu.cn/document/server-docs/authentication-management/access-token/tenant_access_token_internal
+ * Feishu contacts API (self-built enterprise app)
+ * - Department list: https://open.feishu.cn/document/server-docs/contact-v3/department/children
+ * - Single department: https://open.feishu.cn/document/server-docs/contact-v3/department/get
+ * - Direct department users: https://open.feishu.cn/document/server-docs/contact-v3/user/find_by_department
+ * - tenant_access_token: https://open.feishu.cn/document/server-docs/authentication-management/access-token/tenant_access_token_internal
  */
 class FeishuClient implements ImProviderInterface {
 
@@ -45,7 +45,7 @@ class FeishuClient implements ImProviderInterface {
         $departments = [];
         $seen = [];
 
-        // 飞书的子部门列表不含根部门本身，先把根部门加入（与企业微信保持一致）。
+        // Feishu's sub-department list does not include the root itself, so the root is added first (consistent with WeCom).
         $root = $this->fetchDepartmentDetail($this->rootDepartmentId);
         if ($root !== null) {
             $departments[] = $root;
@@ -116,7 +116,7 @@ class FeishuClient implements ImProviderInterface {
     }
 
     /**
-     * 获取单个部门信息（用于补齐根部门名称）。根部门 ID 为 0。
+     * Get a single department (to fill in the root department name). The root department ID is 0.
      */
     private function fetchDepartmentDetail(string $departmentId): ?array {
         $query = http_build_query([
@@ -128,7 +128,7 @@ class FeishuClient implements ImProviderInterface {
             'department_id' => $departmentId,
         ]);
 
-        // 根部门需要全员权限，失败时不抛异常，使用兜底名称。
+        // The root department requires all-member permission; on failure no exception is thrown and a fallback name is used.
         $dept = $result['data']['data']['department'] ?? null;
         $ok = $result['ok'] && (int) ($result['data']['code'] ?? -1) === 0 && is_array($dept);
 
@@ -140,7 +140,7 @@ class FeishuClient implements ImProviderInterface {
         }
 
         return [
-            // 强制使用配置的根部门 ID（如 0），确保子部门的 parent_id 能正确链接到根。
+            // Force the configured root department ID (e.g. 0) so the parent_id of sub-departments links correctly to the root.
             'id'        => $departmentId,
             'name'      => $name,
             'parent_id' => '',

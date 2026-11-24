@@ -1,6 +1,6 @@
 # Módulo Zabbix IPAM
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -34,7 +34,7 @@ A varredura usa apenas ICMP e não se conecta a portas TCP dos destinos. Faixas 
 - **Associação automática de hosts**: associa hosts do Zabbix pelo endereço IPv4 de suas interfaces
 - **Links para dados recentes**: abre a página de dados recentes de um host pelo nome na lista ou por um endereço alcançável associado na matriz
 - **Paginação**: todas as listas são paginadas e o usuário escolhe a quantidade de linhas por página
-- **Internacionalização**: segue automaticamente o idioma do usuário no Zabbix, com chinês simplificado, inglês, russo e português do Brasil
+- **Internacionalização**: segue automaticamente o idioma do usuário no Zabbix, com inglês e português do Brasil
 - **Design responsivo**: adapta-se a telas padrão, largas e estreitas, sem largura máxima fixa
 - **Controles de acesso e de entrada**: acesso restrito a administradores do Zabbix e validação de IPv4 e de valores numéricos
 
@@ -107,7 +107,7 @@ O módulo usa o framework de módulos do Zabbix. Arquivos principais:
 - `lib/IpScanner.php`: núcleo de varredura ICMP, fragmentação e multiprocessamento
 - `lib/IpStorage.php`: armazenamento de dados em JSON
 - `lib/TaskManager.php`: tarefas em segundo plano e gerenciamento das varreduras agendadas
-- `lib/LanguageManager.php`: idiomas chinês, inglês, russo e português do Brasil
+- `lib/LanguageManager.php`: idiomas inglês e português do Brasil
 - `lib/ViewRenderer.php`: renderização das views
 - `lib/ZabbixVersion.php`: detecção de compatibilidade com a versão do Zabbix
 - `assets/`: estilos das páginas e scripts do navegador

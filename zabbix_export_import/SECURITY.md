@@ -1,25 +1,25 @@
-# 导入安全审查（1.1.0）
+# Import security review (1.1.0)
 
-## 审查结论与边界
+## Conclusions and boundaries
 
-导入文件仅作为受限的 CSV/JSON 数据解析，不执行上传内容，不调用 `eval`、`unserialize`、Shell 或解压工具，也不按上传文件名写入 Web 目录。前端模块仅注册**预先部署的代码**，不能通过数据文件安装 PHP/JS 文件。
+Import files are only parsed as restricted CSV/JSON data. Uploaded content is never executed; `eval`, `unserialize`, shell commands and decompression tools are not used, and nothing is written to the web directory under the uploaded file name. Front-end modules only register **pre-deployed code**; PHP/JS files cannot be installed through data files.
 
-需要特别区分两类执行：上传内容不会在本模块作为 PHP 执行；但合法 Zabbix 配置中的脚本、命令、HTTP 请求、JavaScript 预处理等，在创建或启用监控项后可能由 Zabbix 执行。因此 1.1.0 增加执行类配置的默认拦截，不能把“JSON 可解析”当作“配置安全”。
+Two kinds of execution must be distinguished: uploaded content is never executed as PHP by this module, but scripts, commands, HTTP requests, JavaScript preprocessing and similar items in a valid Zabbix configuration may be executed by Zabbix once the items are created or enabled. That is why 1.1.0 blocks executable configuration by default; "the JSON parses" must not be mistaken for "the configuration is safe".
 
-## 加固内容
+## Hardening
 
-- 新增 `UploadValidator`，同时校验实际 PHP 上传临时文件、扩展名、文件名、真实大小、`fileinfo` 内容类型、UTF-8、数据容器及模式。拒绝 PHP/PHAR/PHTML、可执行文件、压缩包、双扩展名、伪装的非文本内容和超限数据。不会信任客户端声明的 MIME 类型。
-- 仅读取 `is_uploaded_file()` 为真的临时文件；不接受任意服务器文件路径；使用实际文件大小和有上限的流读取。保留合法的带引号 CSV 表头。
-- 默认拦截外部检查、数据库、SSH/Telnet、HTTP、Script/Browser、`system.run` 及 JavaScript 预处理。更新时也检查保留的目标预处理，避免通过状态更新激活被忽略的代码。
-- 执行类配置仅可由 **Super admin** 在预览时勾选授权。授权绑定到已预览的数据；确认时重新检查权限和配置。预览显示代码差异及风险提示。该授权不表示代码已被判定无害，只应给予可信来源。
-- 模块配置中的 PHP 标签和常见代码/命令相关键也默认拦截；普通配置的语义仍由已部署的扩展决定，应逐项审查，不应依赖通用关键字检查代替扩展自身的安全性。
-- 恢复主机本地项时，项的 `host` 必须与所属主机记录一致，禁止在主机文件中夹带其他主机的写入；预览包含待恢复的本地项内容。
-- 模块目录及 manifest 均限制在规范路径内，拒绝目录/manifest 符号链接、路径穿越和超大清单。
-- 预览存储必须位于 Zabbix 和已知 Web 根目录之外，目录 0700、文件 0600，检查所有者和符号链接，绑定用户/会话，原生 CSRF/SID 始终保护 POST。
-- 预览 JSON 使用 `JSON_HEX_TAG`：保留业务值，但在磁盘文件中把 `<`、`>` 编为 Unicode 转义，不保留原始 PHP/HTML 标签。显示仍使用原生 HTML 转义。
-- 每个会话最多保留 5 份预览，淘汰旧预览；创建数据上限 16 MiB、持久状态上限 32 MiB；全局最多 100 份、128 MiB，使用配额锁减少并发绕过，清理过期数据。
+- New `UploadValidator` that checks the actual PHP upload temporary file, extension, file name, real size, `fileinfo` content type, UTF-8, data container and schema. It rejects PHP/PHAR/PHTML, executables, archives, double extensions, disguised non-text content and oversized data. The client-declared MIME type is never trusted.
+- Only temporary files for which `is_uploaded_file()` is true are read; arbitrary server paths are not accepted; the real file size and bounded stream reads are used. Valid quoted CSV headers are kept.
+- External checks, database, SSH/Telnet, HTTP, Script/Browser, `system.run` and JavaScript preprocessing are blocked by default. Updates also check the preprocessing kept on the target, so ignored code cannot be activated through a status update.
+- Executable configuration can only be approved by a **Super admin** during preview. The approval is bound to the previewed data; permissions and configuration are checked again on confirmation. The preview shows code differences and risk warnings. The approval does not mean the code was judged harmless and should only be given to trusted sources.
+- PHP tags and common code/command-related keys in module configuration are also blocked by default; the semantics of ordinary configuration still depend on the deployed extension and must be reviewed item by item, instead of relying on generic keyword checks in place of the extension's own security.
+- When restoring host-local items, the item's `host` must match the host record that contains it, so a host file cannot smuggle writes to other hosts; the preview includes the local items to be restored.
+- Module directories and manifests are restricted to canonical paths; directory/manifest symlinks, path traversal and oversized manifests are rejected.
+- Preview storage must be outside Zabbix and the known web roots, with directories 0700 and files 0600, owner and symlink checks, bound to the user/session; native CSRF/SID always protects POST.
+- Preview JSON uses `JSON_HEX_TAG`: business values are kept, but `<` and `>` are stored as Unicode escapes on disk, so raw PHP/HTML tags are never kept. Display still uses native HTML escaping.
+- At most 5 previews per session are kept, evicting older ones; created data is limited to 16 MiB and persistent state to 32 MiB; globally at most 100 previews and 128 MiB, with a quota lock to reduce concurrent bypasses, and expired data is cleaned up.
 
-## 验证
+## Verification
 
 ```sh
 php tests/uploads.php
@@ -28,16 +28,16 @@ for v in 6.0 7.0 7.4 8.0 fallback6 fallback7 unknown; do php tests/compatibility
 python tests/upload_e2e.py --url http://YOUR-ZABBIX/zabbix/ --username Admin
 ```
 
-- 上传/执行策略单元检查：51 项通过。
-- 预览存储/模块路径检查：15 项通过。
-- 版本与接口分支检查：87 项通过；这是隔离的模拟接口测试，不代表其他版本实机验收。
-- 既有安全/筛选检查：50 项通过；格式检查：26 项通过。
-- 目标环境 Zabbix 7.0.32 / PHP 8.3.36 上，恶意上传/执行策略实测 36 项通过，原业务回归 58 项通过。
-- 所有 26 个 PHP 文件语法检查通过。
+- Upload/execution policy unit checks: 51 passed.
+- Preview storage/module path checks: 15 passed.
+- Version and interface branch checks: 87 passed; these are isolated simulated-interface tests and do not represent real acceptance on other versions.
+- Existing security/filter checks: 50 passed; format checks: 26 passed.
+- On the target environment Zabbix 7.0.32 / PHP 8.3.36, 36 real malicious upload/execution policy tests and 58 business regression tests passed.
+- All 26 PHP files passed the syntax check.
 
-真实测试上传 PHP、改名 PHP、双扩展名、PHP/PHTML 双扩展名、ZIP/路径穿越包、XML、PHP 序列化字符串、HTML、NUL 及超大文件；证明不生成代码执行标记。合法 JSON 内的 PHP 样式说明文字保持为数据且被转义显示。授权路径只创建了一条**禁用**的无副作用脚本监控项，随后删除。未在服务器或 Agent 上执行不可信上传脚本。
+Real tests uploaded PHP, renamed PHP, double extensions, PHP/PHTML double extensions, ZIP/path traversal archives, XML, serialized PHP strings, HTML, NUL and oversized files, and showed that no code execution marker was produced. PHP-like descriptive text inside valid JSON stays data and is displayed escaped. The approval path only created one **disabled** script item without side effects, which was deleted afterwards. No untrusted uploaded script was executed on the server or an agent.
 
-本次未提供独立的 Zabbix 6.0 / 7.4 实机环境。兼容层采用精确版本常量、CMDB 风格的原生类探测以及接口能力探测；保持 6.0 的 manifest 1/SID/旧模块路径与 7.x 的 manifest 2/CSRF/新模块管理器分支。未知环境明确拒绝，不使用空模块基类或伪造令牌。8.0 的分支测试只验证版本分类，不声明 8.0 运行兼容。
+No standalone real Zabbix 6.0 / 7.4 environment was available this time. The compatibility layer uses exact version constants, CMDB-style native class detection and interface capability detection; it keeps the 6.0 branch (manifest 1/SID/old module path) and the 7.x branch (manifest 2/CSRF/new module manager). Unknown environments are rejected explicitly, without an empty module base class or forged tokens. The 8.0 branch test only verifies version classification and does not claim runtime compatibility with 8.0.
 
 ## 1.3.0 template path
 

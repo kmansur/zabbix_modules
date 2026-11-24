@@ -1,136 +1,126 @@
-# Zabbix Clonehosts 模块
+# Zabbix Clonehosts Module
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-这是一个 Zabbix 前端模块，用于基于已有监控主机的配置批量克隆导入大量主机。模块在 Zabbix Web 的「数据采集（Data collection）」菜单下新增「主机批量导入」菜单项（位于「主机」之后），支持 CSV 文件导入和在线表格录入两种方式，并提供预览、冲突检测和实时导入进度反馈功能。
+Zabbix Clonehosts is a frontend module for Zabbix that batch-clones and imports a large number of hosts based on an existing monitored host's configuration. It adds a "Zabbix Clonehosts" menu item under the "Data collection" menu in Zabbix Web (after "Hosts"), supporting both CSV file import and online table entry, with preview, conflict detection, and real-time import progress feedback.
 
 ![1](images/image.png)
 ![2](images/image-1.png)
 ![3](images/image-2.png)
 ![4](images/image-3.png)
 
-## 功能特性
+## Features
 
-- **源主机克隆**：选择任意已有监控主机作为克隆模板，其全部配置（接口、群组、模板、标签、宏、TLS、IPMI、资产模式等）均可被继承
+- **Source host cloning**: Pick any existing monitored host as the clone template. Its full configuration (interfaces, groups, templates, tags, macros, TLS, IPMI, inventory mode, etc.) can be inherited.
+- **Dual-mode data entry**:
+  - CSV upload: UTF-8 and GBK supported, automatic header detection and encoding recognition, CSV template download available.
+  - Online table entry: add/remove rows, clear all, real-time validation.
+- **Smart field inheritance**: Only host name and interface IP are required. Other fields (visible name, port, host groups, templates, tags, macros, description) fall back to the source host's config when left empty.
+- **Host group auto-creation**: Host groups specified in the CSV that do not yet exist are created via the API before being linked.
+- **Preview & conflict detection**: Full preview before import; auto-detects host name conflicts, missing required fields, in-batch duplicates, and name clashes with existing hosts/templates. Status badges distinguish "exists / direct link", "will create", "not found", and "inherited from source".
+- **Selective import**: The preview page lets you check/uncheck the hosts you want to import. Conflicting hosts are skipped automatically; ready hosts can also be excluded individually.
+- **Back to edit**: From the preview page you can return to the online table page with all data preserved, so non-ready hosts can be edited without losing what was already entered.
+- **Import progress feedback**: Hosts are created one by one via AJAX, with a real-time progress bar and success/fail counters.
+- **Result report export**: After import finishes, you can download a CSV report (host name, IP, host ID, result, error message).
+- **Localization**: The interface follows the Zabbix user or system language, no gettext dependency.
+- **Responsive design**: Adapts to different screen sizes.
+- **Modern UI**: Follows the native Zabbix design language.
 
-- **双模式数据录入**：
-  - CSV 文件上传：支持 UTF-8 和 GBK 编码，自动表头检测和编码识别，可下载 CSV 模板
-  - 在线表格录入：支持添加/删除行、清空全部，数据实时校验
+## Installation
 
-- **智能字段继承**：仅主机名称和接口 IP 为必填项，其他字段（可见名称、端口、主机群组、模板、标签、宏、描述）留空时自动继承源主机配置
-
-- **主机群组自动创建**：导入时 CSV 中指定的主机群组若不存在，自动调用 API 创建后再关联
-
-- **预览与冲突检测**：导入前全面预览，自动检测主机名冲突、必填字段缺失、批次内重复、与已有主机/模板同名冲突等问题；并以状态标识区分「已存在直接关联」「将新建」「未找到」「继承自源主机」
-
-- **选择性导入**：预览页支持勾选/取消要导入的主机，冲突主机自动跳过，就绪主机可单独取消导入
-
-- **返回编辑**：预览页可一键带着数据返回在线表格录入页，方便对非就绪主机进行编辑，不会清空已录入数据
-
-- **导入进度反馈**：逐台 AJAX 创建主机，实时进度条和成功/失败计数
-
-- **结果报告导出**：导入完成后可下载 CSV 格式的结果报告（含主机名、IP、主机ID、结果、错误信息）
-
-- **多语言支持**：界面语言自动跟随 Zabbix 用户语言，或继承系统默认语言，无需 gettext 依赖
-
-- **响应式设计**：适配不同屏幕尺寸
-
-- **现代化界面**：遵循 Zabbix 原生设计风格
-
-## 安装步骤
-
-### 安装模块
+### Install Module
 
 ```bash
-# Zabbix 6.0 / 7.0 部署方法
+# For Zabbix 6.0 / 7.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/modules/
 
-# Zabbix 7.2+ / 7.4 / 8.0 部署方法
+# For Zabbix 7.2+ / 7.4 / 8.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/ui/modules/
 ```
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
+
+If you are using Zabbix 6.0, change the `manifest_version` in `zabbix_clonehosts/manifest.json` to `1.0`:
 
 ```bash
-# ⚠️ 如果使用Zabbix 6.0，修改manifest_version
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_clonehosts/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 转到 **Administration → General → Modules**。
-2. 点击 **Scan directory** 按钮扫描新模块。
-3. 找到「Host Batch Import / 主机批量导入」模块，点击启用模块。
-4. 刷新页面，模块将在 **Data collection（数据采集）** 菜单下显示为「主机批量导入」，位于「Hosts（主机）」之后。
+1. Go to Administration → General → Modules.
+2. Click **Scan directory** to detect new modules.
+3. Find and enable the "Zabbix Clonehosts" module.
+4. Refresh the page — the module appears under **Data collection → Host Batch Import**, right after "Hosts".
 
-## 注意事项
+## Notes
 
-- **性能考虑**：导入采用逐台串行方式，大批量导入可能需要较长时间。建议单次导入不超过 500 台主机。
-- **主机名唯一性**：主机名在 Zabbix 中与模板名共享命名空间，必须全局唯一。预览阶段会同时检测主机和模板冲突。
-- **模板依赖**：CSV 中指定的模板必须在 Zabbix 中已存在，否则导入时仅关联已存在的模板（未找到的模板会被标记为「未找到」）。
-- **CSV 编码**：建议使用 UTF-8 编码保存 CSV 文件。若中文显示乱码，可在页面切换编码为 GBK 后重新解析。
-- **权限要求**：使用本模块需要 Zabbix 管理员（Zabbix Admin）及以上权限。
-- **数据准确性**：创建的监控主机基于源主机的当前配置快照。如果源主机在导入过程中被修改，已创建的主机不会受影响。
+- **Performance**: Import is sequential. Large batches may take a while. Recommended upper bound: ~500 hosts per run.
+- **Host name uniqueness**: Host names share the namespace with templates in Zabbix and must be globally unique. The preview stage checks both host and template conflicts.
+- **Template dependency**: Templates referenced in the CSV must already exist in Zabbix. Missing templates are marked as "not found" and skipped during import.
+- **CSV encoding**: UTF-8 is recommended. If special characters look garbled, switch the page encoding to GBK and re-parse.
+- **Permissions**: Using this module requires Zabbix Admin or higher.
+- **Data accuracy**: Created hosts are based on a snapshot of the source host's current configuration. Changes to the source host during import do not affect already-created hosts.
 
-### 目录归属与保存提示
+### Directory ownership and save errors
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-## 开发
+## Development
 
-模块基于 Zabbix 模块框架开发。文件结构：
+The module is built on the Zabbix module framework. Key files:
 
-- `manifest.json`：模块配置、路由和静态资源声明
-- `Module.php`：菜单注册（兼容 `Zabbix\Core\CModule` 与 `Core\CModule`）
-- `CompatHelper.php`：Zabbix 6.0/6.4/7.x/8.x API 兼容性辅助类
-- `LangHelper.php`：中文、英文和俄语语言管理（纯 PHP 数组实现，无 gettext 依赖）
-- `actions/Clonehosts.php`：主页面控制器（源主机选择、CSV 上传、表格录入）
-- `actions/ClonehostsSource.php`：AJAX 源主机配置加载接口
-- `actions/ClonehostsPreview.php`：预览页面控制器（冲突检测、字段状态）
-- `actions/ClonehostsImport.php`：AJAX 导入接口（逐台创建主机）
-- `views/`：页面视图（主页面、预览、JSON 响应）
-- `assets/js/`：JavaScript（CSV 解析、表格管理、AJAX 导入进度）
-- `assets/css/`：模块样式表
-- `clonehosts_template.csv`：CSV 导入模板
+- `manifest.json` — module configuration, routes and asset declarations
+- `Module.php` — menu registration (compatible with both `Zabbix\Core\CModule` and `Core\CModule`)
+- `CompatHelper.php` — Zabbix 6.0/6.4/7.x/8.x API compatibility helper
+- `LangHelper.php` — English and Brazilian Portuguese localization (pure PHP array, no gettext)
+- `actions/Clonehosts.php` — main page controller (source host selection, CSV upload, table entry)
+- `actions/ClonehostsSource.php` — AJAX endpoint for loading source host config
+- `actions/ClonehostsPreview.php` — preview page controller (conflict detection, field status)
+- `actions/ClonehostsImport.php` — AJAX import endpoint (creates hosts one by one)
+- `views/` — page views (main page, preview, JSON response)
+- `assets/js/` — JavaScript (CSV parsing, table management, AJAX import progress)
+- `assets/css/` — module styles
+- `clonehosts_template.csv` — CSV import template
 
-如需扩展，可参考 [Zabbix 模块开发文档](https://www.zabbix.com/documentation/current/zh/devel/modules/file_structure)。
+See Zabbix module development docs for extension: https://www.zabbix.com/documentation/current/en/devel/modules/file_structure
 
-## 模块配置
+## Module Configuration
 
-### CSV 数据格式
+### CSV format
 
-模块附带模板文件 `clonehosts_template.csv`，可在导入页面点击「下载 CSV 模板」获取。CSV 表头及字段说明：
+The module ships with a template file `clonehosts_template.csv`. You can download it from the import page via the "Download CSV template" button. The template header is in English; the Brazilian Portuguese headers (e.g. `Nome do host(*)`) are recognized as well. Columns are read by position. CSV header and field descriptions:
 
-| 字段 | 必填 | 说明 |
+| Field | Required | Description |
 | --- | --- | --- |
-| 主机名称(*) | 是 | 主机标识，需全局唯一（与模板共享命名空间） |
-| 可见的名称 | 否 | 留空时使用主机名称 |
-| 接口IP(*) | 是 | 主机接口 IP 地址 |
-| 端口 | 否 | 留空时继承源主机端口 |
-| 主机群组 | 否 | 多个群组用 `;` 分隔，不存在时自动创建 |
-| 模板 | 否 | 多个模板用 `;` 分隔，按 host 或 name 匹配 |
-| 标签 | 否 | 格式 `tag=value`，多个用 `;` 分隔 |
-| 宏 | 否 | 格式 `{$MACRO}=value`，多个用 `;` 分隔 |
-| 描述 | 否 | 主机描述信息 |
+| Host Name(*) | Yes | Host identifier, must be globally unique (shares namespace with templates) |
+| Visible Name | No | Falls back to host name when empty |
+| Interface IP(*) | Yes | Host interface IP address |
+| Port | No | Falls back to source host's port when empty |
+| Host Groups | No | Multiple groups separated by `;`; auto-created if missing |
+| Templates | No | Multiple templates separated by `;`; matched by host or name |
+| Tags | No | Format `tag=value`, multiple pairs separated by `;` |
+| Macros | No | Format `{$MACRO}=value`, multiple pairs separated by `;` |
+| Description | No | Host description |
 
-示例：
+Example:
 
 ```csv
-主机名称(*),可见的名称,接口IP(*),端口,主机群组,模板,标签,宏,描述
+Host Name(*),Visible Name,Interface IP(*),Port,Host Groups,Templates,Tags,Macros,Description
 web-server-01,Web Server 01,192.168.1.10,10050,Servers;Web Servers,Linux by Zabbix Agent;Nginx by HTTP,env=prod;os=linux,{$SNMP_COMMUNITY}=public,Web server 01
 db-server-01,DB Server 01,192.168.1.20,10050,Servers;Database Servers,MySQL by Zabbix Agent,env=prod;os=linux;role=db,{$MYSQL_PORT}=3306,Database server 01
 ```
 
-## 许可证
+## License
 
-本项目遵循 GPL-2.0 许可证。
+This project is licensed under GPL-2.0.

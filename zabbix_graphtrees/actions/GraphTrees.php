@@ -28,7 +28,7 @@ class GraphTrees extends CController {
     }
 
     protected function doAction(): void {
-        // 仅获取树形数据（主机分组+主机），分类和图表通过AJAX异步加载
+        // Only the tree data (host groups + hosts) is fetched; categories and graphs are loaded asynchronously via AJAX
         $treeData = [];
         try {
             $hostGroups = API::HostGroup()->get([

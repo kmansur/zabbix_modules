@@ -1,8 +1,8 @@
 <?php
 /**
- * 机房访问权限（关联 Zabbix 用户组 / 用户）
- * - 机房可配置 user_groups、users（可选）
- * - 两者均未配置时对所有用户可见
+ * Room access permissions (linked to Zabbix user groups / users)
+ * - Rooms can have user_groups and users (optional)
+ * - Visible to all users when neither is set
  */
 
 namespace Modules\ZabbixRack\Lib;
@@ -55,7 +55,7 @@ class RackPermission {
     }
 
     /**
-     * 写入机房前规范化权限字段；空权限时不写入键名以保持旧版 config 兼容。
+     * Normalize permission fields before writing a room; empty permissions omit the keys to stay compatible with old configs.
      *
      * @param array<string, mixed> $room
      * @return array<string, mixed>
@@ -103,7 +103,7 @@ class RackPermission {
     }
 
     /**
-     * 机柜配置页及机房/机柜 CRUD 仅超级管理员可访问。
+     * The rack configuration page and room/rack CRUD are accessible to Super admins only.
      */
     public static function canAccessManage(): bool {
         return self::isSuperAdmin();
@@ -120,7 +120,7 @@ class RackPermission {
     }
 
     /**
-     * 保存前规范化：全选用户组与用户视为全员可见（不写权限字段）。
+     * Normalize before saving: all user groups and users selected means visible to everyone (no permission fields written).
      *
      * @param array<string, mixed> $room
      * @param array<int, string> $allGroupIds
@@ -324,7 +324,7 @@ class RackPermission {
     }
 
     /**
-     * 校验当前用户是否可操作指定主机上的机柜标签（分配/移除）。
+     * Check whether the current user may change rack tags on the given host (assign/remove).
      */
     public static function userCanAccessHostId(string $hostId): bool {
         if (self::isSuperAdmin()) {

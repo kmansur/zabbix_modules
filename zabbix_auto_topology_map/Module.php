@@ -11,24 +11,24 @@ if (class_exists('Zabbix\\Core\\CModule')) {
 		}
 
 		/**
-		 * 在「监测」下注册「自动拓扑图」入口。
-		 * 整段包在 try/catch 里：菜单组件在不同版本签名略有差异，
-		 * 失败时只丢菜单，不能让所有前端页面白屏。
+		 * Registers the "Auto Topology Map" entry under Monitoring.
+		 * Wrapped in try/catch: the menu component signature differs slightly between versions,
+		 * so a failure only loses the menu instead of blanking every frontend page.
 		 */
 		private function registerMenu(): void {
 			try {
-				// 注意：必须是 \APP，不能写成 APP —— 命名空间内 APP 会被解析成
-				// Modules\Topomap\APP，Zabbix 的 autoloader 找不到就直接抛异常，
-				// PHP 的「全局类回退」不会发生，结果就是菜单静默丢失。
+				// Note: it must be \APP, not APP — inside the namespace APP resolves to
+				// Modules\Topomap\APP; the Zabbix autoloader cannot find it and throws,
+				// PHP's global class fallback does not happen, and the menu silently disappears.
 				$submenu = \APP::Component()->get('menu.main')
 					->findOrAdd(_('Monitoring'))
 					->getSubmenu();
 
-				if (method_exists($submenu, 'find') && $submenu->find(LanguageManager::t('自动拓扑图')) !== null) {
+				if (method_exists($submenu, 'find') && $submenu->find(LanguageManager::t('Auto topology map')) !== null) {
 					return;
 				}
 
-				$item = (new \CMenuItem(LanguageManager::t('自动拓扑图')))->setAction('topomap.view');
+				$item = (new \CMenuItem(LanguageManager::t('Auto topology map')))->setAction('topomap.view');
 
 				if (method_exists($submenu, 'insertAfter')) {
 					$submenu->insertAfter(_('Maps'), $item);
@@ -38,7 +38,7 @@ if (class_exists('Zabbix\\Core\\CModule')) {
 				}
 			}
 			catch (\Throwable $e) {
-				// 菜单注册失败不影响模块页面本身（仍可直接访问 zabbix.php?action=topomap.view）
+				// A menu registration failure does not affect the module page (still reachable at zabbix.php?action=topomap.view)
 			}
 		}
 	}
@@ -51,18 +51,18 @@ else {
 
 		private function registerMenu(): void {
 			try {
-				// 注意：必须是 \APP，不能写成 APP —— 命名空间内 APP 会被解析成
-				// Modules\Topomap\APP，Zabbix 的 autoloader 找不到就直接抛异常，
-				// PHP 的「全局类回退」不会发生，结果就是菜单静默丢失。
+				// Note: it must be \APP, not APP — inside the namespace APP resolves to
+				// Modules\Topomap\APP; the Zabbix autoloader cannot find it and throws,
+				// PHP's global class fallback does not happen, and the menu silently disappears.
 				$submenu = \APP::Component()->get('menu.main')
 					->findOrAdd(_('Monitoring'))
 					->getSubmenu();
 
-				if (method_exists($submenu, 'find') && $submenu->find(LanguageManager::t('自动拓扑图')) !== null) {
+				if (method_exists($submenu, 'find') && $submenu->find(LanguageManager::t('Auto topology map')) !== null) {
 					return;
 				}
 
-				$item = (new \CMenuItem(LanguageManager::t('自动拓扑图')))->setAction('topomap.view');
+				$item = (new \CMenuItem(LanguageManager::t('Auto topology map')))->setAction('topomap.view');
 
 				if (method_exists($submenu, 'insertAfter')) {
 					$submenu->insertAfter(_('Maps'), $item);

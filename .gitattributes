@@ -1,7 +1,7 @@
-# 自动规范化行结束符
+# Normalize line endings automatically
 * text=auto eol=lf
 
-# 针对不同文件类型更精确的配置（推荐）
+# More precise settings per file type (recommended)
 *.js text eol=lf
 *.ts text eol=lf
 *.jsx text eol=lf
@@ -13,7 +13,7 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 
-# 二进制文件不处理
+# Binary files are left untouched
 *.png binary
 *.jpg binary
 *.gif binary

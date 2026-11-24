@@ -1,6 +1,6 @@
 # Zabbix Backup and Restore
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -21,7 +21,7 @@ Selecione a configuração no frontend do Zabbix, exporte um único arquivo YAML
 - Exporta categorias de configuração para YAML, até 500 MiB por arquivo.
 - Pré-visualiza as versões de origem e destino e a quantidade de registros antes de restaurar.
 - Cria objetos ausentes ou atualiza os objetos correspondentes, com reversão do lote em caso de falha.
-- Interface em chinês, inglês, russo e português do Brasil, conforme o idioma do usuário no Zabbix.
+- Interface em inglês e português do Brasil, conforme o idioma do usuário no Zabbix.
 
 ## Instalação
 

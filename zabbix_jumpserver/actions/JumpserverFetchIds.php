@@ -14,8 +14,8 @@ use Modules\ZabbixJumpserver\Lib\ConfigManager;
 use Modules\ZabbixJumpserver\Lib\JumpserverClient;
 
 /**
- * 从 JumpServer 拉取所有资产，按 IP 匹配 Zabbix 本地主机，
- * 并把匹配到的资产 ID 以标记形式写回对应主机。
+ * Fetch all assets from JumpServer, match local Zabbix hosts by IP,
+ * and write the matched asset IDs back to the hosts as tags.
  */
 class JumpserverFetchIds extends CController {
 
@@ -50,7 +50,7 @@ class JumpserverFetchIds extends CController {
         $client = new JumpserverClient($config);
 
         try {
-            // JumpServer 资产：按 IP（address）建立映射
+            // JumpServer assets: map by IP (address)
             $ipToAsset = [];
             foreach ($client->getHosts() as $asset) {
                 $address = trim((string) ($asset['address'] ?? ''));
@@ -148,7 +148,7 @@ class JumpserverFetchIds extends CController {
     }
 
     /**
-     * 将资产 ID 以标记形式写回 Zabbix 主机（保留已有其他标记）
+     * Write the asset ID back to the Zabbix host as a tag (keeping other existing tags)
      */
     private function writeBackAssetId(array $host, string $assetId): bool {
         $assetTag = ConfigManager::ASSET_TAG;

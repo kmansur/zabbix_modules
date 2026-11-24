@@ -6,7 +6,7 @@
     "url": "https://github.com/X-Mars/zabbix_modules",
     "namespace": "ZabbixClonehosts",
     "version": "1.3.0",
-    "description": "Clone existing host configurations in bulk from CSV or an online table, with import previews, conflict detection, automatic host group creation, and progress updates. / 通过 CSV 或在线表格批量克隆已有主机配置，支持导入预览、冲突检测、自动创建主机组和进度反馈。",
+    "description": "Clone existing host configurations in bulk from CSV or an online table, with import previews, conflict detection, automatic host group creation, and progress updates.",
     "actions": {
         "clonehosts": {
             "class": "Clonehosts",

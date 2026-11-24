@@ -1,6 +1,6 @@
 # Módulo Zabbix Graph Trees
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -32,7 +32,7 @@ Módulo de frontend do Zabbix que oferece navegação de recursos em árvore e v
   - Atualização automática (intervalos de 30/60/120/300 segundos)
   - Períodos rápidos de 10 minutos a 30 dias, além de hora inicial e final manuais
   - Um ícone de exportação no canto superior direito de cada gráfico baixa um PNG em alta resolução (área de plotagem de 2400×600)
-- **Internacionalização**: interface em chinês, inglês, russo e português do Brasil
+- **Internacionalização**: interface em inglês e português do Brasil
 - **Design responsivo**: adapta-se a diferentes tamanhos de tela
 - **Interface moderna**: visual limpo e objetivo
 

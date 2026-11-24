@@ -1,6 +1,6 @@
 <?php
 /**
- * 删除机房控制器
+ * Controller that deletes rooms
  */
 
 namespace Modules\ZabbixRack\Actions;
@@ -18,7 +18,7 @@ use Modules\ZabbixRack\Lib\RackPermission;
 class RoomDelete extends CController {
     
     protected function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {

@@ -7,7 +7,7 @@ use API;
 require_once __DIR__ . '/ConfigManager.php';
 
 /**
- * 从 lldp.remote.info[*] 监控项构建拓扑 nodes / edges
+ * Build topology nodes / edges from lldp.remote.info[*] items
  */
 class LldpTopologyBuilder {
 

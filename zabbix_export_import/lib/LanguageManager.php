@@ -13,13 +13,8 @@ final class LanguageManager
                 : \CSettingsHelper::get("default_lang");
         }
         $locale = str_replace("-", "_", trim((string) $locale));
-        if (preg_match('/^ru(?:_|$)/i', $locale)) {
-            return "ru_RU";
-        }
-        if (preg_match('/^pt(?:_|$)/i', $locale)) {
-            return "pt_BR";
-        }
-        return preg_match('/^[a-z]{2,3}_[A-Z]{2}$/D', $locale) ? $locale : "en_US";
+        // Supported languages: Brazilian Portuguese (pt*) and English (everything else).
+        return preg_match('/^pt(?:_|$)/i', $locale) ? "pt_BR" : "en_US";
     }
     public static function t(string $text): string
     {
@@ -53,7 +48,7 @@ final class LanguageManager
                 return $catalog[$prefix] . substr($text, strlen($prefix));
             }
         }
-        // Existing Zabbix gettext catalogs translate shared labels in other frontend locales.
+        // Shared labels fall back to the Zabbix gettext catalog of the current frontend locale.
         return _($text);
     }
 }

@@ -1,116 +1,116 @@
-# Zabbix 数据库导出模块
+# Zabbix Database Export Module
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-当前版本为 **3.0.4**，模块目录为 `zabbix_database_export`。
+The current version is **3.0.4**, installed under `zabbix_database_export`.
 
-这是一个从 Zabbix Web 导出数据库备份的前端模块。它复用前端当前的数据库连接，将数据库基础表的结构和数据导出为 SQL 文件。模块入口位于 **管理 → 数据库导出**，仅 Zabbix 超级管理员可使用。
+This frontend module exports database backups from Zabbix Web. It reuses the frontend's database connection to export base table definitions and rows as a SQL file. Open **Administration → Database export** as a Zabbix Super admin.
 
-## 功能特性
+## Features
 
-- **数据库识别**。自动选择 MySQL/MariaDB 或 PostgreSQL 导出方式，页面显示数据库类型和版本。
-- **选表**。查看表名、存储引擎和预估大小（数据与索引合计），按表名筛选并批量选择。
-- **导出模式**。支持表结构和数据、仅表结构、仅数据。未选中的表始终保留 `CREATE TABLE`，包括字段、索引和约束。
-- **输出位置**。可在浏览器下载或保存到服务器。选择浏览器下载时，实际大小不超过 500 MB（500,000,000 字节）的文件直接下载，更大的文件自动保存到指定目录。
-- **时区与语言**。文件名包含数据库类型，时间使用当前用户的时区。页面跟随前端语言设置，支持中文、英文和俄语。
-- **界面**。使用本地 CSS 和 JavaScript 实现响应式 Element Plus 风格。
+- **Database detection**. Automatically choose the MySQL/MariaDB or PostgreSQL export implementation and display the database type and version.
+- **Table selection**. View table names, storage engines, and estimated sizes including data and indexes. Filter by name and select tables in bulk.
+- **Export modes**. Export structure and data, structure only, or data only. Unselected tables always retain their `CREATE TABLE` statements, including columns, indexes, and constraints.
+- **Output destination**. Download in the browser or save on the server. When browser download is selected, files up to 500 MB (500,000,000 bytes) download directly. Larger files are saved automatically to the specified directory.
+- **Time zone and language**. Filenames include the database type and use the current user's time zone. The interface follows the frontend language setting and supports English and Brazilian Portuguese.
+- **Interface**. Local CSS and JavaScript provide a responsive layout styled after Element Plus.
 
 ![1](images/1.png)
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
-将本目录下的 `manifest.json`、`Module.php`、`actions/`、`assets/`、`lib/` 和 `views/` 复制到前端的 `modules/zabbix_database_export/`。常见部署路径如下。
+Copy `manifest.json`, `Module.php`, `actions/`, `assets/`, `lib/`, and `views/` from this directory into `modules/zabbix_database_export/` under your Zabbix frontend. Common package paths are shown below.
 
-| Zabbix 版本 | 模块目录 |
+| Zabbix version | Module directory |
 | --- | --- |
 | 7.0 | `/usr/share/zabbix/modules/zabbix_database_export/` |
 | 8.0 | `/usr/share/zabbix/ui/modules/zabbix_database_export/` |
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
 
-Zabbix 6.0 将模块清单版本改为 1.0；7.0/8.0 保持 2.0。
+For Zabbix 6.0, change the module manifest version to 1.0. Keep 2.0 on 7.0/8.0.
 
 ```bash
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' /usr/share/zabbix/modules/zabbix_database_export/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 使用超级管理员账号进入 **管理 → 一般 → 模块**（**Administration → General → Modules**）。
-2. 选择 **扫描目录**（**Scan directory**），启用 **Zabbix Database Export**。
-3. 刷新页面并打开 **管理 → 数据库导出**。
+1. Sign in as a Super admin and open **Administration → General → Modules**.
+2. Select **Scan directory** and enable **Zabbix Database Export**.
+3. Refresh the page and open **Administration → Database export**.
 
-## 注意事项
+## Notes
 
-- **备份内容**。完整备份包含用户和凭据。MySQL/MariaDB SQL 使用 `CREATE TABLE` 和带列名的 `INSERT`。PostgreSQL 使用原生 `pg_dump` 生成 SQL 和 `COPY` 数据，包含索引、约束和序列。导入「仅数据」模式生成的文件时，选中的表需要已有兼容结构，未选中的表需要能在目标库创建。
-- **数据一致性**。InnoDB 数据在同一事务快照下读取。PostgreSQL 的结构和数据导出共用同一个事务快照。
-- **PostgreSQL 环境**。PHP 需要启用 `pgsql` 扩展和 `proc_open`，前端服务器需安装与数据库服务器兼容的 `pg_dump`。模块复用前端配置的连接和 TLS 参数，临时密码文件权限为 `0600`，完成后删除。
-- **SQL 回读**。PostgreSQL 文件使用 `psql -v ON_ERROR_STOP=1 -d 目标库 -f 备份.sql` 导入。SQL 使用源数据库方言，目标需要兼容的数据库类型及扩展。
-- **大文件**。模块先在 PHP 临时目录生成完整文件。保存到服务器还需要目标目录有足够的磁盘空间。导出耗时受 Web 服务器、代理和 PHP-FPM 的超时设置影响。
+- **Backup contents**. A full backup includes users and credentials. MySQL/MariaDB SQL uses `CREATE TABLE` and `INSERT` with explicit column names. PostgreSQL uses native `pg_dump` SQL and `COPY` data, including indexes, constraints, and sequences. When importing a file generated in **Data only** mode, selected tables need existing compatible definitions, and unselected tables must be creatable in the destination database.
+- **Data consistency**. InnoDB data is read from a single transaction snapshot. PostgreSQL structure and data exports share one transaction snapshot.
+- **PostgreSQL requirements**. Enable PHP `pgsql` and `proc_open`, and install a compatible `pg_dump` on the frontend server. The module reuses frontend connection and TLS settings. Its temporary password file has mode `0600` and is removed afterward.
+- **SQL restore**. Import PostgreSQL files with `psql -v ON_ERROR_STOP=1 -d target_database -f backup.sql`. Dumps use the source database dialect and require compatible target database types and extensions.
+- **Large files**. The module first writes the complete backup to the PHP temporary directory. Server saves also require enough free space at the destination. Web server, proxy, and PHP-FPM timeouts can affect long exports.
 
-### 目录归属与保存提示
+### Directory ownership and save errors
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-## 开发
+## Development
 
-- `manifest.json`、`Module.php` — 模块注册和菜单入口
-- `actions/DatabaseExport.php`、`views/databaseexport.php` — 请求处理与页面渲染
-- `lib/SqlExport.php`、`lib/PostgresqlExport.php`、`lib/BackupFile.php` — SQL 导出与文件保存
-- `lib/LanguageManager.php`、`assets/` — 界面翻译与前端资源
-- `tests/checks.php` — SQL 导出与 500 MB 边界回归检查
+- `manifest.json`, `Module.php` — Module registration and menu entry
+- `actions/DatabaseExport.php`, `views/databaseexport.php` — Request handling and rendering
+- `lib/SqlExport.php`, `lib/PostgresqlExport.php`, `lib/BackupFile.php` — SQL export and file saving
+- `lib/LanguageManager.php`, `assets/` — Translations and frontend assets
+- `tests/checks.php` — SQL export and 500 MB boundary regression checks
 
-PostgreSQL 回归检查位于 `tests/postgresql.php`，覆盖选表、排除历史数据、序列、二进制、JSON 和生成列。
+PostgreSQL regression checks in `tests/postgresql.php` cover table selection, history exclusion, sequences, binary data, JSON, and generated columns.
 
-## 模块配置
+## Module Configuration
 
-### 使用方法
+### Usage
 
-1. 在 **导出范围** 中选择全部表或选中的表。可用搜索框缩小范围，用表头复选框选择筛选出的全部表。
-   勾选 **排除历史记录** 后，所有以 `history` 开头的表均仅导出结构。
-2. 选择 **导出内容**。
+1. Under **Table scope**, choose all tables or selected tables. Use the search field to narrow the list and the header checkbox to select all filtered tables.
+   Check **Exclude history records** to export only the structure of every table whose name starts with `history`.
+2. Choose the export **Contents**.
 
-   | 模式 | 选中的表 | 未选中的表 |
+   | Mode | Selected tables | Unselected tables |
    | --- | --- | --- |
-   | 表结构和数据 | 表结构和行数据 | 表结构 |
-   | 仅表结构 | 表结构 | 表结构 |
-   | 仅数据 | 行数据 | 表结构 |
+   | Structure and data | Table structure and rows | Table structure |
+   | Structure only | Table structure | Table structure |
+   | Data only | Rows | Table structure |
 
-3. 选择 **浏览器下载** 或 **保存到服务器**，填写服务器目录并点击 **导出 SQL**。保存到服务器后，页面会显示绝对路径和文件大小。
+3. Choose **Download in browser** or **Save on server**, enter the server directory, and click **Export SQL**. For server saves, the page displays the absolute path and file size.
 
-#### 导出文件名
+#### Export Filenames
 
-浏览器下载、手动保存和超过 500 MB 后自动保存均使用以下格式。时间为当前 Zabbix 用户的时区时间。
+Browser downloads, manual server saves, and automatic saves over 500 MB use the following formats. Timestamps follow the current Zabbix user's time zone.
 
-| 数据库类型 | 文件名格式 |
+| Database type | Filename format |
 | --- | --- |
 | MySQL | `zabbix_database_backup_mysql_yyyy-mm-dd_hh-mm-ss.sql` |
 | MariaDB | `zabbix_database_backup_mariadb_yyyy-mm-dd_hh-mm-ss.sql` |
 | PostgreSQL | `zabbix_database_backup_postgresql_yyyy-mm-dd_hh-mm-ss.sql` |
 
-#### 配置服务器备份目录
+#### Configure the Server Backup Directory
 
-默认目录为 `/tmp/zabbix`。该目录不存在时，模块会尝试创建。要允许其他位置，可在模块部署目录添加 `config.local.php`：
+The default directory is `/tmp/zabbix`. The module attempts to create it if needed. To allow other locations, add `config.local.php` to the deployed module directory:
 
 ```php
 <?php
 return ['/var/lib/zabbix/database-backups'];
 ```
 
-页面可填写配置的目录或其下已有的子目录。备份目录须位于 Web 根目录之外，归 Web 服务账号所有，权限为 `0700`。导出的文件权限为 `0600`，同名文件会保留。容器部署时，目录位于前端容器内，可挂载持久卷。
+Enter a configured directory or one of its existing subdirectories in the form. The directory must be outside the web root, owned by the web service account, and have mode `0700`. Exported files use mode `0600`, and existing files with the same name are preserved. In container deployments, the directory is inside the frontend container and can be backed by a persistent volume.
 
-## 许可证
+## License
 
-本模块的许可说明见仓库[许可证](../README.md#许可证)。分发时保留相关第三方署名。
+See the repository [license terms](../README.md#license). Preserve third-party attribution when redistributing.

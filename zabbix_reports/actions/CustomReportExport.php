@@ -19,7 +19,7 @@ use Modules\ZabbixReports\Lib\ProblemFinder;
 class CustomReportExport extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -62,7 +62,7 @@ class CustomReportExport extends CController {
                 }
             }
 
-            // 验证日期
+            // Validate the dates
             $fromTimestamp = strtotime($fromDate . ' 00:00:00');
             $toTimestamp = strtotime($toDate . ' 23:59:59');
             
@@ -70,10 +70,10 @@ class CustomReportExport extends CController {
                 throw new \Exception(LanguageManager::t('Invalid date format'));
             }
 
-            // 重新生成报表数据
+            // Regenerate the report data
             $reportData = $this->generateReportData($fromTimestamp, $toTimestamp, $groupId);
 
-            // 只支持PDF导出（参考日报导出）
+            // Only PDF export is supported (modeled on the daily report export)
             $this->exportToPdf($reportData, $fromDate, $toDate, $groupName);
 
         } catch (\Exception $e) {
@@ -83,7 +83,7 @@ class CustomReportExport extends CController {
     }
 
     private function generateReportData(int $fromTimestamp, int $toTimestamp, string $groupId = ''): array {
-        // 获取主机（支持分组过滤）
+        // Get hosts (with group filter support)
         $hostOptions = [
             'output' => ['hostid', 'name'],
             'filter' => ['status' => HOST_STATUS_MONITORED]
@@ -94,7 +94,7 @@ class CustomReportExport extends CController {
         $filteredHosts = API::Host()->get($hostOptions);
         $filteredHostIds = array_column($filteredHosts, 'hostid');
 
-        // 使用 ProblemFinder 获取与报表周期有交集的所有告警
+        // Use ProblemFinder to get all alarms that overlap the report period
         $problemResult = ProblemFinder::getProblemsInPeriod($fromTimestamp, $toTimestamp, 500, $filteredHostIds);
         $problemCount = $problemResult['problemCount'];
         $resolvedCount = $problemResult['resolvedCount'];
@@ -103,7 +103,7 @@ class CustomReportExport extends CController {
         $triggerHostMap = $problemResult['triggerHostMap'];
         $triggerStatusMap = $problemResult['triggerStatusMap'] ?? [];
 
-        // 构建告警信息
+        // Build the alarm information
         $alertInfo = [];
         $hostCounts = [];
         foreach ($events as $event) {
@@ -132,10 +132,10 @@ class CustomReportExport extends CController {
         arsort($hostCounts);
         $topHosts = array_slice($hostCounts, 0, 10, true);
 
-        // 获取所有主机（使用已过滤的主机列表）
+        // Get all hosts (using the filtered host list)
         $hosts = $filteredHosts;
 
-        // 获取主机组映射
+        // Get the host group map
         $hostGroups = [];
         if (!empty($hosts)) {
             $hostids = array_column($hosts, 'hostid');
@@ -144,7 +144,7 @@ class CustomReportExport extends CController {
                 'hostids' => $hostids
             ]);
             
-            // 建立主机到组的映射
+            // Build the host-to-group map
             foreach ($hostGroupMap as $group) {
                 $groupHosts = API::Host()->get([
                     'output' => ['hostid'],
@@ -161,7 +161,7 @@ class CustomReportExport extends CController {
             }
         }
 
-        // 第二部分：按主机群组分组的主机信息
+        // Part 2: host information grouped by host group
         $hostsByGroup = [];
         $cpuUsage = [];
         $memUsage = [];
@@ -169,14 +169,14 @@ class CustomReportExport extends CController {
         $memTotal = [];
         
         foreach ($hosts as $host) {
-            // 分组主机
+            // Group hosts
             $groups = isset($hostGroups[$host['hostid']]) ? $hostGroups[$host['hostid']] : [];
             $hostGroupName = !empty($groups) ? $groups[0]['name'] : 'No Group';
             if (!isset($hostsByGroup[$hostGroupName])) {
                 $hostsByGroup[$hostGroupName] = [];
             }
             
-            // 初始化主机信息
+            // Initialize host information
             $hostInfo = [
                 'name' => $host['name'],
                 'cpu_usage' => 'N/A',
@@ -185,35 +185,35 @@ class CustomReportExport extends CController {
                 'mem_total' => 'N/A'
             ];
             
-            // 使用ItemFinder查找CPU使用率
+            // Use ItemFinder to find CPU utilization
             $cpuUtilResult = ItemFinder::findCpuUtilization($host['hostid'], $fromTimestamp, $toTimestamp);
             if ($cpuUtilResult && $cpuUtilResult['value'] !== null) {
                 $cpuUsage[$host['name']] = $cpuUtilResult['value'];
                 $hostInfo['cpu_usage'] = number_format($cpuUtilResult['value'], 2) . '%';
             }
             
-            // 使用ItemFinder查找CPU数量
+            // Use ItemFinder to find the CPU count
             $cpuCountResult = ItemFinder::findCpuCount($host['hostid'], $fromTimestamp, $toTimestamp);
             if ($cpuCountResult && $cpuCountResult['value'] !== null) {
                 $cpuTotal[$host['name']] = $cpuCountResult['value'];
                 $hostInfo['cpu_total'] = $cpuCountResult['value'];
             }
             
-            // 使用ItemFinder查找内存使用率
+            // Use ItemFinder to find memory utilization
             $memUtilResult = ItemFinder::findMemoryUtilization($host['hostid'], $fromTimestamp, $toTimestamp);
             if ($memUtilResult && $memUtilResult['value'] !== null) {
                 $memUsage[$host['name']] = $memUtilResult['value'];
                 $hostInfo['mem_usage'] = number_format($memUtilResult['value'], 2) . '%';
             }
             
-            // 使用ItemFinder查找内存总量
+            // Use ItemFinder to find total memory
             $memTotalResult = ItemFinder::findMemorySize($host['hostid'], $fromTimestamp, $toTimestamp);
             if ($memTotalResult && $memTotalResult['value'] !== null) {
                 $memTotal[$host['name']] = $memTotalResult['value'];
                 $hostInfo['mem_total'] = number_format($memTotalResult['value'] / (1024*1024*1024), 2);
             }
             
-            // 添加主机到对应群组
+            // Add the host to its group
             $hostsByGroup[$hostGroupName][] = $hostInfo;
         }
         arsort($cpuUsage);
@@ -221,7 +221,7 @@ class CustomReportExport extends CController {
         $topCpuHosts = array_slice($cpuUsage, 0, 10, true);
         $topMemHosts = array_slice($memUsage, 0, 10, true);
 
-        // 准备数据（参考日报格式）
+        // Prepare the data (modeled on the daily report format)
         return [
             'date' => date('Y-m-d', $fromTimestamp),
             'report_date' => date('Y-m-d', $fromTimestamp),
@@ -229,7 +229,7 @@ class CustomReportExport extends CController {
             'resolvedCount' => $resolvedCount,
             'alertInfo' => $alertInfo,
             'hostsByGroup' => $hostsByGroup,
-            // 保留旧格式兼容性
+            // Keep compatibility with the old format
             'topHosts' => $topHosts,
             'topCpuHosts' => $topCpuHosts,
             'topMemHosts' => $topMemHosts,
@@ -239,7 +239,7 @@ class CustomReportExport extends CController {
     }
 
     private function exportToPdf(array $data, string $fromDate, string $toDate, string $groupName = ''): void {
-        // 生成PDF（严格参考日报导出方式）
+        // Generate the PDF (strictly following the daily report export)
         $pdfTitle = LanguageManager::t('Custom Report') . ' - ' . $fromDate . ' - ' . $toDate;
         if ($groupName !== '') {
             $pdfTitle .= ' [' . $groupName . ']';
@@ -248,13 +248,13 @@ class CustomReportExport extends CController {
         $pdfGenerator->setData($data);
         $pdfContent = $pdfGenerator->generate();
 
-        // 检查是否是HTML格式（当没有PDF库时的fallback）
+        // Check whether it is HTML (fallback when no PDF library is available)
         if (strpos($pdfContent, '<!DOCTYPE html>') === 0) {
-            // 返回HTML文件，用户可以打印为PDF
+            // Return an HTML file that the user can print to PDF
             header('Content-Type: text/html; charset=UTF-8');
             header('Content-Disposition: attachment; filename="custom_report_' . str_replace('-', '', $fromDate) . '_' . str_replace('-', '', $toDate) . '.html"');
         } else {
-            // 返回实际的PDF文件
+            // Return the actual PDF file
             header('Content-Type: application/pdf');
             header('Content-Disposition: attachment; filename="custom_report_' . str_replace('-', '', $fromDate) . '_' . str_replace('-', '', $toDate) . '.pdf"');
         }

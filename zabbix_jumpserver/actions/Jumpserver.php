@@ -70,7 +70,7 @@ class Jumpserver extends CController {
     }
 
     /**
-     * 告警严重度选项（值 => 显示名），与 Zabbix 默认严重度一致
+     * Alarm severity options (value => display name), matching the Zabbix default severities
      */
     private function getSeverityOptions(): array {
         return [
@@ -100,7 +100,7 @@ class Jumpserver extends CController {
     }
 
     /**
-     * 获取主机列表（按所选分组/主机过滤），附带接口、分组与标记信息
+     * Get the host list (filtered by the selected group/host), including interfaces, groups and tags
      */
     private function getHosts(string $groupid, string $hostid, string $severity = '', string $search = ''): array {
         $params = [
@@ -175,7 +175,7 @@ class Jumpserver extends CController {
             $problemInfo = $problemMap[$hostIdStr] ?? ['max' => -1, 'counts' => [], 'list' => []];
             $hostSeverity = (int) $problemInfo['max'];
 
-            // 搜索过滤：按 IP / 主机名 / 技术名
+            // Search filter: by IP / host name / technical name
             if ($searchLower !== '') {
                 $haystack = mb_strtolower($hostName . ' ' . $hostTech . ' ' . $mainIp);
                 if (mb_strpos($haystack, $searchLower) === false) {
@@ -183,7 +183,7 @@ class Jumpserver extends CController {
                 }
             }
 
-            // 告警状态过滤：选定严重度时，保留含该严重度告警的主机；ok 表示无告警
+            // Alarm status filter: with a severity selected, keep hosts with alarms of that severity; ok means no alarms
             if ($severity !== '') {
                 if ($severity === 'ok') {
                     if ($hostSeverity >= 0) {
@@ -212,9 +212,9 @@ class Jumpserver extends CController {
     }
 
     /**
-     * 获取每台主机当前处于问题状态的告警
-     * 返回 hostid => [
-     *   'max'    => int 最高严重度,
+     * Get the alarms currently in problem state for each host
+     * Returns hostid => [
+     *   'max'    => int highest severity,
      *   'counts' => [severity => count],
      *   'list'   => [ ['severity'=>int, 'name'=>string, 'time'=>int], ... ]
      * ]

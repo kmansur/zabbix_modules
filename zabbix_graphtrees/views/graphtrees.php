@@ -10,7 +10,7 @@ use Modules\ZabbixGraphTrees\Lib\ViewRenderer;
 
 $pageTitle = $data['title'] ?? LanguageManager::t('Graph Trees');
 
-// CSS样式
+// CSS styles
 $styleTag = new CTag('style', true, '
 .graphtrees-container {
     display: flex;
@@ -20,7 +20,7 @@ $styleTag = new CTag('style', true, '
     padding: 0;
 }
 
-/* ===== 左侧树形面板 ===== */
+/* ===== Left tree panel ===== */
 .tree-panel {
     width: 280px;
     min-width: 280px;
@@ -52,7 +52,7 @@ $styleTag = new CTag('style', true, '
     padding: 8px;
 }
 
-/* 第一级：主机分组 */
+/* Level 1: host groups */
 .tree-group {
     margin-bottom: 4px;
 }
@@ -96,7 +96,7 @@ $styleTag = new CTag('style', true, '
     display: block;
 }
 
-/* 第二级：主机 */
+/* Level 2: hosts */
 .tree-host {
     padding: 5px 10px;
     margin: 1px 0;
@@ -136,7 +136,7 @@ $styleTag = new CTag('style', true, '
     transform: rotate(90deg);
 }
 
-/* 第三级：分类（Application / Tag） */
+/* Level 3: categories (Application / Tag) */
 .tree-categories {
     display: none;
     margin-left: 16px;
@@ -197,7 +197,7 @@ $styleTag = new CTag('style', true, '
     color: #adb5bd;
 }
 
-/* ===== 右侧内容面板 ===== */
+/* ===== Right content panel ===== */
 .content-panel {
     flex: 1;
     display: flex;
@@ -297,7 +297,7 @@ $styleTag = new CTag('style', true, '
     padding: 20px;
 }
 
-/* ===== 图表网格 ===== */
+/* ===== Graph grid ===== */
 .graphs-grid {
     display: grid;
     grid-template-columns: repeat(var(--graph-cols, 2), 1fr);
@@ -400,7 +400,7 @@ $styleTag = new CTag('style', true, '
     font-size: 13px;
 }
 
-/* ===== 空状态 ===== */
+/* ===== Empty state ===== */
 .empty-state {
     text-align: center;
     padding: 80px 20px;
@@ -417,7 +417,7 @@ $styleTag = new CTag('style', true, '
     font-size: 15px;
 }
 
-/* ===== 加载状态 ===== */
+/* ===== Loading state ===== */
 .loading-state {
     text-align: center;
     padding: 60px 20px;
@@ -439,7 +439,7 @@ $styleTag = new CTag('style', true, '
     100% { transform: rotate(360deg); }
 }
 
-/* ===== 图表放大弹窗 ===== */
+/* ===== Graph zoom dialog ===== */
 .graph-modal-overlay {
     position: fixed;
     top: 0;
@@ -508,7 +508,7 @@ $styleTag = new CTag('style', true, '
     height: auto;
 }
 
-/* ===== 响应式 ===== */
+/* ===== Responsive ===== */
 @media (max-width: 1200px) {
     .graphs-grid {
         --graph-cols: 1 !important;
@@ -529,10 +529,10 @@ $styleTag = new CTag('style', true, '
 }
 ');
 
-// ===== 构建树形面板 =====
+// ===== Build the tree panel =====
 $treePanel = (new CDiv())->addClass('tree-panel');
 
-// 搜索框
+// Search box
 $treeSearch = (new CDiv())
     ->addClass('tree-search')
     ->addItem(
@@ -542,7 +542,7 @@ $treeSearch = (new CDiv())
     );
 $treePanel->addItem($treeSearch);
 
-// 树节点
+// Tree nodes
 $treeNodes = (new CDiv())
     ->addClass('tree-nodes')
     ->setAttribute('id', 'tree-nodes');
@@ -551,7 +551,7 @@ if (!empty($data['tree_data'])) {
     foreach ($data['tree_data'] as $group) {
         $groupDiv = (new CDiv())->addClass('tree-group');
 
-        // 分组头
+        // Group header
         $groupHeader = (new CDiv())
             ->addClass('tree-group-header')
             ->setAttribute('onclick', 'toggleGroup(this)');
@@ -561,7 +561,7 @@ if (!empty($data['tree_data'])) {
         $groupHeader->addItem(new CSpan($group['groupname']));
         $groupDiv->addItem($groupHeader);
 
-        // 主机列表（默认折叠）
+        // Host list (collapsed by default)
         $hostsDiv = (new CDiv())->addClass('tree-hosts');
 
         foreach ($group['hosts'] as $host) {
@@ -579,7 +579,7 @@ if (!empty($data['tree_data'])) {
             $hostDiv->addItem(new CSpan($host['name']));
             $hostWrapper->addItem($hostDiv);
 
-            // 分类容器（将通过AJAX填充）
+            // Category container (filled via AJAX)
             $catDiv = (new CDiv())
                 ->addClass('tree-categories')
                 ->setAttribute('id', 'categories-' . $host['hostid']);
@@ -595,15 +595,15 @@ if (!empty($data['tree_data'])) {
 
 $treePanel->addItem($treeNodes);
 
-// ===== 构建内容面板 =====
+// ===== Build the content panel =====
 $contentPanel = (new CDiv())->addClass('content-panel');
 
-// 工具栏
+// Toolbar
 $toolbar = (new CDiv())
     ->addClass('content-toolbar')
     ->setAttribute('id', 'content-toolbar');
 
-// 时间范围选择
+// Time range selection
 $toolbar->addItem((new CSpan(LanguageManager::t('Time Range')))->addClass('toolbar-label'));
 
 $timeSelect = new CTag('select', true);
@@ -634,7 +634,7 @@ foreach ($timeOptions as $value => $label) {
 }
 $toolbar->addItem($timeSelect);
 
-// 使用 Zabbix 当前用户时区，提交绝对时间，避免浏览器时区造成偏移。
+// Use the current Zabbix user's time zone and submit absolute times, so the browser time zone does not cause offsets.
 $customRange = (new CDiv())
     ->addClass('custom-time-range')
     ->setAttribute('id', 'custom-time-range')
@@ -665,7 +665,7 @@ $toolbar->addItem($customRange);
 
 $toolbar->addItem((new CDiv())->addClass('toolbar-separator'));
 
-// 列数选择
+// Column count selection
 $toolbar->addItem((new CSpan(LanguageManager::t('Columns')))->addClass('toolbar-label'));
 
 $colSelect = new CTag('select', true);
@@ -684,7 +684,7 @@ $toolbar->addItem($colSelect);
 
 $toolbar->addItem((new CDiv())->addClass('toolbar-separator'));
 
-// 自动刷新
+// Automatic refresh
 $toolbar->addItem((new CSpan(LanguageManager::t('Auto Refresh')))->addClass('toolbar-label'));
 
 $refreshSelect = new CTag('select', true);
@@ -709,26 +709,26 @@ foreach ($refreshOptions as $value => $label) {
 }
 $toolbar->addItem($refreshSelect);
 
-// 手动刷新按钮
+// Manual refresh button
 $toolbar->addItem(
     (new CButton('refresh-btn', LanguageManager::t('Refresh')))
         ->addClass('toolbar-btn')
         ->setAttribute('onclick', 'refreshGraphs()')
 );
 
-// 信息栏
+// Info bar
 $toolbar->addItem(
     (new CSpan(''))->addClass('toolbar-info')->setAttribute('id', 'toolbar-info')
 );
 
 $contentPanel->addItem($toolbar);
 
-// 内容主体
+// Main content
 $contentBody = (new CDiv())
     ->addClass('content-body')
     ->setAttribute('id', 'content-body');
 
-// 默认空状态
+// Default empty state
 $emptyState = (new CDiv())
     ->addClass('empty-state')
     ->setAttribute('id', 'empty-state')
@@ -737,7 +737,7 @@ $emptyState = (new CDiv())
 
 $contentBody->addItem($emptyState);
 
-// 图表网格容器
+// Graph grid container
 $graphsGrid = (new CDiv())
     ->addClass('graphs-grid')
     ->setAttribute('id', 'graphs-grid')
@@ -747,13 +747,13 @@ $contentBody->addItem($graphsGrid);
 
 $contentPanel->addItem($contentBody);
 
-// ===== 主容器 =====
+// ===== Main container =====
 $mainContainer = (new CDiv())
     ->addClass('graphtrees-container')
     ->addItem($treePanel)
     ->addItem($contentPanel);
 
-// 渲染页面
+// Render the page
 ViewRenderer::render($pageTitle, $styleTag, $mainContainer);
 
 // ===== JavaScript =====
@@ -782,7 +782,7 @@ $i18n = [
 var i18n = <?php echo json_encode($i18n, JSON_UNESCAPED_UNICODE); ?>;
 var exportImageIcon = '<svg t="1795258841814" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4996" width="200" height="200" aria-hidden="true" focusable="false"><path d="M377.3 562.1s124-173.6 334.8-148.8v161.2l210.8-248L712.1 90.9v148.8s-297.6-24.8-334.8 322.4z" fill="#C0C3C6" p-id="4997"></path><path d="M910.6 928.2H116.9c-10.4 0-18.9-8.4-18.9-18.9V115.7c0-10.4 8.4-18.9 18.9-18.9H506c10.4 0 18.9 8.4 18.9 18.9s-8.4 18.9-18.9 18.9H135.7v756h756v-378c0-10.4 8.4-18.9 18.9-18.9s18.9 8.4 18.9 18.9v396.8c-0.1 10.4-8.5 18.8-18.9 18.8z" fill="#2E3742" p-id="4998"></path><path d="M712.1 593.4c-2.2 0-4.4-0.4-6.5-1.2-7.4-2.7-12.4-9.8-12.4-17.7v-144c-186.7-12.9-299.5 141-300.7 142.6-5 7-14.1 9.7-22 6.6-8-3.1-12.9-11.1-12-19.6C387.6 288.9 578.4 220 692.2 220h1.1V90.9c0-7.8 4.8-14.8 12.1-17.6 7.3-2.8 15.5-0.8 20.8 5L937 313.9c6.3 7 6.4 17.6 0.3 24.8l-210.8 248c-3.6 4.3-8.9 6.7-14.4 6.7zM670.5 392c14.2 0 28.8 0.8 43.8 2.6 9.5 1.1 16.6 9.2 16.6 18.7v109.9l166.9-196.4L731 140.2v99.5c0 5.3-2.2 10.3-6.1 13.8-3.9 3.6-9.1 5.3-14.3 5-10.8-0.9-244.2-16.2-304.2 243.6C456.2 455.2 546.5 392 670.5 392z" fill="#2E3742" p-id="4999"></path></svg>';
 
-// ===== 状态管理 =====
+// ===== State management =====
 var state = {
     selectedHostId: 0,
     selectedHostName: "",
@@ -794,10 +794,10 @@ var state = {
     autoRefreshTimer: null,
     autoRefreshSeconds: 0,
     loadedCategories: {}, // hostid -> categories data cache
-    currentGraphs: []     // 当前显示的图表数据
+    currentGraphs: []     // Graph data currently displayed
 };
 
-// ===== 树形面板交互 =====
+// ===== Tree panel interaction =====
 function toggleGroup(el) {
     var icon = el.querySelector(".tree-group-icon");
     var hostsDiv = el.parentElement.querySelector(".tree-hosts");
@@ -840,26 +840,26 @@ function filterTree(text) {
 }
 
 function selectHost(el, hostid, hostname) {
-    // 更新状态
+    // Update the state
     state.selectedHostId = hostid;
     state.selectedHostName = hostname;
     state.selectedCategory = "__all__";
 
-    // 高亮主机
+    // Highlight the host
     document.querySelectorAll(".tree-host").forEach(function(h) { h.classList.remove("active"); });
     el.classList.add("active");
 
-    // 清除分类高亮
+    // Clear the category highlight
     document.querySelectorAll(".tree-category").forEach(function(c) { c.classList.remove("active"); });
 
-    // 展开分类
+    // Expand the categories
     var toggle = el.querySelector(".tree-host-toggle");
     var catContainer = document.getElementById("categories-" + hostid);
 
     if (toggle) toggle.classList.add("expanded");
     if (catContainer) catContainer.classList.add("expanded");
 
-    // 折叠其他主机的分类
+    // Collapse the categories of other hosts
     document.querySelectorAll(".tree-categories").forEach(function(c) {
         if (c.id !== "categories-" + hostid) {
             c.classList.remove("expanded");
@@ -870,29 +870,29 @@ function selectHost(el, hostid, hostname) {
         if (t) t.classList.remove("expanded");
     });
 
-    // 加载分类（如果尚未加载）
+    // Load the categories (if not loaded yet)
     if (!state.loadedCategories[hostid]) {
         loadCategories(hostid);
     } else {
         renderCategories(hostid, state.loadedCategories[hostid]);
     }
 
-    // 加载所有图表
+    // Load all graphs
     loadGraphs(hostid, "__all__");
 }
 
 function selectCategory(el, hostid, category) {
     state.selectedCategory = category;
 
-    // 高亮分类
+    // Highlight the category
     document.querySelectorAll(".tree-category").forEach(function(c) { c.classList.remove("active"); });
     el.classList.add("active");
 
-    // 加载该分类的图表
+    // Load the graphs of this category
     loadGraphs(hostid, category);
 }
 
-// ===== AJAX: 加载分类 =====
+// ===== AJAX: load categories =====
 function loadCategories(hostid) {
     var catContainer = document.getElementById("categories-" + hostid);
     if (!catContainer) return;
@@ -921,7 +921,7 @@ function renderCategories(hostid, data) {
 
     catContainer.innerHTML = "";
 
-    // "所有图表"选项
+    // "All graphs" option
     var allDiv = document.createElement("div");
     allDiv.className = "tree-category" + (state.selectedCategory === "__all__" ? " active" : "");
     allDiv.onclick = function() { selectCategory(this, hostid, "__all__"); };
@@ -930,10 +930,10 @@ function renderCategories(hostid, data) {
         '<span class="tree-category-badge">' + (data.totalGraphs || 0) + '</span>';
     catContainer.appendChild(allDiv);
 
-    // 各分类
+    // Each category
     if (data.categories && data.categories.length > 0) {
         data.categories.forEach(function(cat) {
-            // 隐藏没有图表且没有数值型监控项的分类
+            // Hide categories without graphs and without numeric items
             if ((cat.graphCount || 0) === 0 && (cat.numericItemCount || 0) === 0) {
                 return;
             }
@@ -949,7 +949,7 @@ function renderCategories(hostid, data) {
     }
 }
 
-// ===== AJAX: 加载图表 =====
+// ===== AJAX: load graphs =====
 function loadGraphs(hostid, category) {
     var grid = document.getElementById("graphs-grid");
     var empty = document.getElementById("empty-state");
@@ -985,7 +985,7 @@ function loadGraphs(hostid, category) {
         });
 }
 
-// ===== 渲染图表 =====
+// ===== Render graphs =====
 function renderGraphs(graphs) {
     var grid = document.getElementById("graphs-grid");
     grid.innerHTML = "";
@@ -994,7 +994,7 @@ function renderGraphs(graphs) {
         var card = document.createElement("div");
         card.className = "graph-card";
 
-        // 头部
+        // Header
         var header = document.createElement("div");
         header.className = "graph-card-header";
 
@@ -1015,7 +1015,7 @@ function renderGraphs(graphs) {
 
         card.appendChild(header);
 
-        // 图表图片
+        // Graph image
         var body = document.createElement("div");
         body.className = "graph-card-body";
 
@@ -1054,7 +1054,7 @@ function renderGraphs(graphs) {
     });
 }
 
-// 重新请求高清原图，保留当前图表的类型、监控项和已应用时间范围。
+// Request the high-resolution original again, keeping the current graph type, items and applied time range.
 function exportGraphImage(g, button, sourceUrl, hostName) {
     if (button.disabled) return;
     var url = new URL(sourceUrl, window.location.href);
@@ -1075,7 +1075,7 @@ function exportGraphImage(g, button, sourceUrl, hostName) {
             return response.blob();
         })
         .then(function(blob) {
-            // 登录过期或接口报错时不能把 HTML/JSON 保存成 PNG。
+            // When the login has expired or the endpoint errors, HTML/JSON must not be saved as PNG.
             if (blob.type.split(";")[0].toLowerCase() !== "image/png" || blob.size === 0) {
                 throw new Error("Invalid PNG response");
             }
@@ -1090,7 +1090,7 @@ function exportGraphImage(g, button, sourceUrl, hostName) {
                 link.click();
             } finally {
                 link.remove();
-                // 等待浏览器开始下载后释放临时 URL。
+                // Release the temporary URL after the browser starts the download.
                 setTimeout(function() { URL.revokeObjectURL(objectUrl); }, 1000);
             }
         })
@@ -1110,7 +1110,7 @@ function validateGraphImage(blob) {
         var objectUrl = URL.createObjectURL(blob);
         var image = new Image();
         image.onload = function() {
-            // Zabbix 的权限、时间范围等错误也可能以 HTTP 200 + 小尺寸 PNG 返回。
+            // Zabbix permission, time range and other errors may also come back as HTTP 200 + a small PNG.
             if (image.naturalWidth >= 2400 && image.naturalHeight >= 600) {
                 resolve(objectUrl);
             } else {
@@ -1150,7 +1150,7 @@ function buildGraphUrl(g, width, height) {
     }
 }
 
-// ===== 放大弹窗 =====
+// ===== Zoom dialog =====
 function openZoomModal(g) {
     var overlay = document.createElement("div");
     overlay.className = "graph-modal-overlay";
@@ -1209,7 +1209,7 @@ function closeZoomModal() {
     }
 }
 
-// ===== 工具栏功能 =====
+// ===== Toolbar functions =====
 function onTimeRangeChange(value) {
     state.timeRangeRequestId++;
     var customRange = document.getElementById("custom-time-range");
@@ -1236,7 +1236,7 @@ function applyCustomTimeRange() {
         error.hidden = false;
         return;
     }
-    // datetime-local 值为相同格式的本地时间字符串，直接比较，不经过浏览器时区转换。
+    // datetime-local values are local time strings in the same format and are compared directly, without browser time zone conversion.
     if (fromInput.value >= toInput.value) {
         error.textContent = i18n.timeRangeOrder;
         error.hidden = false;
@@ -1254,7 +1254,7 @@ function applyCustomTimeRange() {
             return response.json();
         })
         .then(function(data) {
-            // 切换快捷范围或修改输入后，旧请求不得覆盖当前选择。
+            // After switching the quick range or changing the input, stale requests must not override the current selection.
             if (requestId !== state.timeRangeRequestId || fromValue !== fromInput.value || toValue !== toInput.value) return;
             if (!data.success) {
                 error.textContent = data.error || i18n.timeRangeFailed;
@@ -1311,7 +1311,7 @@ function stopAutoRefresh() {
 
 function refreshGraphs() {
     if (state.selectedHostId > 0) {
-        // 清除分类缓存以强制刷新
+        // Clear the category cache to force a refresh
         delete state.loadedCategories[state.selectedHostId];
         loadCategories(state.selectedHostId);
         loadGraphs(state.selectedHostId, state.selectedCategory);
@@ -1319,12 +1319,12 @@ function refreshGraphs() {
 }
 
 function refreshGraphImages() {
-    // 自动刷新：直接重新渲染当前图表（buildGraphUrl会生成新的时间戳）
+    // Automatic refresh: re-render the current graphs directly (buildGraphUrl generates a new timestamp)
     if (state.currentGraphs.length > 0) {
         renderGraphs(state.currentGraphs);
     }
 
-    // 同时刷新放大弹窗中的图片
+    // Also refresh the image in the zoom dialog
     var modalImg = document.getElementById("graph-modal-img");
     if (modalImg && modalImg.dataset.graphJson) {
         try {
@@ -1341,22 +1341,22 @@ function updateToolbarInfo(count) {
     }
 }
 
-// ===== 工具函数 =====
+// ===== Utility functions =====
 function escapeHtml(str) {
     var div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
 }
 
-// ===== 初始化 =====
+// ===== Initialization =====
 document.addEventListener("DOMContentLoaded", function() {
-    // 设置列数CSS变量
+    // Set the CSS variable for the column count
     var grid = document.getElementById("graphs-grid");
     if (grid) {
         grid.style.setProperty("--graph-cols", state.columns);
     }
 
-    // 恢复上次选择的自动刷新间隔
+    // Restore the last selected automatic refresh interval
     try {
         var saved = localStorage.getItem('graphtrees_auto_refresh');
         if (saved !== null) {
@@ -1369,7 +1369,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     } catch(e) {}
 
-    // 启动自动刷新
+    // Start automatic refresh
     if (state.autoRefreshSeconds > 0) {
         startAutoRefresh(state.autoRefreshSeconds);
     }

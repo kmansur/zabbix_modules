@@ -1,7 +1,7 @@
 <?php
 /**
- * 主机告警查询控制器
- * 返回指定主机的活跃告警信息
+ * Host alarm query controller
+ * Returns the active alarms of the given host
  */
 
 namespace Modules\ZabbixRack\Actions;
@@ -15,7 +15,7 @@ use Modules\ZabbixRack\Lib\HostRackManager;
 class HostProblems extends CController {
     
     protected function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {

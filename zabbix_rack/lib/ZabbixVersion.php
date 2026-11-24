@@ -1,13 +1,13 @@
 <?php
 /**
- * Zabbix 版本兼容层
+ * Zabbix version compatibility layer
  */
 
 namespace Modules\ZabbixRack\Lib;
 
 /**
- * Zabbix版本检测和兼容性工具类
- * 自动检测Zabbix版本并提供统一的API接口
+ * Zabbix version detection and compatibility helper
+ * Detects the Zabbix version automatically and provides a unified API
  */
 class ZabbixVersion {
     
@@ -16,14 +16,14 @@ class ZabbixVersion {
     private static $isVersion7 = null;
     
     /**
-     * 检测Zabbix版本
+     * Detect the Zabbix version
      */
     public static function detect(): string {
         if (self::$version !== null) {
             return self::$version;
         }
         
-        // 方法1: 检查命名空间是否存在
+        // Method 1: check whether the namespace exists
         if (class_exists('Zabbix\Core\CModule')) {
             self::$version = '7.0';
             self::$isVersion7 = true;
@@ -38,7 +38,7 @@ class ZabbixVersion {
             return self::$version;
         }
         
-        // 方法2: 检查常量
+        // Method 2: check constants
         if (defined('ZABBIX_VERSION')) {
             $version = ZABBIX_VERSION;
             if (version_compare($version, '7.0', '>=')) {
@@ -53,7 +53,7 @@ class ZabbixVersion {
             return self::$version;
         }
         
-        // 默认假设为6.0
+        // Assume 6.0 by default
         self::$version = '6.0';
         self::$isVersion6 = true;
         self::$isVersion7 = false;
@@ -61,7 +61,7 @@ class ZabbixVersion {
     }
     
     /**
-     * 获取 Zabbix 版本
+     * Get the Zabbix version
      */
     public static function getVersion(): string {
         if (self::$version === null) {
@@ -71,7 +71,7 @@ class ZabbixVersion {
     }
     
     /**
-     * 获取主版本号
+     * Get the major version number
      */
     public static function getMajorVersion(): int {
         $version = self::getVersion();
@@ -80,7 +80,7 @@ class ZabbixVersion {
     }
     
     /**
-     * 判断是否为Zabbix 6.0
+     * Whether this is Zabbix 6.0
      */
     public static function isVersion6(): bool {
         if (self::$isVersion6 === null) {
@@ -90,7 +90,7 @@ class ZabbixVersion {
     }
     
     /**
-     * 判断是否为Zabbix 7.0+
+     * Whether this is Zabbix 7.0+
      */
     public static function isVersion7(): bool {
         if (self::$isVersion7 === null) {
@@ -100,7 +100,7 @@ class ZabbixVersion {
     }
     
     /**
-     * 获取CModule基类名称
+     * Get the CModule base class name
      */
     public static function getModuleBaseClass(): string {
         if (self::isVersion7()) {
@@ -110,7 +110,7 @@ class ZabbixVersion {
     }
     
     /**
-     * 获取禁用CSRF验证的方法名
+     * Get the name of the method that disables CSRF validation
      */
     public static function getDisableCsrfMethod(): string {
         if (self::isVersion7()) {

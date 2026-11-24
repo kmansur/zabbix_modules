@@ -17,7 +17,7 @@ CREATE TABLE relation (id integer PRIMARY KEY, parent bigint REFERENCES fixture(
 CREATE TABLE history_uint (id integer PRIMARY KEY, value text);
 CREATE TABLE "odd.*""table" (id integer PRIMARY KEY, value text);
 INSERT INTO fixture (message, bytes, payload, flag, stamp)
-VALUES ('quote'' \ 中文😃', decode('00ff275c','hex'), '{"k":"value"}', true, '2026-01-01 15:00:00+05:30');
+VALUES ('quote'' \ ação😃', decode('00ff275c','hex'), '{"k":"value"}', true, '2026-01-01 15:00:00+05:30');
 INSERT INTO relation VALUES (1,1);
 INSERT INTO history_uint VALUES (1,'excluded history');
 INSERT INTO "odd.*""table" VALUES (1,'literal table name');

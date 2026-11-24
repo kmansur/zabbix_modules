@@ -3,8 +3,8 @@
 namespace Modules\ZabbixJumpserver\Lib;
 
 /**
- * 视图渲染层
- * 提供统一的页面渲染接口，兼容 Zabbix 6.0 / 7.0+
+ * View rendering layer
+ * Provides a unified page rendering interface, compatible with Zabbix 6.0 / 7.0+
  */
 class ViewRenderer {
 

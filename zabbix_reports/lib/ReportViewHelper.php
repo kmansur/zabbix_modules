@@ -5,18 +5,18 @@ namespace Modules\ZabbixReports\Lib;
 require_once __DIR__ . '/LanguageManager.php';
 
 /**
- * 报表视图助手 - 集中管理所有报表视图的公共组件
+ * Report view helper - centralizes the common components of all report views
  * 
- * 提供：统一 CSS、摘要卡片、表格构建器、JS 交互增强
+ * Provides: common CSS, summary cards, table builders, JS enhancements
  */
 class ReportViewHelper {
 
     /**
-     * 获取统一的报表 CSS 样式（现代仪表盘风格）
+     * Get the common report CSS (modern dashboard style)
      */
     public static function getStyleTag(): \CTag {
         return new \CTag('style', true, '
-/* ===== 报表全局变量 ===== */
+/* ===== Report global variables ===== */
 :root {
     --rpt-primary: #4361ee;
     --rpt-primary-light: #eef1ff;
@@ -39,7 +39,7 @@ class ReportViewHelper {
     --rpt-radius-sm: 6px;
 }
 
-/* ===== 报表容器 ===== */
+/* ===== Report container ===== */
 .rpt-container {
     padding: 24px;
     width: 100%;
@@ -48,7 +48,7 @@ class ReportViewHelper {
     min-height: calc(100vh - 120px);
 }
 
-/* ===== 报表头部 ===== */
+/* ===== Report header ===== */
 .rpt-header {
     display: flex;
     align-items: center;
@@ -80,7 +80,7 @@ class ReportViewHelper {
     margin-left: 4px;
 }
 
-/* ===== 操作按钮组 ===== */
+/* ===== Action button group ===== */
 .rpt-actions {
     display: flex;
     gap: 10px;
@@ -140,7 +140,7 @@ class ReportViewHelper {
     line-height: 1;
 }
 
-/* ===== 统计摘要卡片 ===== */
+/* ===== Summary statistics cards ===== */
 .rpt-stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -203,7 +203,7 @@ class ReportViewHelper {
     font-weight: 500;
 }
 
-/* ===== 区域卡片 ===== */
+/* ===== Section cards ===== */
 .rpt-section {
     background: var(--rpt-card-bg);
     border-radius: var(--rpt-radius);
@@ -267,7 +267,7 @@ class ReportViewHelper {
     padding: 0;
 }
 
-/* ===== 表格样式 ===== */
+/* ===== Table styles ===== */
 .rpt-table {
     width: 100%;
     border-collapse: collapse;
@@ -333,7 +333,7 @@ class ReportViewHelper {
     font-size: 14px;
 }
 
-/* ===== 排名序号 ===== */
+/* ===== Ranking numbers ===== */
 .rpt-rank {
     display: inline-flex;
     align-items: center;
@@ -350,7 +350,7 @@ class ReportViewHelper {
 .rpt-rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); color: #fff; }
 .rpt-rank-n { background: var(--rpt-bg); color: var(--rpt-text-secondary); }
 
-/* ===== 进度条 ===== */
+/* ===== Progress bars ===== */
 .rpt-progress-cell {
     display: flex;
     align-items: center;
@@ -387,7 +387,7 @@ class ReportViewHelper {
 .rpt-progress-text.level-mid { color: var(--rpt-warning); }
 .rpt-progress-text.level-high { color: var(--rpt-danger); }
 
-/* ===== 严重等级颜色标签 ===== */
+/* ===== Severity color tags ===== */
 .rpt-severity-tag {
     display: inline-flex;
     align-items: center;
@@ -406,7 +406,7 @@ class ReportViewHelper {
     flex-shrink: 0;
 }
 
-/* 严重等级配色 */
+/* Severity colors */
 .rpt-sev-not-classified { background: #97AAB3; color: #fff; }
 .rpt-sev-information   { background: #7499FF; color: #fff; }
 .rpt-sev-warning       { background: #FFC859; color: #333; }
@@ -414,7 +414,7 @@ class ReportViewHelper {
 .rpt-sev-high          { background: #E97659; color: #fff; }
 .rpt-sev-disaster      { background: #E45959; color: #fff; }
 
-/* ===== 触发器已禁用/已删除标签 ===== */
+/* ===== Trigger disabled/deleted tags ===== */
 .rpt-trigger-disabled-tag {
     display: inline-block;
     font-size: 10px;
@@ -428,7 +428,7 @@ class ReportViewHelper {
     white-space: nowrap;
 }
 
-/* ===== 时间标签 ===== */
+/* ===== Time tags ===== */
 .rpt-time {
     font-family: "SF Mono", "Menlo", "Monaco", monospace;
     font-size: 12px;
@@ -444,14 +444,14 @@ class ReportViewHelper {
     color: var(--rpt-text);
 }
 
-/* ===== 双列布局 ===== */
+/* ===== Two-column layout ===== */
 .rpt-grid-2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
 }
 
-/* ===== 空状态 ===== */
+/* ===== Empty state ===== */
 .rpt-empty {
     text-align: center;
     padding: 48px 20px;
@@ -468,7 +468,7 @@ class ReportViewHelper {
     font-size: 14px;
 }
 
-/* ===== 日期表单区 ===== */
+/* ===== Date form area ===== */
 .rpt-date-form {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 20px 25px;
@@ -543,7 +543,7 @@ class ReportViewHelper {
     min-width: auto;
 }
 
-/* ===== 错误提示 ===== */
+/* ===== Error messages ===== */
 .rpt-error {
     background: var(--rpt-danger-light);
     border: 1px solid rgba(230, 57, 70, 0.2);
@@ -557,7 +557,7 @@ class ReportViewHelper {
     gap: 8px;
 }
 
-/* ===== 页脚信息 ===== */
+/* ===== Footer information ===== */
 .rpt-footer {
     text-align: center;
     padding: 16px;
@@ -567,7 +567,7 @@ class ReportViewHelper {
     margin-top: 20px;
 }
 
-/* ===== 动画效果 ===== */
+/* ===== Animations ===== */
 @keyframes rptFadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -582,7 +582,7 @@ class ReportViewHelper {
 .rpt-animate-delay-3 { animation-delay: 0.15s; opacity: 0; }
 .rpt-animate-delay-4 { animation-delay: 0.2s; opacity: 0; }
 
-/* ===== 响应式 ===== */
+/* ===== Responsive ===== */
 @media (max-width: 1200px) {
     .rpt-grid-2 {
         grid-template-columns: 1fr;
@@ -616,7 +616,7 @@ class ReportViewHelper {
     }
 }
 
-/* ===== 图表区域 ===== */
+/* ===== Chart area ===== */
 .rpt-chart-wrapper {
     display: flex;
     align-items: center;
@@ -676,7 +676,7 @@ class ReportViewHelper {
     color: var(--rpt-text-secondary);
 }
 
-/* ===== 打印优化 ===== */
+/* ===== Print optimization ===== */
 @media print {
     .rpt-container {
         padding: 0;
@@ -706,7 +706,7 @@ class ReportViewHelper {
     }
 
     /**
-     * 获取报表 JavaScript 增强代码
+     * Get the report JavaScript enhancement code
      */
     public static function getScriptTag(): string {
         $i18n = json_encode([
@@ -719,7 +719,7 @@ class ReportViewHelper {
 (function() {
     "use strict";
 
-    // ===== 表格搜索 =====
+    // ===== Table search =====
     document.querySelectorAll(".rpt-search-input").forEach(function(input) {
         var tableId = input.getAttribute("data-table");
         input.addEventListener("input", function() {
@@ -746,7 +746,7 @@ class ReportViewHelper {
         }
     }
 
-    // ===== 表格排序 =====
+    // ===== Table sorting =====
     document.querySelectorAll(".rpt-table thead th[data-sortable]").forEach(function(th) {
         th.addEventListener("click", function() {
             var table = th.closest("table");
@@ -781,7 +781,7 @@ class ReportViewHelper {
         });
     });
 
-    // ===== 数字动画 =====
+    // ===== Number animation =====
     document.querySelectorAll(".rpt-stat-value[data-count]").forEach(function(el) {
         var target = parseInt(el.getAttribute("data-count")) || 0;
         if (target === 0) { el.textContent = "0"; return; }
@@ -798,7 +798,7 @@ class ReportViewHelper {
         requestAnimationFrame(step);
     });
 
-    // ===== 雷达图渲染 =====
+    // ===== Radar chart rendering =====
     (function() {
         var el = document.getElementById("rpt-radar-chart");
         if (!el) return;
@@ -842,7 +842,7 @@ class ReportViewHelper {
         el.innerHTML="<svg viewBox=\"0 0 320 290\" xmlns=\"http://www.w3.org/2000/svg\" style=\"max-width:320px;width:100%;height:auto;\">"+s+"</svg>";
     })();
 
-    // ===== 饼图渲染 =====
+    // ===== Pie chart rendering =====
     (function() {
         var el = document.getElementById("rpt-pie-chart");
         if (!el) return;
@@ -882,12 +882,12 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建统计摘要卡片组
+     * Build the group of summary statistics cards
      */
     public static function buildStatsGrid(array $data): \CDiv {
         $grid = (new \CDiv())->addClass('rpt-stats-grid');
 
-        // 问题数
+        // Problems
         $grid->addItem(self::buildStatCard(
             "\u{26A0}", 'danger',
             $data['problem_count'] ?? 0,
@@ -895,7 +895,7 @@ class ReportViewHelper {
             'rpt-animate rpt-animate-delay-1'
         ));
 
-        // 已解决数
+        // Resolved
         $grid->addItem(self::buildStatCard(
             "\u{2705}", 'success',
             $data['resolved_count'] ?? 0,
@@ -903,7 +903,7 @@ class ReportViewHelper {
             'rpt-animate rpt-animate-delay-2'
         ));
 
-        // 主机组数
+        // Host groups
         $groupCount = 0;
         if (!empty($data['hosts_by_group'])) {
             $groupCount = count($data['hosts_by_group']);
@@ -915,7 +915,7 @@ class ReportViewHelper {
             'rpt-animate rpt-animate-delay-3'
         ));
 
-        // 主机数
+        // Hosts
         $hostCount = 0;
         if (!empty($data['hosts_by_group'])) {
             foreach ($data['hosts_by_group'] as $hosts) {
@@ -933,7 +933,7 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建单个统计卡片
+     * Build a single statistics card
      */
     private static function buildStatCard(string $icon, string $color, $value, string $label, string $animClass = ''): \CDiv {
         $card = (new \CDiv())->addClass('rpt-stat-card');
@@ -959,7 +959,7 @@ class ReportViewHelper {
     }
 
     /**
-     * 严重等级名称和CSS类映射
+     * Severity name and CSS class map
      */
     private static function getSeverityInfo(int $severity): array {
         $map = [
@@ -974,10 +974,10 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建告警信息区域（含搜索）
+     * Build the alarm information section (with search)
      */
     public static function buildAlertSection(array $alerts, int $limit = 500): \CDiv {
-        // 确保按时间倒序排列
+        // Make sure it is sorted by time descending
         usort($alerts, function($a, $b) {
             return strcmp($b['time'] ?? '', $a['time'] ?? '');
         });
@@ -985,7 +985,7 @@ class ReportViewHelper {
         $section = (new \CDiv())->addClass('rpt-section rpt-animate');
         $alertCount = count($alerts);
 
-        // 头部
+        // Header
         $header = (new \CDiv())->addClass('rpt-section-header');
         $title = (new \CTag('h3', true))
             ->addClass('rpt-section-title')
@@ -1006,13 +1006,13 @@ class ReportViewHelper {
         $header->addItem($tools);
         $section->addItem($header);
 
-        // 表格
+        // Table
         $body = (new \CDiv())->addClass('rpt-section-body');
         $table = (new \CTag('table', true))
             ->addClass('rpt-table')
             ->setAttribute('id', 'alert-table');
 
-        // 表头
+        // Table header
         $thead = new \CTag('thead', true);
         $headRow = new \CTag('tr', true);
         $headRow->addItem(new \CTag('th', true, '#'));
@@ -1032,11 +1032,11 @@ class ReportViewHelper {
         $thead->addItem($headRow);
         $table->addItem($thead);
 
-        // 表体
+        // Table body
         $tbody = new \CTag('tbody', true);
         if (!empty($alerts)) {
-            // ru_RU and pt_BR use localized day-first timestamps.
-            $isRussian = in_array(LanguageManager::getCurrentLanguage(), ['ru_RU', 'pt_BR'], true);
+            // pt_BR uses localized day-first timestamps.
+            $isDayFirst = LanguageManager::getCurrentLanguage() === 'pt_BR';
             $count = 0;
             foreach ($alerts as $alert) {
                 if ($count >= $limit) break;
@@ -1050,7 +1050,7 @@ class ReportViewHelper {
                     (new \CTag('td', true))
                         ->addItem((new \CSpan($alert['host']))->addClass('rpt-host-name'))
                 );
-                // 严重等级
+                // Severity
                 $severity = (int)($alert['severity'] ?? 0);
                 $sevInfo = self::getSeverityInfo($severity);
                 $row->addItem(
@@ -1061,7 +1061,7 @@ class ReportViewHelper {
                         )
                         ->setAttribute('data-sort-value', $severity)
                 );
-                // 告警名称（含禁用/删除标记）
+                // Alarm name (with disabled/deleted marker)
                 $alertNameTd = new \CTag('td', true, $alert['alert']);
                 if (!empty($alert['trigger_disabled'])) {
                     $alertNameTd->addItem(
@@ -1073,7 +1073,7 @@ class ReportViewHelper {
                 $alertTimestamp = strtotime($alert['time'] ?? '');
                 $row->addItem(
                     (new \CTag('td', true))
-                        ->addItem((new \CSpan($isRussian && $alertTimestamp !== false
+                        ->addItem((new \CSpan($isDayFirst && $alertTimestamp !== false
                             ? LanguageManager::formatDateTime($alertTimestamp) : $alert['time']))->addClass('rpt-time'))
                         ->setAttribute('data-sort-value', $alertTimestamp ?: 0)
                 );
@@ -1082,14 +1082,14 @@ class ReportViewHelper {
                 $recoveryClass = $recoveryTime !== '-' ? 'rpt-time rpt-time-recovered' : 'rpt-time';
                 $row->addItem(
                     (new \CTag('td', true))
-                        ->addItem((new \CSpan($isRussian && $recoveryTimestamp !== false
+                        ->addItem((new \CSpan($isDayFirst && $recoveryTimestamp !== false
                             ? LanguageManager::formatDateTime($recoveryTimestamp) : $recoveryTime))->addClass($recoveryClass))
                         ->setAttribute('data-sort-value', $recoveryTimestamp ?: 0)
                 );
                 $tbody->addItem($row);
             }
         }
-        // 空行（隐藏/显示由JS控制）
+        // Empty row (shown/hidden by JS)
         $noDataRow = (new \CTag('tr', true))
             ->addClass('rpt-no-data')
             ->addItem(
@@ -1108,7 +1108,7 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建主机群组信息区域
+     * Build the host group information section
      */
     public static function buildHostGroupSection(array $hostsByGroup, int $limit = 100): \CDiv {
         $section = (new \CDiv())->addClass('rpt-section rpt-animate');
@@ -1117,7 +1117,7 @@ class ReportViewHelper {
             $totalHosts += count($hosts);
         }
 
-        // 头部
+        // Header
         $header = (new \CDiv())->addClass('rpt-section-header');
         $title = (new \CTag('h3', true))
             ->addClass('rpt-section-title')
@@ -1137,13 +1137,13 @@ class ReportViewHelper {
         $header->addItem($tools);
         $section->addItem($header);
 
-        // 表格
+        // Table
         $body = (new \CDiv())->addClass('rpt-section-body');
         $table = (new \CTag('table', true))
             ->addClass('rpt-table')
             ->setAttribute('id', 'group-table');
 
-        // 表头
+        // Table header
         $thead = new \CTag('thead', true);
         $headRow = new \CTag('tr', true);
         $headRow->addItem(new \CTag('th', true, '#'));
@@ -1163,7 +1163,7 @@ class ReportViewHelper {
         $thead->addItem($headRow);
         $table->addItem($thead);
 
-        // 表体
+        // Table body
         $tbody = new \CTag('tbody', true);
         if (!empty($hostsByGroup)) {
             $count = 0;
@@ -1207,12 +1207,12 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建 Top CPU / Memory 双列区域（带排名和进度条）
+     * Build the Top CPU / Memory two-column section (with ranking and progress bars)
      */
     public static function buildTopResourceSection(array $data): \CDiv {
         $grid = (new \CDiv())->addClass('rpt-grid-2');
 
-        // CPU 区域
+        // CPU section
         $grid->addItem(self::buildTopTable(
             'cpu-table',
             "\u{1F4BB} " . LanguageManager::t('CPU Information (TOP 5)'),
@@ -1221,7 +1221,7 @@ class ReportViewHelper {
             'cpu'
         ));
 
-        // Memory 区域
+        // Memory section
         $grid->addItem(self::buildTopTable(
             'mem-table',
             "\u{1F4BE} " . LanguageManager::t('Memory Information (TOP 5)'),
@@ -1234,25 +1234,25 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建 Top 资源表格（带排名和进度条）
+     * Build the Top resource table (with ranking and progress bars)
      */
     private static function buildTopTable(string $tableId, string $title, array $topHosts, array $totals, string $type): \CDiv {
         $section = (new \CDiv())->addClass('rpt-section rpt-animate');
 
-        // 头部
+        // Header
         $header = (new \CDiv())->addClass('rpt-section-header');
         $header->addItem(
             (new \CTag('h3', true))->addClass('rpt-section-title')->addItem($title)
         );
         $section->addItem($header);
 
-        // 表格
+        // Table
         $body = (new \CDiv())->addClass('rpt-section-body');
         $table = (new \CTag('table', true))
             ->addClass('rpt-table')
             ->setAttribute('id', $tableId);
 
-        // 表头
+        // Table header
         $thead = new \CTag('thead', true);
         $headRow = new \CTag('tr', true);
         $headRow->addItem(new \CTag('th', true, '#'));
@@ -1280,7 +1280,7 @@ class ReportViewHelper {
         $thead->addItem($headRow);
         $table->addItem($thead);
 
-        // 表体
+        // Table body
         $tbody = new \CTag('tbody', true);
         if (!empty($topHosts)) {
             $rank = 0;
@@ -1289,20 +1289,20 @@ class ReportViewHelper {
                 $rank++;
                 $row = new \CTag('tr', true);
 
-                // 排名
+                // Rank
                 $rankClass = $rank <= 3 ? 'rpt-rank rpt-rank-' . $rank : 'rpt-rank rpt-rank-n';
                 $row->addItem(
                     (new \CTag('td', true))
                         ->addItem((new \CSpan((string)$rank))->addClass($rankClass))
                 );
 
-                // 主机名
+                // Host name
                 $row->addItem(
                     (new \CTag('td', true))
                         ->addItem((new \CSpan($host))->addClass('rpt-host-name'))
                 );
 
-                // 使用率（带进度条）
+                // Utilization (with progress bar)
                 $usageVal = number_format($usage, 2);
                 $level = $usage < 60 ? 'low' : ($usage < 85 ? 'mid' : 'high');
                 $progressCell = (new \CTag('td', true))
@@ -1324,7 +1324,7 @@ class ReportViewHelper {
                 $progressCell->addItem($progressDiv);
                 $row->addItem($progressCell);
 
-                // 总量
+                // Total
                 if ($type === 'mem') {
                     $totalVal = isset($totals[$host]) 
                         ? number_format($totals[$host] / (1024*1024*1024), 2) . ' GB' 
@@ -1357,7 +1357,7 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建页面头部（标题 + 操作按钮）
+     * Build the page header (title + action buttons)
      */
     public static function buildHeader(string $titleText, string $icon, string $exportAction, array $exportParams = [], array $filterData = []): \CDiv {
         $header = (new \CDiv())->addClass('rpt-header');
@@ -1370,13 +1370,13 @@ class ReportViewHelper {
 
         $actions = (new \CDiv())->addClass('rpt-actions');
 
-        // 过滤下拉框区域（群组、日期等）
+        // Filter dropdown area (group, date, etc.)
         if (!empty($filterData['action_name'])) {
             $actionName = $filterData['action_name'];
-            // 统一 JS 跳转：收集 .rpt-actions 下所有 select 值拼接 URL
+            // Common JS navigation: collect all select values under .rpt-actions and build the URL
             $jsRedirect = '(function(el){var c=el.closest(\'.rpt-actions\');var ss=c.querySelectorAll(\'select\');var u=\'zabbix.php?action=' . htmlspecialchars($actionName, ENT_QUOTES) . '\';for(var i=0;i<ss.length;i++){u+=\'&\'+ss[i].name+\'=\'+ss[i].value;}window.location.href=u;})(this)';
 
-            // 时间维度下拉框（年、月、周等）
+            // Time dimension dropdowns (year, month, week, etc.)
             if (!empty($filterData['date_selects'])) {
                 foreach ($filterData['date_selects'] as $selectDef) {
                     $select = (new \CTag('select', true))
@@ -1395,7 +1395,7 @@ class ReportViewHelper {
                 }
             }
 
-            // 主机群组下拉框
+            // Host group dropdown
             $allGroups = $filterData['all_groups'] ?? [];
             $selectedGroupId = $filterData['filter_groupid'] ?? '';
             $groupSelect = (new \CTag('select', true))
@@ -1416,7 +1416,7 @@ class ReportViewHelper {
             $actions->addItem($groupSelect);
         }
 
-        // 导出按钮（使用 <a> 标签 + 静态 URL，避免 Zabbix CButton/form 事件干扰）
+        // Export button (an <a> tag + static URL, avoiding interference from Zabbix CButton/form events)
         $exportUrl = 'zabbix.php?action=' . urlencode($exportAction) . '&format=pdf';
         foreach ($exportParams as $k => $v) {
             $exportUrl .= '&' . urlencode($k) . '=' . urlencode($v);
@@ -1429,7 +1429,7 @@ class ReportViewHelper {
             ->addItem(LanguageManager::t('Export PDF'));
         $actions->addItem($exportLink);
 
-        // 邮件按钮
+        // Email button
         $actions->addItem(
             (new \CButton('send_email', ''))
                 ->addClass('rpt-btn rpt-btn-outline')
@@ -1445,8 +1445,8 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建图表双列区域（告警级别雷达 + 主机组问题分布饼图）
-     * 放置在"问题最多的主机"之前
+     * Build the two-column chart section (severity radar + host group problem distribution pie chart)
+     * Placed before "hosts with the most problems"
      */
     public static function buildChartsRow(array $alerts, array $hostsByGroup): \CDiv {
         $grid = (new \CDiv())->addClass('rpt-grid-2');
@@ -1456,12 +1456,12 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建告警级别雷达图（数据通过 data-chart 传递给 JS 渲染 SVG）
+     * Build the severity radar chart (data passed to JS via data-chart to render the SVG)
      */
     private static function buildSeverityRadarChart(array $alerts): \CDiv {
         $section = (new \CDiv())->addClass('rpt-section rpt-animate');
 
-        // 头部
+        // Header
         $header = (new \CDiv())->addClass('rpt-section-header');
         $header->addItem(
             (new \CTag('h3', true))
@@ -1470,7 +1470,7 @@ class ReportViewHelper {
         );
         $section->addItem($header);
 
-        // 统计各级别数量
+        // Count each severity
         $severityCounts = ['1' => 0, '2' => 0, '3' => 0, '4' => 0, '5' => 0];
         foreach ($alerts as $alert) {
             $sev = (int)($alert['severity'] ?? 0);
@@ -1504,12 +1504,12 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建主机组问题分布饼图（数据通过 data-chart 传递给 JS 渲染 SVG）
+     * Build the host group problem distribution pie chart (data passed to JS via data-chart to render the SVG)
      */
     private static function buildGroupProblemPieChart(array $alerts, array $hostsByGroup): \CDiv {
         $section = (new \CDiv())->addClass('rpt-section rpt-animate');
 
-        // 头部
+        // Header
         $header = (new \CDiv())->addClass('rpt-section-header');
         $header->addItem(
             (new \CTag('h3', true))
@@ -1518,7 +1518,7 @@ class ReportViewHelper {
         );
         $section->addItem($header);
 
-        // 构建主机→组的反向映射
+        // Build the reverse host → group map
         $hostToGroup = [];
         foreach ($hostsByGroup as $groupName => $hosts) {
             foreach ($hosts as $host) {
@@ -1526,7 +1526,7 @@ class ReportViewHelper {
             }
         }
 
-        // 统计每个组的告警数量
+        // Count the alarms of each group
         $groupCounts = [];
         foreach ($alerts as $alert) {
             $hostName = $alert['host'] ?? '';
@@ -1545,7 +1545,7 @@ class ReportViewHelper {
                     ->addItem((new \CDiv(LanguageManager::t('No Alert Data')))->addClass('rpt-empty-text'))
             );
         } else {
-            // 最多显示 8 个分组，其余合并为"其他"
+            // Show at most 8 groups; the rest are merged into "Other"
             $maxSlices = 8;
             $displayData = [];
             $otherCount = 0;
@@ -1573,13 +1573,13 @@ class ReportViewHelper {
 
             $pieWrap = (new \CDiv())->addClass('rpt-pie-wrapper');
 
-            // SVG 容器（由 JS 渲染）
+            // SVG container (rendered by JS)
             $pieContainer = (new \CDiv())
                 ->setAttribute('id', 'rpt-pie-chart')
                 ->setAttribute('data-chart', $chartData);
             $pieWrap->addItem($pieContainer);
 
-            // 图例（CTag 直接渲染，无转义问题）
+            // Legend (rendered directly with CTag, no escaping issues)
             $legend = (new \CDiv())->addClass('rpt-pie-legend');
             $total = array_sum($displayData);
             $colorIdx = 0;
@@ -1609,7 +1609,7 @@ class ReportViewHelper {
     }
 
     /**
-     * 饼图配色方案
+     * Pie chart color scheme
      */
     private static function getPieColors(): array {
         return [
@@ -1620,7 +1620,7 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建 "问题主机" 信息行
+     * Build the "problem hosts" information row
      */
     public static function buildTopProblemHosts(array $topProblemHosts): \CDiv {
         if (empty($topProblemHosts)) {
@@ -1654,13 +1654,13 @@ class ReportViewHelper {
     }
 
     /**
-     * 构建过滤栏（主机群组）
+     * Build the filter bar (host group)
      */
     public static function buildFilterBar(string $actionName, array $data, array $extraFields = []): \CTag {
         $allGroups = $data['all_groups'] ?? [];
         $selectedGroupId = $data['filter_groupid'] ?? '';
 
-        // 构建跳转URL的JS参数
+        // Build the JS parameters of the navigation URL
         $extraParams = '';
         foreach ($extraFields as $name => $value) {
             $extraParams .= '"&' . htmlspecialchars($name, ENT_QUOTES) . '=' . htmlspecialchars($value, ENT_QUOTES) . '"+';
@@ -1668,10 +1668,10 @@ class ReportViewHelper {
 
         $jsRedirect = 'window.location.href="zabbix.php?action=' . htmlspecialchars($actionName, ENT_QUOTES) . '&groupid="+' . $extraParams . 'this.value';
 
-        // 使用 div 而非 form，避免与 Zabbix 页面外层 form 嵌套冲突
+        // Use a div instead of a form to avoid nesting conflicts with the outer Zabbix page form
         $container = (new \CDiv())->addClass('rpt-date-form');
 
-        // 主机群组选择
+        // Host group selection
         $groupDiv = (new \CDiv())->addClass('rpt-form-group');
         $groupDiv->addItem(
             (new \CTag('label', true, LanguageManager::t('Host Group')))->addClass('rpt-form-label')

@@ -1,18 +1,18 @@
 /*
- * 自动拓扑图（Zabbix 前端模块 topomap）
+ * Auto Topology Map (Zabbix frontend module topomap)
  *
- * 7.0 的主题是编译后的死色（没有 CSS 变量），所以这里自带两套调色板：
- * JS 读 <html theme="...">，给 #topomap-root 挂 .tm-dark / .tm-light。
- * 颜色取自 7.0 官方主题：浅色文字 #1f2c33 / 次要 #768d99，深色文字 #f2f2f2 /
- * 弹层 #2b2b2b，主色按钮沿用 Zabbix 的 #d64000。
+ * The 7.0 themes use compiled fixed colors (no CSS variables), so two palettes are included here:
+ * JS reads <html theme="..."> and adds .tm-dark / .tm-light to #topomap-root.
+ * Colors come from the official 7.0 themes: light text #1f2c33 / secondary #768d99, dark text #f2f2f2 /
+ * popups #2b2b2b; primary buttons keep Zabbix's #d64000.
  */
 
 /*
- * hidden 属性必须在这里显式兜底，否则完全失效：
- * 浏览器内置的 [hidden]{display:none} 属于「用户代理样式」，而本文件里
- * .tm-overlay / .tm-editbar 等写了 display:flex —— 作者样式的优先级高于
- * 用户代理样式，于是 el.hidden = true 只是加了个属性，视觉上毫无变化。
- * 表现就是：一进页面弹层就糊在脸上、点「关闭」没反应。
+ * The hidden attribute must be enforced explicitly here, otherwise it has no effect:
+ * the browser's built-in [hidden]{display:none} is a user-agent style, and this file
+ * sets display:flex on .tm-overlay / .tm-editbar etc. — author styles beat
+ * user-agent styles, so el.hidden = true only adds an attribute with no visual change.
+ * The symptom: popups cover the page as soon as it opens and "Close" does nothing.
  */
 #topomap-root [hidden] {
 	display: none !important;
@@ -67,9 +67,9 @@
 }
 
 /*
- * 页头：7.0 的 header 自带 display:flex，8.0 只给「header .header-title」套 flex，
- * 且 app/views/layout.htmlpage.php 不输出页头，所以这里自己兜底。
- * 目标与 7.x 一致：标题在左、按钮组在右，二者同处一行且垂直居中。
+ * Page header: in 7.0 the header has display:flex; 8.0 only applies flex to "header .header-title"
+ * and app/views/layout.htmlpage.php outputs no header, so it is handled here.
+ * Goal as in 7.x: title on the left, button group on the right, on the same line and vertically centered.
  */
 #topomap-root > header {
 	padding: 0 10px;
@@ -95,7 +95,7 @@
 	margin-left: auto;
 }
 
-/* ---------------------------------------------------------------- 通用控件 */
+/* ---------------------------------------------------------------- Common controls */
 
 .tm-btn {
 	height: 26px;
@@ -123,7 +123,7 @@
 	cursor: default;
 }
 
-/* 工具条上处于「移除 / 链接」模式的按钮 */
+/* Toolbar buttons in "remove / link" mode */
 .tm-btn-active {
 	border-color: #d64000;
 	color: #d64000;
@@ -207,7 +207,7 @@
 	color: #59a559;
 }
 
-/* ---------------------------------------------------------------- 列表页 */
+/* ---------------------------------------------------------------- List page */
 
 .tm-create {
 	display: flex;
@@ -287,7 +287,7 @@
 	color: var(--tm-fg-dim);
 }
 
-/* ---------------------------------------------------------------- 画布页 */
+/* ---------------------------------------------------------------- Canvas page */
 
 .tm-toolbar {
 	display: flex;
@@ -341,9 +341,9 @@
 	background: var(--tm-border);
 }
 
-/* 高度由 JS 按「视口 − 页头 − 工具条 − 页脚」实测后写成内联值，
-   这里只是脚本没跑到时的兜底，保证不会塌成一条线。
-   预览模式是干净的纯色画布（原生预览也不画网格）；只有编辑模式才铺网格。 */
+/* Height is measured by JS as "viewport − header − toolbar − footer" and written inline,
+   this is only a fallback for when the script has not run, so it never collapses into a line.
+   Preview mode is a clean plain canvas (the native preview has no grid either); only edit mode shows the grid. */
 .tm-canvas-wrap {
 	position: relative;
 	height: calc(100vh - 200px);
@@ -394,7 +394,7 @@
 	pointer-events: none;
 }
 
-/* 折点手柄：只在「在画布上点选折点」模式显示，可拖动 / 双击删除 */
+/* Waypoint handles: shown only in "pick waypoints on the canvas" mode; draggable / double-click to delete */
 .tm-svg .tm-waypoint {
 	fill: #ffffff;
 	stroke: #d64000;
@@ -407,7 +407,7 @@
 	fill: #ffe9e0;
 }
 
-/* 连线上的文字：标签 / 指标统一黑色，画在浅色圆角框里（对齐 aiops） */
+/* Text on links: labels / metrics are black on a light rounded box (aligned with aiops) */
 .tm-svg .tm-link-label {
 	font-size: 11px;
 	text-anchor: middle;
@@ -418,7 +418,7 @@
 	font-size: 10px;
 }
 
-/* 指标框（圆角矩形）：配色由 JS 按主题写入，这里只关掉命中事件 */
+/* Metric box (rounded rectangle): colors are set by JS per theme; here only hit events are disabled */
 .tm-svg .tm-link-badge {
 	pointer-events: none;
 }
@@ -428,7 +428,7 @@
 	cursor: move;
 }
 
-/* 形的选中控制点：7×7 圆形，白底、1px 深蓝描边（对齐原生 .ui-resize-dot） */
+/* Shape selection handles: 7×7 circles, white fill, 1px dark blue stroke (aligned with native .ui-resize-dot) */
 .tm-svg .tm-shape-handle {
 	fill: #ffffff;
 	stroke: #02659f;
@@ -441,7 +441,7 @@
 	stroke: #768d99;
 }
 
-/* 形属性窗口里的「矩形 / 椭圆 / 线」三段按钮（原生 radio 样式） */
+/* Three-way "rectangle / ellipse / line" button in the shape properties window (native radio style) */
 .tm-seg {
 	display: inline-flex;
 }
@@ -478,8 +478,8 @@
 	font-weight: bold;
 }
 
-/* 字号/字体/颜色都由 JS 按属性写成 SVG 呈现属性，这里不要再写 font-size，
-   否则作者样式会盖掉形自己的字号（原生是每个形各自设置字体大小）。 */
+/* Font size/family/color are written by JS as SVG presentation attributes; do not set font-size here,
+   otherwise the author style would override each shape's own font size (natively every shape sets its own font size). */
 .tm-svg .tm-shape-text {
 	pointer-events: none;
 	user-select: none;
@@ -491,7 +491,7 @@
 	stroke-width: 8;
 }
 
-/* 元素 */
+/* Elements */
 .tm-el {
 	position: absolute;
 	user-select: none;
@@ -508,12 +508,12 @@
 	max-height: 200px;
 	pointer-events: none;
 	-webkit-user-drag: none;
-	/* 高亮图形压在图标下面（原生 SVG 也是先画 highlight 再画图） */
+	/* The highlight shape sits below the icon (native SVG also draws the highlight before the image) */
 	position: relative;
 	z-index: 1;
 }
 
-/* 图标取不到时（imgstore 报错 / 权限）退化成一个虚线方块，不留破图 */
+/* When an icon cannot be loaded (imgstore error / permissions), fall back to a dashed square instead of a broken image */
 .tm-el-noicon::before {
 	content: '';
 	display: block;
@@ -524,10 +524,10 @@
 	background: var(--tm-panel);
 }
 
-/* 原生拓扑图不在图标右上角显示问题数，问题数写在标签行里 —— 这里不再保留角标样式 */
+/* Native maps do not show the problem count at the top right of the icon but in the label lines — the badge style is no longer kept here */
 
-/* 标签容器：一行名字 + 若干行状态（正常 / 问题 / 已停用 / 在维护中）。
-   每行各自带半透明底，叠在一起也不会糊成一块。 */
+/* Label container: one name line + several status lines (OK / Problem / Disabled / In maintenance).
+   Each line has its own semi-transparent background, so stacked lines do not blur together. */
 .tm-el-label {
 	position: absolute;
 	display: flex;
@@ -586,7 +586,7 @@
 	outline-offset: 3px;
 }
 
-/* 状态只由原生样式的 SVG 高亮（正圆 / 维护方框）表达，图标上加红光是上一版留下的第二套状态显示，去掉 */
+/* Status is expressed only by native-style SVG highlights (circle / maintenance square); the red glow on the icon was a second status display left from the previous version and is removed */
 
 .tm-el.tm-disabled .tm-el-icon {
 	filter: grayscale(100%);
@@ -618,7 +618,7 @@
 	pointer-events: none;
 }
 
-/* ---------------------------------------------------------------- 弹层 */
+/* ---------------------------------------------------------------- Popups */
 
 .tm-overlay {
 	position: fixed;
@@ -649,7 +649,7 @@
 	width: 460px;
 }
 
-/* 链接属性弹窗：宽度贴齐原生 8.0 链接表单（约 842px） */
+/* Link properties dialog: width matches the native 8.0 link form (about 842px) */
 .tm-dialog-link {
 	width: 840px;
 	max-width: calc(100vw - 40px);
@@ -702,7 +702,7 @@
 	border-top: 1px solid var(--tm-border-soft);
 }
 
-/* 表单：左侧标题列固定，右侧自适应 */
+/* Form: fixed label column on the left, flexible on the right */
 .tm-form {
 	width: 100%;
 	border-collapse: collapse;
@@ -729,7 +729,7 @@
 	color: #e45959;
 }
 
-/* 链接标签：与原生链接表单一致，两行文本域 */
+/* Link label: two-line text area, as in the native link form */
 .tm-form textarea.tm-link-labelbox {
 	width: 280px;
 	max-width: 100%;
@@ -737,7 +737,7 @@
 	resize: vertical;
 }
 
-/* 显示标签：原生分段按钮（radio 版） */
+/* Show label: native segmented buttons (radio version) */
 .tm-seg-radio {
 	display: inline-flex;
 	border: 1px solid var(--tm-border);
@@ -816,7 +816,7 @@
 	min-width: 0;
 }
 
-/* 「画布尺寸：自动」——只读提示，不用输入框 */
+/* "Canvas size: automatic" — a read-only hint, no input field */
 .tm-size-auto {
 	color: var(--tm-fg);
 	font-weight: bold;
@@ -900,7 +900,7 @@
 	margin: 0;
 }
 
-/* 主机选择器 */
+/* Host selector */
 .tm-host-list {
 	margin-top: 8px;
 	max-height: 320px;
@@ -944,7 +944,7 @@
 	font-size: 12px;
 }
 
-/* 监控项 / 主机 / 主机群组 选择器（对齐 Zabbix 原生弹层） */
+/* Item / host / host group selectors (aligned with native Zabbix popups) */
 .tm-pick-field {
 	display: flex;
 	align-items: flex-start;
@@ -1011,7 +1011,7 @@
 	font-size: 12px;
 }
 
-/* 弹层里的表格：勾选列 + 名称 / 键值 / 类型 / 信息类型 / 状态 */
+/* Table in the popup: checkbox column + name / key / type / information type / status */
 .tm-pick-scroll {
 	max-height: 400px;
 	overflow: auto;
@@ -1115,7 +1115,7 @@
 	font-size: 12px;
 }
 
-/* 链接属性里的指标行：摘要 + 选择 / 清空 */
+/* Metric rows in link properties: summary + select / clear */
 .tm-metric-row {
 	display: flex;
 	align-items: center;
@@ -1123,8 +1123,8 @@
 	min-height: 26px;
 }
 
-/* 链接属性里的触发器指示器表：指标（严重性色块）/ 触发器 / 移除，
-   固定列宽避免长触发器名把表撑歪 */
+/* Trigger indicator table in link properties: indicator (severity color) / trigger / remove,
+   fixed column widths keep long trigger names from distorting the table */
 .tm-trig-table {
 	width: 100%;
 	border-collapse: collapse;
@@ -1167,7 +1167,7 @@
 	color: var(--tm-fg-dim);
 }
 
-/* 每个触发器的颜色选择器：对齐原生链接指示器行首的色块 */
+/* Color picker per trigger: aligned with the color swatch at the start of native link indicator rows */
 .tm-trig-color {
 	width: 32px;
 	height: 26px;
@@ -1183,8 +1183,8 @@
 	margin-top: 6px;
 }
 
-/* 原生 PopUp（popup.generic）在 8.0 是页内 overlay，需要 .wrapper 承载。
-   模块页面没有这个容器，运行时补一个：只放弹层，空着时不拦截画布点击。 */
+/* The native PopUp (popup.generic) is an in-page overlay in 8.0 and needs a .wrapper container.
+   The module page has no such container, so one is added at runtime: it holds only popups and does not intercept canvas clicks when empty. */
 #tm-popup-host {
 	position: fixed;
 	inset: 0;
@@ -1197,7 +1197,7 @@
 	pointer-events: auto;
 }
 
-/* 触发器严重性色块：指标列 12×12，和原生一致 */
+/* Trigger severity swatch: 12×12 in the indicator column, as in native */
 .tm-sev-box {
 	display: inline-block;
 	width: 12px;
@@ -1206,7 +1206,7 @@
 	vertical-align: -2px;
 }
 
-/* 触发器选择器里严重级别的色块 */
+/* Severity swatches in the trigger selector */
 .tm-sev-dot {
 	display: inline-block;
 	width: 10px;
@@ -1225,7 +1225,7 @@
 	white-space: nowrap;
 }
 
-/* 颜色输入 */
+/* Color input */
 .tm-colorline {
 	display: flex;
 	align-items: center;
@@ -1245,7 +1245,7 @@
 	width: 90px;
 }
 
-/* 自动发现弹窗 */
+/* Auto discovery dialog */
 .tm-discover-tip {
 	margin: 0 0 8px;
 	color: var(--tm-fg-dim);
@@ -1301,7 +1301,7 @@
 	margin: 0;
 }
 
-/* 没有 SNMP 接口的主机：勾不上，视觉上也要能看出来 */
+/* Hosts without an SNMP interface: cannot be checked, and this must be visible */
 .tm-discover-host-off {
 	color: var(--tm-fg-dim);
 	cursor: not-allowed;
@@ -1386,7 +1386,7 @@
 	margin: 0;
 }
 
-/* 自动关联触发器关键词：标签在上、大号多行文本框在下（一行一个关键词） */
+/* Keywords for automatic trigger linking: label on top, large multi-line text box below (one keyword per line) */
 .tm-discover-kw {
 	display: flex;
 	flex-direction: column;
@@ -1420,7 +1420,7 @@
 	line-height: 1.6;
 }
 
-/* 还没开始扫时不要留一块空灰底 */
+/* Do not leave an empty gray area before scanning starts */
 .tm-discover-log:empty {
 	display: none;
 }
@@ -1459,10 +1459,10 @@
 	}
 }
 
-/* ---------------------------------------------------------------- 列表页
- * 主体刻意复用 Zabbix 原生类名（filter-space / list-table / action-buttons /
- * checkbox-radio），外观、深浅主题、表格样式自动跟着主题走。
- * 这里只补原生没覆盖到的细节。
+/* ---------------------------------------------------------------- List page
+ * The main structure deliberately reuses native Zabbix class names (filter-space / list-table / action-buttons /
+ * checkbox-radio), so appearance, light/dark themes and table styles follow the theme automatically.
+ * Only details not covered natively are added here.
  */
 
 #topomap-root .tm-msg-line .tm-msg:empty {

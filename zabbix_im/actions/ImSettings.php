@@ -46,7 +46,7 @@ class ImSettings extends CController {
                 'corp_id'            => (string) $setting['corp_id'],
                 'app_id'             => (string) $setting['app_id'],
                 'app_key'            => (string) $setting['app_key'],
-                // 机密字段不下发，仅告知是否已设置。
+                // Secret fields are not sent; only whether they are set is reported.
                 'corp_secret_set'    => trim((string) $setting['corp_secret']) !== '',
                 'app_secret_set'     => trim((string) $setting['app_secret']) !== '',
             ];

@@ -18,16 +18,16 @@ class JumpserverPush extends CController {
     /** @var JumpserverClient */
     private $client;
 
-    /** name => node id 缓存 */
+    /** name => node id cache */
     private $nodeMap = [];
 
-    /** name => {pk, protocols} 平台缓存 */
+    /** name => {pk, protocols} platform cache */
     private $platformMap = [];
 
-    /** name => asset 资产缓存 */
+    /** name => asset asset cache */
     private $assetMap = [];
 
-    /** 账号模板 ID（留空表示不自动关联账号） */
+    /** Account template ID (blank means accounts are not linked automatically) */
     private $accountTemplateId = '';
 
     public function init(): void {
@@ -101,7 +101,7 @@ class JumpserverPush extends CController {
     }
 
     // ─────────────────────────────────────────────
-    //  JumpServer 端缓存加载
+    //  Loading the JumpServer-side cache
     // ─────────────────────────────────────────────
 
     private function loadNodes(): void {
@@ -151,7 +151,7 @@ class JumpserverPush extends CController {
     }
 
     /**
-     * 确保 JumpServer 中存在对应节点（分组），不存在则创建
+     * Make sure the corresponding node (group) exists in JumpServer, creating it if missing
      */
     private function ensureNode(string $name): ?string {
         if ($name === '') {
@@ -171,7 +171,7 @@ class JumpserverPush extends CController {
     }
 
     // ─────────────────────────────────────────────
-    //  推送逻辑
+    //  Push logic
     // ─────────────────────────────────────────────
 
     private function pushGroups(): array {
@@ -215,12 +215,12 @@ class JumpserverPush extends CController {
             $name = (string) ($host['host'] ?? $host['name']);
             $ip = $this->resolveHostIp($host);
 
-            // 解析平台并映射到 JumpServer 平台
+            // Resolve the platform and map it to the JumpServer platform
             $zbxPlatform = $platformByHost[$hostid] ?? 'Linux';
             $platform = $this->platformMap[$zbxPlatform]
                 ?? ($this->platformMap['Linux'] ?? null);
 
-            // 构造节点列表（自动创建缺失分组）
+            // Build the node list (missing groups are created automatically)
             $nodes = [];
             $groups = $host['hostgroups'] ?? ($host['groups'] ?? []);
             foreach ($groups as $g) {
@@ -234,8 +234,8 @@ class JumpserverPush extends CController {
             $existingAsset = $this->assetMap[$name] ?? null;
             $isNewAsset = !(is_array($existingAsset) && isset($existingAsset['id']));
 
-            // 账号关联：仅在“创建资产”时通过 accounts 字段按模板内嵌，
-            // JumpServer 会依据模板自动填充用户名/密钥。更新资产时不改动账号。
+            // Account linking: only when creating an asset, the template is embedded through the accounts field,
+            // and JumpServer fills in the username/secret from the template. Accounts are not changed when updating assets.
             $attachAccount = ($this->accountTemplateId !== '' && $isNewAsset);
 
             $data = [
@@ -244,7 +244,7 @@ class JumpserverPush extends CController {
                 'is_active' => true,
                 'nodes'     => $nodes,
             ];
-            // 仅创建资产时内嵌账号模板；更新资产时不携带 accounts 字段，避免影响已有账号
+            // The account template is embedded only when creating assets; updates do not send the accounts field, so existing accounts are not affected
             if ($attachAccount) {
                 $data['accounts'] = [['template' => $this->accountTemplateId]];
             }
@@ -282,7 +282,7 @@ class JumpserverPush extends CController {
                 $this->writeBackAssetId($host, $assetId);
 
                 if ($attachAccount) {
-                    // 仅创建资产时内嵌了账号模板，记为账号已关联
+                    // The account template was embedded only on asset creation; mark the account as linked
                     $accountsLinked++;
                 }
             }
@@ -299,7 +299,7 @@ class JumpserverPush extends CController {
     }
 
     /**
-     * 将 JumpServer 资产 ID 以标记形式写回 Zabbix 主机（保留已有标记）
+     * Write the JumpServer asset ID back to the Zabbix host as a tag (keeping existing tags)
      */
     private function writeBackAssetId(array $host, string $assetId): void {
         $assetTag = ConfigManager::ASSET_TAG;
@@ -326,7 +326,7 @@ class JumpserverPush extends CController {
     }
 
     // ─────────────────────────────────────────────
-    //  Zabbix 端数据获取
+    //  Fetching data on the Zabbix side
     // ─────────────────────────────────────────────
 
     private function getZabbixGroups(): array {
@@ -388,7 +388,7 @@ class JumpserverPush extends CController {
     }
 
     /**
-     * 通过 "Operating system" 监控项识别每台主机的平台（Linux / Windows / Other）
+     * Identify each host's platform (Linux / Windows / Other) from the "Operating system" item
      */
     private function getHostPlatforms(array $hostIds): array {
         $platforms = [];

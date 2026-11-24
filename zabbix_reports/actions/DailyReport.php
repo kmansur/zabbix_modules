@@ -16,7 +16,7 @@ use Modules\ZabbixReports\Lib\HostMetrics;
 class DailyReport extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -43,7 +43,7 @@ class DailyReport extends CController {
     protected function doAction(): void {
         $groupId = $this->getInput('groupid', '');
 
-        // 获取所有主机组（用于过滤下拉框）
+        // Get all host groups (for the filter dropdown)
         $allGroups = API::HostGroup()->get([
             'output' => ['groupid', 'name'],
             'sortfield' => 'name',
@@ -71,7 +71,7 @@ class DailyReport extends CController {
         $from = $yesterday;
         $till = $today;
 
-        // 获取主机（支持分组过滤）
+        // Get hosts (with group filter support)
         $hostOptions = [
             'output' => ['hostid', 'name'],
             'filter' => ['status' => HOST_STATUS_MONITORED]
@@ -81,10 +81,10 @@ class DailyReport extends CController {
         }
         $hosts = API::Host()->get($hostOptions);
 
-        // 获取过滤后的主机ID，用于告警过滤
+        // Get the filtered host IDs, used to filter alarms
         $filteredHostIds = array_column($hosts, 'hostid');
 
-        // 使用 ProblemFinder 获取与报表周期有交集的所有告警（按主机过滤）
+        // Use ProblemFinder to get all alarms that overlap the report period (filtered by host)
         $problemResult = ProblemFinder::getProblemsInPeriod($from, $till, 500, $filteredHostIds);
         $problemCount = $problemResult['problemCount'];
         $resolvedCount = $problemResult['resolvedCount'];
@@ -93,7 +93,7 @@ class DailyReport extends CController {
         $triggerHostMap = $problemResult['triggerHostMap'];
         $triggerStatusMap = $problemResult['triggerStatusMap'] ?? [];
 
-        // 构建告警信息
+        // Build the alarm information
         $alertResult = ProblemFinder::buildAlertInfo(
             $problemEvents, $recoveryMap, $triggerHostMap,
             LanguageManager::t('Unknown Host'), $triggerStatusMap
@@ -127,7 +127,7 @@ class DailyReport extends CController {
             'filter_day' => $day
         ]);
         
-        // 显式设置响应标题（Zabbix 6.0 需要）
+        // Set the response title explicitly (required by Zabbix 6.0)
         $response->setTitle(LanguageManager::t('Daily Report'));
 
         $this->setResponse($response);

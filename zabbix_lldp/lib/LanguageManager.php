@@ -9,61 +9,6 @@ class LanguageManager {
 
     private static $currentLanguage = null;
     private static $translations = [
-        'zh_CN' => [
-            'LLDP Topology' => 'LLDP 拓扑',
-            'Select host group' => '选择主机分组',
-            'Select host' => '选择主机',
-            'All Groups' => '所有分组',
-            'All Hosts' => '所有主机',
-            'Query' => '查询',
-            'Querying...' => '查询中...',
-            'Host Group' => '主机分组',
-            'Host' => '主机',
-            'Local device' => '本地设备',
-            'Remote device' => '对端设备',
-            'Local port' => '本地端口',
-            'Remote port' => '对端端口',
-            'Last update' => '更新时间',
-            'Links' => '链路',
-            'Devices' => '设备',
-            'Hosts' => '主机',
-            'Stats format' => '%d 主机 / %d 链路 / %d 设备',
-            'Click query to load topology' => '请选择条件并点击查询以加载拓扑',
-            'No LLDP data found' => '未找到 LLDP 数据',
-            'No hosts with LLDP template' => '未找到关联 LLDP 模板的主机',
-            'Template not found' => '未找到 LLDP 模板，请检查 data/config.json 中的 template_name',
-            'Invalid input parameters.' => '无效的输入参数。',
-            'Query failed' => '查询失败',
-            'No permission.' => '没有权限。',
-            'Local' => '本地',
-            'Remote' => '对端',
-            'Skipped items' => '跳过项',
-            'Zoom in' => '放大',
-            'Show %d more devices' => '展开 %d 台设备',
-            'Collapse branch' => '收起分支',
-            'Hidden device alert' => '隐藏设备有告警',
-            'Visible devices: %d' => '已显示 %d 台设备',
-            'Zoom out' => '缩小',
-            'Details' => '详情',
-            'Click a node or link to view details' => '点击节点或链路查看详情',
-            'Node type' => '节点类型',
-            'Connected links' => '关联链路',
-            'Link details' => '链路详情',
-            'Link filter' => '链路筛选',
-            'Filter links by device or port' => '按设备名或端口筛选链路',
-            'Clear filter' => '清空筛选',
-            'Matched links' => '命中链路：%d',
-            'Host name' => '主机名',
-            'Problem count' => '告警数量',
-            'No active problem' => '无活动告警',
-            'Problem details' => '告警详情',
-            'Severity: Not classified' => '严重性: 未分类',
-            'Severity: Information' => '严重性: 信息',
-            'Severity: Warning' => '严重性: 警告',
-            'Severity: Average' => '严重性: 一般严重',
-            'Severity: High' => '严重性: 严重',
-            'Severity: Disaster' => '严重性: 灾难',
-        ],
         'en_US' => [
             'LLDP Topology' => 'LLDP Topology',
             'Select host group' => 'Select host group',
@@ -114,61 +59,6 @@ class LanguageManager {
             'Severity: Average' => 'Severity: Average',
             'Severity: High' => 'Severity: High',
             'Severity: Disaster' => 'Severity: Disaster',
-        ],
-        'ru_RU' => [
-            'LLDP Topology' => 'Топология LLDP',
-            'Select host group' => 'Выберите группу узлов сети',
-            'Select host' => 'Выберите узел сети',
-            'All Groups' => 'Все группы',
-            'All Hosts' => 'Все узлы сети',
-            'Query' => 'Запросить',
-            'Querying...' => 'Выполняется запрос…',
-            'Host Group' => 'Группа узлов сети',
-            'Host' => 'Узел сети',
-            'Local device' => 'Локальное устройство',
-            'Remote device' => 'Удалённое устройство',
-            'Local port' => 'Локальный порт',
-            'Remote port' => 'Удалённый порт',
-            'Last update' => 'Последнее обновление',
-            'Links' => 'Связи',
-            'Devices' => 'Устройства',
-            'Hosts' => 'Узлы сети',
-            'Stats format' => 'Узлов: %d / связей: %d / устройств: %d',
-            'Click query to load topology' => 'Настройте фильтры и нажмите «Запросить», чтобы загрузить топологию',
-            'No LLDP data found' => 'Данные LLDP не найдены',
-            'No hosts with LLDP template' => 'С шаблоном LLDP не связано ни одного узла сети',
-            'Template not found' => 'Шаблон LLDP не найден. Проверьте template_name в data/config.json',
-            'Invalid input parameters.' => 'Недопустимые входные параметры.',
-            'Query failed' => 'Не удалось выполнить запрос',
-            'No permission.' => 'Недостаточно прав.',
-            'Local' => 'Локальный',
-            'Remote' => 'Удалённый',
-            'Skipped items' => 'Пропущенные элементы',
-            'Zoom in' => 'Увеличить',
-            'Zoom out' => 'Уменьшить',
-            'Details' => 'Подробности',
-            'Click a node or link to view details' => 'Нажмите на узел или связь, чтобы посмотреть подробности',
-            'Node type' => 'Тип узла',
-            'Connected links' => 'Связи узла',
-            'Link details' => 'Сведения о связи',
-            'Link filter' => 'Фильтр связей',
-            'Filter links by device or port' => 'Фильтровать связи по устройству или порту',
-            'Clear filter' => 'Очистить фильтр',
-            'Matched links' => 'Найдено связей: %d',
-            'Host name' => 'Имя узла сети',
-            'Problem count' => 'Количество проблем',
-            'No active problem' => 'Нет активных проблем',
-            'Problem details' => 'Сведения о проблеме',
-            'Severity: Not classified' => 'Важность: не классифицировано',
-            'Severity: Information' => 'Важность: информация',
-            'Severity: Warning' => 'Важность: предупреждение',
-            'Severity: Average' => 'Важность: средняя',
-            'Severity: High' => 'Важность: высокая',
-            'Severity: Disaster' => 'Важность: чрезвычайная',
-            'Show %d more devices' => 'Показать скрытые устройства (%d)',
-            'Collapse branch' => 'Свернуть ветвь',
-            'Hidden device alert' => 'Проблема у скрытого устройства',
-            'Visible devices: %d' => 'Видимых устройств: %d',
         ],
         'pt_BR' => [
             'LLDP Topology' => 'Topologia LLDP',
@@ -295,31 +185,16 @@ class LanguageManager {
     }
 
     private static function mapZabbixLangToOurs($zabbixLang) {
-        $lowerLang = strtolower(trim((string) $zabbixLang));
-
-        if (preg_match('/^ru(?:[-_]|$)/i', trim($lowerLang))) {
-            return 'ru_RU';
+        $lang = strtolower(str_replace('-', '_', trim((string) $zabbixLang)));
+        if ($lang === self::LANG_DEFAULT) {
+            return self::LANG_DEFAULT;
         }
-        if (preg_match('/^pt(?:[-_]|$)/i', trim($lowerLang))) {
+        // Supported languages: Brazilian Portuguese (pt*) and English (everything else).
+        if (preg_match('/^pt(?:_|$)/', $lang)) {
             return 'pt_BR';
         }
-        $langMap = [
-            'zh_cn' => 'zh_CN', 'zh-cn' => 'zh_CN', 'zh' => 'zh_CN',
-            'en_us' => 'en_US', 'en-us' => 'en_US', 'en' => 'en_US',
-            'default' => self::LANG_DEFAULT,
-        ];
 
-        if (isset($langMap[$lowerLang])) {
-            return $langMap[$lowerLang];
-        }
-        if (strpos($lowerLang, 'zh') === 0) {
-            return 'zh_CN';
-        }
-        if (strpos($lowerLang, 'en') === 0) {
-            return 'en_US';
-        }
-
-        return self::ZBX_DEFAULT_LANG;
+        return 'en_US';
     }
 
     private static function ensureSupportedOrFallback($lang) {

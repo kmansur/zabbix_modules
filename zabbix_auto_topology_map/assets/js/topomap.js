@@ -1,35 +1,35 @@
 /*
- * 自动拓扑图（Zabbix 前端模块 topomap）
+ * Auto Topology Map (Zabbix frontend module topomap)
  *
- * 页面骨架在 views/topomap.view.php，数据接口在 actions/TopomapData.php。
- * 数据本身存于 Zabbix 原生 sysmaps（map.create / map.update），
- * 所以这里读写的是「监测 → 拓扑图」同一份数据。
+ * The page skeleton is in views/topomap.view.php and the data endpoint in actions/TopomapData.php.
+ * The data itself lives in native Zabbix sysmaps (map.create / map.update),
+ * so this reads and writes the same data as "Monitoring → Maps".
  *
- * 注意：Zabbix 把模块 JS 以无 defer 的 <script> 注入 <head>，执行时 <body> 还没解析，
- * 因此所有初始化必须延后到 DOMContentLoaded，否则 getElementById 恒为 null。
+ * Note: Zabbix injects module JS into <head> as a <script> without defer, before <body> is parsed,
+ * so all initialization must wait for DOMContentLoaded, otherwise getElementById always returns null.
  */
 (function () {
 	'use strict';
 
 	// ---------------------------------------------------------------
-	// 多语言词典由 PHP 侧 LanguageManager::jsMap() 注入
-	// （window.TOPOMAP_I18N）。中文环境词典为空，T() 直接返回原文；
-	// 英文环境查不到译文时同样回退原文，保证任何情况下都有文案。
+	// The translation dictionary is injected by LanguageManager::jsMap() on the PHP side
+	// (window.TOPOMAP_I18N). In English the dictionary is empty and T() returns the source text;
+	// in Portuguese, missing translations also fall back to the source text, so there is always some text.
 	// ---------------------------------------------------------------
 
-	// 注意：词典是页面骨架里的内联脚本注入的，本文件在 <head> 里先执行，
-	// 所以这里只能每次现读 window.TOPOMAP_I18N，不能在加载时缓存。
+	// Note: the dictionary is injected by an inline script in the page skeleton, and this file runs first in <head>,
+	// so window.TOPOMAP_I18N must be read on every call and cannot be cached at load time.
 	function T(s) {
 		var dict = window.TOPOMAP_I18N;
 
-		if (!dict || window.TOPOMAP_LANG === 'zh_CN') {
+		if (!dict) {
 			return s;
 		}
 
 		return Object.prototype.hasOwnProperty.call(dict, s) ? dict[s] : s;
 	}
 
-	// 带占位符的翻译：TF('共 %s 个拓扑图', n)。%s / %d 依次替换。
+	// Translation with placeholders: TF('%s topology maps in total', n). %s / %d are replaced in order.
 	function TF(s) {
 		var args = Array.prototype.slice.call(arguments, 1);
 		var i = 0;
@@ -57,7 +57,7 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 常量 / 基础
+		// Constants / basics
 		// ---------------------------------------------------------------
 
 		var ET_HOST = 0;
@@ -66,15 +66,15 @@
 		var ET_GROUP = 3;
 		var ET_IMAGE = 4;
 
-		// sysmaps.label_type 取值（与 7.0.28 ui/js/class.cmap.js CMap.LABEL_TYPE_* 一致）
-		var LT_LABEL = 0;    // 元素自己的标签文本
-		var LT_IP = 1;       // 主机 IP
-		var LT_NAME = 2;     // 元素名称（主机名）
-		var LT_STATUS = 3;   // 只显示状态
-		var LT_NOTHING = 4;  // 不显示标签
-		var LT_CUSTOM = 5;   // 用 sysmaps.label_string_* 宏模板（预览里按标签文本回退）
+		// Values of sysmaps.label_type (same as CMap.LABEL_TYPE_* in 7.0.28 ui/js/class.cmap.js)
+		var LT_LABEL = 0;    // The element's own label text
+		var LT_IP = 1;       // Host IP
+		var LT_NAME = 2;     // Element name (host name)
+		var LT_STATUS = 3;   // Status only
+		var LT_NOTHING = 4;  // No label
+		var LT_CUSTOM = 5;   // Uses the sysmaps.label_string_* macro templates (the preview falls back to the label text)
 
-		// 状态行颜色兜底（后端会带 sysmap 里配置的真实颜色）
+		// Fallback colors for status lines (the backend sends the real colors configured in the sysmap)
 		var STATUS_COLORS = {
 			ok: '009900',
 			ok_ack: '009900',
@@ -84,28 +84,28 @@
 			maintenance: 'EE9600'
 		};
 
-		var LABEL_LOCS = [[-1, T('默认')], [0, T('底部')], [1, T('左侧')], [2, T('右侧')], [3, T('顶部')]];
-		var ICON_LOCS = [[0, T('默认')], [1, T('底部')], [2, T('左侧')], [3, T('右侧')], [4, T('顶部')]];
-		var TAG_OPERATORS = [[0, T('包含')], [1, T('等于')], [2, T('不包含')], [3, T('不等于')], [4, T('存在')], [5, T('不存在')]];
-		var LINK_DRAWTYPES = [[0, T('实线')], [2, T('粗线')], [3, T('点线')], [4, T('虚线')]];
-		// 每链路的走线模式：0 自动曲线（现状）/ 1 自动直角 / 2 手动折点（在画布上点选、拖动）
-		var LINK_ROUTINGS = [[0, T('自动曲线')], [1, T('自动直角')], [2, T('手动折点')]];
-		// 每链路的「触发器来源端」口径，与后端 TopomapData::TRIGGER_SOURCE_* 一一对应。
-		// 连线方向 = selementid1（源端）→ selementid2（本端）。
+		var LABEL_LOCS = [[-1, T('Default')], [0, T('Bottom')], [1, T('Left')], [2, T('Right')], [3, T('Top')]];
+		var ICON_LOCS = [[0, T('Default')], [1, T('Bottom')], [2, T('Left')], [3, T('Right')], [4, T('Top')]];
+		var TAG_OPERATORS = [[0, T('Contains')], [1, T('Equals')], [2, T('Does not contain')], [3, T('Does not equal')], [4, T('Exists')], [5, T('Does not exist')]];
+		var LINK_DRAWTYPES = [[0, T('Solid line')], [2, T('Thick line')], [3, T('Dotted line')], [4, T('Dashed line')]];
+		// Per-link routing mode: 0 automatic curve (current) / 1 automatic orthogonal / 2 manual waypoints (picked and dragged on the canvas)
+		var LINK_ROUTINGS = [[0, T('Auto curve')], [1, T('Auto orthogonal')], [2, T('Manual waypoints')]];
+		// Per-link "trigger source" scope, matching the backend TopomapData::TRIGGER_SOURCE_* one to one.
+		// Link direction = selementid1 (source) → selementid2 (local).
 		var TRIGGER_SOURCES = [
-			[0, T('自动（源端优先）')],
-			[1, T('仅源端')],
-			[2, T('仅本端')],
-			[3, T('两端都关联')],
-			[4, T('不关联')]
+			[0, T('Auto (source first)')],
+			[1, T('Source only')],
+			[2, T('Target only')],
+			[3, T('Both ends')],
+			[4, T('None')]
 		];
-		// 形类型与原生 SVGMapShape 一致：0 矩形 / 1 椭圆 / 2 线。
-		// 线的 x、y 是起点，width、height 是终点的绝对坐标（不是宽高），与原生 sysmap_shape 语义相同。
-		var SHAPE_TYPES = [[0, T('矩形')], [1, T('椭圆')], [2, T('线')]];
-		var SHAPE_BORDERS = [[0, T('无')], [1, T('实线')], [2, T('点线')], [3, T('虚线')]];
-		// 字体：下标即 sysmap_shape.font，名称与原生 shapeForm 的下拉一致；
-		// 具体画出来的族名取原生 SVGMap.FONTS（原生里 9 显示 Helvetica，SVG 却画 Trebuchet MS，
-		// 这里照抄原生的实际渲染结果，保证和自带拓扑图一模一样）。
+		// Shape types as in native SVGMapShape: 0 rectangle / 1 ellipse / 2 line.
+		// For lines x, y is the start and width, height are the absolute end coordinates (not width/height), as in native sysmap_shape.
+		var SHAPE_TYPES = [[0, T('Rectangle')], [1, T('Ellipse')], [2, T('Line')]];
+		var SHAPE_BORDERS = [[0, T('None')], [1, T('Solid line')], [2, T('Dotted line')], [3, T('Dashed line')]];
+		// Fonts: the index is sysmap_shape.font, names match the dropdown of the native shapeForm;
+		// the family actually drawn follows native SVGMap.FONTS (natively 9 shows Helvetica but the SVG draws Trebuchet MS);
+		// the native rendering is copied as is, so it looks exactly like the built-in maps.
 		var SHAPE_FONT_NAMES = ['Georgia', 'Palatino', 'Times New Roman', 'Arial', 'Arial Black', 'Comic Sans',
 			'Impact', 'Lucida Sans', 'Tahoma', 'Helvetica', 'Verdana', 'Courier New', 'Lucida Console'];
 		var SHAPE_FONT_FAMILIES = ['Georgia, serif', '"Palatino Linotype", "Book Antiqua", Palatino, serif',
@@ -114,39 +114,39 @@
 			'"Lucida Sans Unicode", "Lucida Grande", sans-serif', 'Tahoma, Geneva, sans-serif',
 			'"Trebuchet MS", Helvetica, sans-serif', 'Verdana, Geneva, sans-serif',
 			'"Courier New", Courier, monospace', '"Lucida Console", Monaco, monospace'];
-		// 原生 SVGMap.BORDER_TYPES：点线/虚线的 dash 数组会随线宽放大
+		// Native SVGMap.BORDER_TYPES: dash arrays for dotted/dashed lines scale with the line width
 		var SHAPE_BORDER_DASHES = ['', 'none', '1,2', '4,4'];
 		var SHAPE_TEXT_PADDING = 5;
-		// 选中控制点：7×7 圆形，白底、1px 深蓝描边（对齐原生 .ui-resize-dot）
+		// Selection handles: 7×7 circles, white fill, 1px dark blue stroke (aligned with native .ui-resize-dot)
 		var SHAPE_HANDLE_RADIUS = 3.5;
 		var SEVERITY_COLORS = ['#97AAB3', '#7499FF', '#FFC859', '#FFA059', '#E97659', '#E45959'];
 		var DEFAULT_LINK_COLOR = '00CC00';
-		// 连线绑定的触发器处于问题态时的线色（自动发现建的线会绑端口状态类触发器）
+		// Link color when a bound trigger is in problem state (links created by auto discovery bind port status triggers)
 		var DEFAULT_TRIGGER_COLOR = 'DD0000';
-		// 同一对元素之间有多条连线（链路聚合的多个成员口）时，相邻两条线的垂直间距（像素）。
-		// 画成对称偏移的二次贝塞尔曲线，避免完全重叠成一条。取值对齐 aiops：线贴近成束，
-		// 每条线的指标徽标再沿曲线错开位置（避免相邻线的框叠在一起）。
+		// Vertical spacing (pixels) between adjacent links when several links join the same pair of elements (members of a link aggregation).
+		// They are drawn as symmetrically offset quadratic Bézier curves so they do not overlap completely. Values aligned with aiops: links stay close in a bundle,
+		// and each link's metric badge is shifted along the curve (so boxes of adjacent links do not overlap).
 		var LINK_PAIR_SPACING = 12;
-		// 自动发现的「发现深度」可自定义（1~10 层，默认 3 层），之前把选项写死成 1~4 层
+		// The auto discovery depth is configurable (1–10 levels, default 3); it used to be hard-coded as 1–4
 		var DISCOVER_DEPTH_MIN = 1;
 		var DISCOVER_DEPTH_MAX = 10;
 		var DISCOVER_DEPTH_DEFAULT = 3;
 
-		// 画布尺寸不写死：最小铺满可视区域，拖拽/添加超出右边或下边时实时长大，
-		// 保存时收缩到「内容外接框」与「可视区域」中较大的那个。
-		// 这两个最小值只是画布还没布局出来时的兜底。
+		// The canvas size is not fixed: at least the visible area, growing in real time when dragging/adding beyond the right or bottom edge,
+		// and shrinking on save to the larger of the content bounding box and the visible area.
+		// These two minimums are only fallbacks before the canvas has been laid out.
 		var MIN_CANVAS_W = 1000;
 		var MIN_CANVAS_H = 700;
-		var CANVAS_PAD = 60;   // 内容四周留白
-		var CANVAS_MAX = 60000; // sysmaps.width/height 的上限（8.0 API 实测 60000 可用，与后端一致）
-		var DRAG_EDGE = 56;    // 拖拽时指针距离画布边缘多少像素开始自动平移
-		var PAN_STEP = 16;     // 每次自动平移的像素（屏幕坐标）
+		var CANVAS_PAD = 60;   // Padding around the content
+		var CANVAS_MAX = 60000; // Upper limit of sysmaps.width/height (60000 verified with the 8.0 API, same as the backend)
+		var DRAG_EDGE = 56;    // Distance in pixels from the canvas edge at which dragging starts auto-panning
+		var PAN_STEP = 16;     // Pixels per auto-pan step (screen coordinates)
 
 		var theme = (document.documentElement.getAttribute('theme') || document.body.className || '').toLowerCase();
 		var isDark = theme.indexOf('dark') !== -1;
 		root.classList.add(isDark ? 'tm-dark' : 'tm-light');
 
-		// 从自身脚本 URL 反推 zabbix.php / imgstore.php 所在目录，兼容子目录部署
+		// Derive the directory of zabbix.php / imgstore.php from this script's URL, supporting subdirectory deployments
 		var scriptSrc = document.currentScript && document.currentScript.src ? String(document.currentScript.src) : '';
 		scriptSrc = scriptSrc.split('?')[0].split('#')[0];
 
@@ -171,9 +171,9 @@
 			removeMode: null,
 			linkMode: false,
 			linkFirst: null,
-			// 折点编辑中的链路（整组代表）：非空时画布点击空白处追加折点、显示折点圆点
+			// Link (representing its whole group) whose waypoints are being edited: when set, clicking empty canvas adds a waypoint and waypoint dots are shown
 			bendLink: null,
-			// 当前选中的形（对齐原生：点一下出 8 个圆形控制点，拖动控制点改大小）
+			// Currently selected shape (as in native: one click shows 8 circular handles; dragging a handle resizes)
 			shapeSel: null,
 			selected: null,
 			zoom: 1,
@@ -184,13 +184,13 @@
 			hostPick: null,
 			itemPick: null,
 			trigPick: null,
-			// 已绑触发器的名字缓存（triggerid => description），画布/对话框里的 chip 用它
+			// Name cache of bound triggers (triggerid => description), used by chips on the canvas/in dialogs
 			triggerNames: {},
-			// 触发器是否正在报警（triggerid => true）：手工刚绑上就能立刻按触发器色画线
+			// Whether a trigger is firing (triggerid => true): lets a just-bound trigger color the link immediately
 			triggerProblems: {},
-			// 触发器严重性（triggerid => priority 0~5）：链接属性里的「指标」色块用它
+			// Trigger severity (triggerid => priority 0–5): used by the "indicator" swatch in link properties
 			triggerSeverity: {},
-			// 列表：筛选 / 排序 / 勾选（对齐原生拓扑图列表的交互）
+			// List: filter / sort / select (aligned with the interactions of the native map list)
 			filterName: '',
 			sortField: 'name',
 			sortOrder: 'ASC',
@@ -205,7 +205,7 @@
 		var elCanvasView = document.getElementById('tm-canvas-view');
 		var elCreateBtn = document.getElementById('tm-create-btn');
 		var elDiscoverBtn = document.getElementById('tm-discover-btn');
-		// 「创建拓扑图」只属于列表页；画布视图里要藏起来
+		// "Create map" belongs only to the list page; hide it in the canvas view
 		var elHeaderControls = document.querySelector('#topomap-root .header-controls');
 		var elListMsg = document.getElementById('tm-list-msg');
 		var elListBody = document.getElementById('tm-list-body');
@@ -262,7 +262,7 @@
 		var elItemCancel = document.getElementById('tm-item-cancel');
 		var elItemClose = document.getElementById('tm-item-close');
 
-		// 主机弹层（监控项弹层里「主机 → 选择」打开）
+		// Host popup (opened via "Host → Select" in the item popup)
 		var elHpOverlay = document.getElementById('tm-hp-overlay');
 		var elHpGroupBox = document.getElementById('tm-hp-groupbox');
 		var elHpGroupPick = document.getElementById('tm-hp-grouppick');
@@ -273,7 +273,7 @@
 		var elHpCancel = document.getElementById('tm-hp-cancel');
 		var elHpClose = document.getElementById('tm-hp-close');
 
-		// 主机群组弹层（主机弹层里「主机群组 → 选择」打开）
+		// Host group popup (opened via "Host group → Select" in the host popup)
 		var elGgOverlay = document.getElementById('tm-gg-overlay');
 		var elGgSearch = document.getElementById('tm-gg-search');
 		var elGgList = document.getElementById('tm-gg-list');
@@ -282,7 +282,7 @@
 		var elGgCancel = document.getElementById('tm-gg-cancel');
 		var elGgClose = document.getElementById('tm-gg-close');
 
-		// 触发器弹层（链接属性里「触发器 → 选择」打开）
+		// Trigger popup (opened via "Trigger → Select" in link properties)
 		var elTrigOverlay = document.getElementById('tm-trig-overlay');
 		var elTrigGroupBox = document.getElementById('tm-trig-groupbox');
 		var elTrigGroupPick = document.getElementById('tm-trig-grouppick');
@@ -296,7 +296,7 @@
 		var elTrigClose = document.getElementById('tm-trig-close');
 
 		// ---------------------------------------------------------------
-		// 工具函数
+		// Utility functions
 		// ---------------------------------------------------------------
 
 		function clear(node) {
@@ -361,13 +361,13 @@
 		}
 
 		/*
-		 * 统一显隐：既写 hidden 属性，也写内联 display。
+		 * Show/hide consistently: set both the hidden attribute and inline display.
 		 *
-		 * 只靠 hidden 属性在真浏览器里不可靠：作者样式 `.tm-overlay{display:flex}`
-		 * 会盖掉用户代理样式 `[hidden]{display:none}`（作者 > UA），于是
-		 * `el.hidden = true` 只是加了个属性，视觉上什么都没变 —— 弹层关不掉。
-		 * 内联样式的优先级高于任何作者样式选择器，且不受「CSS 文件被缓存成旧版」
-		 * 的影响，所以两条腿走路。恢复显示时把内联值清空，交还给样式表。
+		 * The hidden attribute alone is unreliable in real browsers: the author style `.tm-overlay{display:flex}`
+		 * overrides the user-agent style `[hidden]{display:none}` (author > UA), so
+		 * `el.hidden = true` only adds an attribute with no visual change — the popup cannot be closed.
+		 * Inline styles beat any author style selector and are not affected by a stale cached CSS file,
+		 * so both are used. When showing again, the inline value is cleared and control returns to the stylesheet.
 		 */
 		function setHidden(el, hide) {
 			if (!el) {
@@ -379,13 +379,13 @@
 		}
 
 		/**
-		 * 给接口调用加一道前端超时：fetch 本身没有超时参数，后端卡住时只能自己 race，
-		 * 否则发现对话框会永远停在「扫描 xxx …」。
+		 * Add a frontend timeout to API calls: fetch itself has no timeout parameter, so a stuck backend can only be raced,
+		 * otherwise the discovery dialog would stay at "Scanning xxx …" forever.
 		 */
 		function withTimeout(promise, ms) {
 			return new Promise(function (resolve, reject) {
 				var timer = setTimeout(function () {
-					reject(new Error(T('扫描超时（') + Math.round(ms / 1000) + T(' 秒仍无返回），已跳过这批设备')));
+					reject(new Error(T('Scan timed out (') + Math.round(ms / 1000) + T('s without response); skipped this batch')));
 				}, ms);
 
 				promise.then(function (value) {
@@ -398,7 +398,7 @@
 			});
 		}
 
-		// 统一的接口调用：先 text() 再 JSON.parse，区分 HTTP 错误 / 空响应 / 非 JSON
+		// Common API call: text() first, then JSON.parse, distinguishing HTTP errors / empty responses / non-JSON
 		function api(mode, params) {
 			var body = new URLSearchParams();
 
@@ -416,11 +416,11 @@
 			}).then(function (res) {
 				return res.text().then(function (text) {
 					if (!res.ok) {
-						throw new Error(T('接口返回 HTTP ') + res.status + T('：') + text.slice(0, 150));
+						throw new Error(T('API returned HTTP ') + res.status + ': ' + text.slice(0, 150));
 					}
 
 					if (!text) {
-						throw new Error(T('接口返回空响应（HTTP ') + res.status + T('）'));
+						throw new Error(T('API returned an empty response (HTTP ') + res.status + ')');
 					}
 
 					var data;
@@ -429,11 +429,11 @@
 						data = JSON.parse(text);
 					}
 					catch (e) {
-						throw new Error(T('接口返回的不是 JSON：') + text.slice(0, 150));
+						throw new Error(T('API returned non-JSON data: ') + text.slice(0, 150));
 					}
 
 					if (!data || data.success !== true) {
-						throw new Error(data && data.error ? data.error : T('接口返回失败'));
+						throw new Error(data && data.error ? data.error : T('API request failed'));
 					}
 
 					return data;
@@ -442,12 +442,12 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 预览模式：点主机图标弹原生主机菜单
+		// Preview mode: clicking a host icon opens the native host menu
 		// ---------------------------------------------------------------
 
-		// 菜单数据由 Zabbix 自带的 menu.popup 控制器生成（视图/配置/链接/脚本四段，
-		// 权限判断、URL、脚本、以及第三方模块注入的「View Neighbors (LLDP/CDP)」都在里面），
-		// 拿回来后用原生 getMenuPopupHost + $.fn.menuPopup 渲染，外观与自带拓扑图一致。
+		// The menu data is generated by Zabbix's own menu.popup controller (view/configuration/links/scripts sections,
+		// including permission checks, URLs, scripts and "View Neighbors (LLDP/CDP)" injected by third-party modules),
+		// and is rendered with native getMenuPopupHost + $.fn.menuPopup, so it looks like the built-in maps.
 		function openHostMenu(se, node, event) {
 			if (se.elementtype !== ET_HOST || !se._hostid) {
 				return;
@@ -475,16 +475,16 @@
 					resp = JSON.parse(text);
 				}
 				catch (e) {
-					throw new Error(T('菜单接口返回的不是 JSON'));
+					throw new Error(T('The menu API returned non-JSON data'));
 				}
 
 				if (!resp || !resp.data) {
-					throw new Error(resp && resp.error ? resp.error : T('菜单数据为空'));
+					throw new Error(resp && resp.error ? resp.error : T('Menu data is empty'));
 				}
 
 				showHostMenu(se, node, event, resp.data);
 			}).catch(function (err) {
-				openNoticeDialog(T('无法打开主机菜单'), err && err.message ? err.message : T('请求失败'));
+				openNoticeDialog(T('Cannot open the host menu'), err && err.message ? err.message : T('Request failed'));
 			});
 		}
 
@@ -499,8 +499,8 @@
 			var hostid = String(se._hostid);
 			var sections = getMenuPopupHost(menuData, $el);
 
-			// 原生地图页有 view.editHost 来打开主机编辑弹窗，模块页没有，
-			// 改成直接调 Zabbix 的 PopUp（同一个 popup.host.edit 页面）
+			// The native map page has view.editHost to open the host edit popup; the module page does not,
+			// so Zabbix's PopUp is called directly (the same popup.host.edit page)
 			sections.forEach(function (section) {
 				(section.items || []).forEach(function (item) {
 					if (item.label !== '主机' && item.label !== 'Host') {
@@ -524,7 +524,7 @@
 				});
 			});
 
-			// menuPopup 默认按点击位置展开，需要 jQuery 事件（原生 event.originalEvent）
+			// menuPopup opens at the click position by default and needs a jQuery event (native event.originalEvent)
 			var jqEvent = $.Event(event);
 
 			jqEvent.pageX = event.pageX;
@@ -534,12 +534,12 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 图标
+		// Icons
 		// ---------------------------------------------------------------
 
 		function iconUrl(iconid) {
-			// 离线演示页会把图标以 data URI 挂在 window.TOPOMAP_ICON_DATA 上；
-			// 真实环境里没有这个变量，直接走 imgstore.php。
+			// The offline demo page attaches icons as data URIs to window.TOPOMAP_ICON_DATA;
+			// in a real environment that variable does not exist and imgstore.php is used directly.
 			if (window.TOPOMAP_ICON_DATA && window.TOPOMAP_ICON_DATA[iconid]) {
 				return window.TOPOMAP_ICON_DATA[iconid];
 			}
@@ -592,7 +592,7 @@
 					return se.iconid_on;
 				}
 
-				// 维护中（且没有问题）：原生用「维护」图标
+				// In maintenance (and no problems): the native map uses the "maintenance" icon
 				if (se._maintenance === 1 && se.iconid_maintenance !== '0') {
 					return se.iconid_maintenance;
 				}
@@ -602,11 +602,11 @@
 		}
 
 		/*
-		 * 图标后面的高亮图形，对齐原生 getMapHighligts() + SVGMapElement.updateHighlight()：
-		 *   问题中 → 严重级别色的圆（已确认问题加 4px 绿描边）
-		 *   维护中 → 橙色方框（50% 透明）
-		 *   已停用 → 灰色方框（50% 透明）
-		 * 只有图的 highlight 开关为奇数（原生 SYSMAP_HIGHLIGHT_ON=1）时才画。
+		 * Highlight shape behind the icon, aligned with native getMapHighligts() + SVGMapElement.updateHighlight():
+		 *   problem → circle in the severity color (acknowledged problems get a 4px green stroke)
+		 *   maintenance → orange square (50% transparent)
+		 *   disabled → gray square (50% transparent)
+		 * Drawn only when the map's highlight switch is odd (native SYSMAP_HIGHLIGHT_ON=1).
 		 */
 		function highlightForElement(se) {
 			var map = state.map;
@@ -638,11 +638,11 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 数据归一化
+		// Data normalization
 		// ---------------------------------------------------------------
 
-		// 某类元素该用哪个 label_type：开了「高级标签」(label_format=1) 就按元素类型取，
-		// 否则统一用全局 label_type —— 和 7.0.28 class.cmap.js 的 updateLabel() 一致。
+		// Which label_type an element type uses: with "advanced labels" (label_format=1) it depends on the element type,
+		// otherwise the global label_type is used — same as updateLabel() in 7.0.28 class.cmap.js.
 		function labelTypeFor(map, elementtype) {
 			var type = map.label_type;
 
@@ -695,10 +695,10 @@
 			map.shapes = map.shapes || [];
 			map.hosts = map.hosts || {};
 			map.colors = map.colors || {};
-			// 链路指标：每链路的监控项 ID（后端自建表），以及这些监控项的最新值元信息
+			// Link metrics: per-link item IDs (module table) and the latest-value metadata of those items
 			map.metric_items = map.metric_items || {};
 
-			// 标签配置：label_format=1 时才按元素类型取 label_type_*，否则用全局 label_type
+			// Label settings: label_type_* per element type only when label_format=1, otherwise the global label_type
 			map.label_format = num(map.label_format, 0);
 			map.label_type = num(map.label_type, 0);
 			map.label_type_host = num(map.label_type_host, -1);
@@ -708,7 +708,7 @@
 			map.label_type_image = num(map.label_type_image, -1);
 			map.show_unack = num(map.show_unack, 0);
 			map.expandproblem = num(map.expandproblem, 0);
-			// 元素高亮（原生「高亮」开关）：开着才有图标后面的严重级别色圆 / 维护态方框
+			// Element highlight (native "highlight" switch): the severity circle / maintenance square behind the icon only appears when on
 			map.highlight = num(map.highlight, 0);
 
 			map.selements.forEach(function (se) {
@@ -738,8 +738,8 @@
 				se._hostid = hostid;
 				se._hostName = host ? host.name : '';
 				se._ip = host ? String(host.ip || '') : '';
-				// {HOST.CONN} 用的连接地址：后端按主接口/SNMP 接口的 IP 或 DNS 计算，
-				// 旧数据没有 conn 字段时退回 ip，保证兼容。
+				// Connection address for {HOST.CONN}: computed by the backend from the IP or DNS of the main/SNMP interface;
+				// old data without a conn field falls back to ip for compatibility.
 				se._conn = host ? String(host.conn || host.ip || '') : '';
 				se._status = host ? num(host.status, 0) : 0;
 				se._maintenance = host ? num(host.maintenance, 0) : 0;
@@ -754,24 +754,24 @@
 				link.drawtype = num(link.drawtype, 0);
 				link.color = link.color || DEFAULT_LINK_COLOR;
 				link.label = link.label || '';
-				// 原生链接属性里的「显示标签」：默认 -1 / 始终 1 / 自动隐藏 0
+				// "Show label" in the native link properties: default -1 / always 1 / auto-hide 0
 				link.show_label = num(link.show_label, -1);
 				link.linktriggers = link.linktriggers || [];
 				link.metrics = normalizeMetrics(link.metrics);
-				// 两端端口名与「触发器来源端」口径：后端存在模块自建表里，随链路一起带回
+				// End port names and "trigger source" scope: stored by the backend in the module table and returned with the links
 				link.source_port = String(link.source_port || '');
 				link.target_port = String(link.target_port || '');
 				link.trigger_source = num(link.trigger_source, 0);
-				// 走线模式与手动折点（后端表 topomap_link_paths）。
-				// 自动发现的连线（两端端口名是发现时写进来的）默认走「自动直角」，
-				// 按树形布局从父节点底下统一分叉；手工连线仍默认「自动曲线」。
+				// Routing mode and manual waypoints (backend table topomap_link_paths).
+				// Auto-discovered links (end port names written at discovery) default to "automatic orthogonal",
+				// branching from below the parent in the tree layout; manual links still default to "automatic curve".
 				var autoRouting = (link.source_port || link.target_port) ? 1 : 0;
 				link.routing = Math.max(0, Math.min(2, num(link.routing, autoRouting)));
 				link.waypoints = normalizeWaypointList(link.waypoints);
 			});
 
 			map.shapes.forEach(function (shape) {
-				// 默认值与原生 Shape 构造器一致：10,10 起、50×50、Helvetica 11、黑框 2px
+				// Defaults match the native Shape constructor: starting at 10,10, 50×50, Helvetica 11, 2px black border
 				shape.type = Math.max(0, Math.min(2, num(shape.type, 0)));
 				shape.x = num(shape.x, 10);
 				shape.y = num(shape.y, 10);
@@ -794,7 +794,7 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 列表
+		// List
 		// ---------------------------------------------------------------
 
 		function loadIcons() {
@@ -807,11 +807,11 @@
 		}
 
 		function loadList() {
-			msg(elListMsg, T('加载中…'));
+			msg(elListMsg, T('Loading…'));
 			clear(elListBody);
 
 			var tr = make('tr');
-			var td = make('td', 'tm-empty', T('加载中…'));
+			var td = make('td', 'tm-empty', T('Loading…'));
 			td.colSpan = 3;
 			tr.appendChild(td);
 			elListBody.appendChild(tr);
@@ -821,20 +821,20 @@
 				state.canEdit = !!data.can_edit;
 				syncCreateState();
 				renderList();
-				msg(elListMsg, T('共 ') + state.maps.length + T(' 个拓扑图'));
+				msg(elListMsg, T('Total ') + state.maps.length + T(' maps'));
 
 				if (!state.canEdit) {
-					msg(elListMsg, T('当前用户没有创建 / 编辑拓扑图的权限，仅供查看'), 'error');
+					msg(elListMsg, T('Your role cannot create or edit maps; read-only view'), 'error');
 				}
 			}).catch(function (e) {
 				clear(elListBody);
 
 				var row = make('tr');
-				var cell = make('td', 'tm-empty', T('加载失败：') + e.message);
+				var cell = make('td', 'tm-empty', T('Loading failed: ') + e.message);
 				cell.colSpan = 3;
 				row.appendChild(cell);
 				elListBody.appendChild(row);
-				msg(elListMsg, T('加载失败：') + e.message, 'error');
+				msg(elListMsg, T('Loading failed: ') + e.message, 'error');
 			});
 		}
 
@@ -843,8 +843,8 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 列表：筛选 / 排序 / 勾选 / 批量操作
-		// 结构与交互对齐原生「监测 → 拓扑图」
+		// List: filter / sort / select / bulk actions
+		// Structure and interactions aligned with native "Monitoring → Maps"
 		// ---------------------------------------------------------------
 
 		function visibleMaps() {
@@ -864,7 +864,7 @@
 					cmp = va - vb;
 				}
 				else {
-					// 必须用 localeCompare：直接比字符串是码点序，「机房B」会排到「核心网络」前面
+					// localeCompare is required: plain string comparison uses code point order and sorts names incorrectly
 					cmp = String(va).localeCompare(String(vb), locale(), {numeric: true, sensitivity: 'base'});
 				}
 
@@ -888,7 +888,7 @@
 			var ids = checkedIds();
 			var shown = visibleMaps().length;
 
-			elSelectedCount.textContent = ids.length + T(' 已选');
+			elSelectedCount.textContent = ids.length + T(' selected');
 
 			if (elMassDelete) {
 				elMassDelete.disabled = ids.length === 0;
@@ -905,13 +905,13 @@
 
 			var rows = visibleMaps();
 
-			elTableStats.textContent = T('显示 ') + rows.length + T('，共找到 ') + state.maps.length + ' ';
+			elTableStats.textContent = T('Showing ') + rows.length + T(', found ') + state.maps.length + ' ';
 
 			if (!rows.length) {
 				var emptyRow = make('tr');
 				var emptyCell = make('td', 'tm-empty', state.maps.length
-					? T('没有匹配的拓扑图。')
-					: T('暂无拓扑图。点击右上角「创建拓扑图」新建一个。'));
+					? T('No matching maps.')
+					: T('No maps yet. Click "Create map" in the upper right corner to add one.'));
 				emptyCell.colSpan = 5;
 				emptyRow.appendChild(emptyCell);
 				elListBody.appendChild(emptyRow);
@@ -923,7 +923,7 @@
 			rows.forEach(function (map) {
 				var tr = make('tr');
 
-				// 勾选（原生 .checkbox-radio + label>span 的画法）
+				// Checkbox (drawn as native .checkbox-radio + label>span)
 				var tdCheck = make('td');
 				var cb = make('input', 'checkbox-radio');
 				cb.type = 'checkbox';
@@ -947,11 +947,11 @@
 				tdCheck.appendChild(cb);
 				tdCheck.appendChild(lb);
 
-				// 名称（点击进画布预览）
+				// Name (click to open the canvas preview)
 				var tdName = make('td', 'wordbreak');
 				var link = make('a', '', map.name);
 				link.href = '#';
-				link.title = T('元素 ') + map.elements + T(' 个');
+				link.title = T('Elements ') + map.elements + T('');
 				link.addEventListener('click', function (e) {
 					e.preventDefault();
 					openMap(map.sysmapid, false);
@@ -961,19 +961,19 @@
 				var tdW = make('td', '', String(map.width));
 				var tdH = make('td', '', String(map.height));
 
-				// 动作：属性 / 编辑
+				// Actions: properties / edit
 				var tdAct = make('td');
 				var ul = make('ul', 'hor-list');
 
 				if (state.canEdit) {
-					var prop = make('a', '', T('属性'));
+					var prop = make('a', '', T('Properties'));
 					prop.href = '#';
 					prop.addEventListener('click', function (e) {
 						e.preventDefault();
 						openPropertiesDialog(map);
 					});
 
-					var edit = make('a', '', T('编辑'));
+					var edit = make('a', '', T('Edit'));
 					edit.href = '#';
 					edit.addEventListener('click', function (e) {
 						e.preventDefault();
@@ -1073,9 +1073,9 @@
 				return;
 			}
 
-			confirmDialog(T('删除 ') + ids.length + T(' 张拓扑图？'),
-				T('删除后无法恢复。这些图与「监测 → 拓扑图」共用同一份数据，原生列表里也会一起消失。'),
-				T('删除')
+			confirmDialog(T('Delete ') + ids.length + T(' maps?'),
+				T('This cannot be undone. These maps share data with Monitoring → Maps and will also disappear from the native list.'),
+				T('Delete')
 			).then(function (ok) {
 				if (!ok) {
 					return;
@@ -1085,11 +1085,11 @@
 					ids.forEach(function (id) {
 						delete state.checked[id];
 					});
-					msg(elListMsg, T('已删除 ') + ids.length + T(' 张拓扑图'), 'ok');
+					msg(elListMsg, T('Deleted ') + ids.length + T(' maps'), 'ok');
 
 					return loadList();
 				}).catch(function (e) {
-					msg(elListMsg, T('删除失败：') + e.message, 'error');
+					msg(elListMsg, T('Deletion failed: ') + e.message, 'error');
 				});
 			});
 		}
@@ -1116,38 +1116,38 @@
 				document.body.appendChild(a);
 				a.click();
 				document.body.removeChild(a);
-				msg(elListMsg, T('已导出 ') + data.count + T(' 张拓扑图'), 'ok');
+				msg(elListMsg, T('Exported ') + data.count + T(' maps'), 'ok');
 			}).catch(function (e) {
-				msg(elListMsg, T('导出失败：') + e.message, 'error');
+				msg(elListMsg, T('Export failed: ') + e.message, 'error');
 			});
 		}
 
-		// 创建拓扑图：创建按钮 → 名称 / 画布尺寸 / 应用 / 重设
+		// Create map: create button → name / canvas size / apply / reset
 		function openCreateDialog() {
 			if (!state.canEdit) {
-				openNoticeDialog(T('没有权限'), T('当前用户没有创建 / 编辑拓扑图的权限（需要角色里的「创建和编辑拓扑图」）。'));
+				openNoticeDialog(T('No permission'), T('Your role cannot create or edit maps (the role needs "Create and edit maps").'));
 
 				return;
 			}
 
 			openDialog({
-				title: T('创建拓扑图'),
+				title: T('Create map'),
 				narrow: true,
 				build: function (body) {
 					var tbody = dialogForm(body);
-					var nameRow = formRow(tbody, T('名称'), true);
+					var nameRow = formRow(tbody, T('Name'), true);
 					var input = make('input', 'tm-input tm-input-block');
 					input.type = 'text';
 					input.maxLength = 128;
-					input.placeholder = T('输入拓扑图名称');
+					input.placeholder = T('Enter a map name');
 					input.autocomplete = 'off';
 					nameRow.td.appendChild(input);
 
-					// 画布尺寸不再填：进去后拖到哪儿画布就长到哪儿，保存时自动收紧
-					var sizeRow = formRow(tbody, T('画布尺寸'), false);
-					sizeRow.td.appendChild(make('div', 'tm-size-auto', T('自动')));
+					// The canvas size is no longer entered: the canvas grows wherever you drag and shrinks automatically on save
+					var sizeRow = formRow(tbody, T('Canvas size'), false);
+					sizeRow.td.appendChild(make('div', 'tm-size-auto', T('Auto')));
 					sizeRow.td.appendChild(make('div', 'tm-hint',
-						T('创建后画布会随元素自动扩展，保存时按内容收紧到合适大小')));
+						T('The canvas expands with its elements and shrinks to fit the content when saving')));
 
 					var warn = make('div', 'tm-msg');
 					warn.style.marginTop = '6px';
@@ -1174,43 +1174,43 @@
 
 						if (!name) {
 							warn.className = 'tm-msg tm-msg-error';
-							warn.textContent = T('名称不能为空');
+							warn.textContent = T('The name cannot be empty');
 							input.focus();
 
 							return;
 						}
 
 						warn.className = 'tm-msg';
-						warn.textContent = T('创建中…');
+						warn.textContent = T('Creating…');
 						elCreateBtn.disabled = true;
 
 						api('create', {name: name}).then(function (data) {
 							closeDialog();
 
 							return loadList().then(function () {
-								msg(elListMsg, T('已创建「') + name + T('」'), 'ok');
+								msg(elListMsg, T('Created "') + name + '"', 'ok');
 								openMap(data.sysmapid, false);
 							});
 						}).catch(function (e) {
 							warn.className = 'tm-msg tm-msg-error';
-							warn.textContent = T('创建失败：') + e.message;
+							warn.textContent = T('Creation failed: ') + e.message;
 						}).then(function () {
 							syncCreateState();
 						});
 					};
 				},
 				buttons: [
-					{label: T('应用'), primary: true, onClick: function () { openCreateDialog.submit(); }},
-					{label: T('重设'), onClick: function () { openCreateDialog.reset(); }}
+					{label: T('Apply'), primary: true, onClick: function () { openCreateDialog.submit(); }},
+					{label: T('Reset'), onClick: function () { openCreateDialog.reset(); }}
 				]
 			});
 		}
 
 		// ---------------------------------------------------------------
-		// 自动发现（SNMP LLDP / CDP）
+		// Auto discovery (SNMP LLDP / CDP)
 		// ---------------------------------------------------------------
 
-		// 弹窗内的临时状态：勾了哪些起点、扫到哪些节点/链路
+		// Temporary state of the dialog: which seeds are checked, which nodes/links were found
 		var discover = null;
 
 		function openDiscoverDialog() {
@@ -1226,14 +1226,14 @@
 			};
 
 			openDialog({
-				title: T('自动发现拓扑'),
+				title: T('Discover topology'),
 				build: buildDiscoverBody,
 				buttons: [
-					{label: T('取消'), onClick: closeDialog},
+					{label: T('Cancel'), onClick: closeDialog},
 					{
-						label: T('开始发现'),
+						label: T('Start discovery'),
 						primary: true,
-						// 发现完成后同一个按钮变成「生成拓扑图」
+						// After discovery the same button becomes "Generate map"
 						onClick: function () {
 							if (discover && discover.finished) {
 								saveDiscover();
@@ -1253,15 +1253,15 @@
 			return !!(discover && discover.mode === 'rediscover');
 		}
 
-		// 画布内「重新发现」：以当前图里的主机元素为种子重新扫描，
-		// 结果就地并入当前图（保留已配置的链路指标）。
+		// In-canvas "rediscover": rescans using the host elements of the current map as seeds,
+		// and merges the result into the current map in place (keeping configured link metrics).
 		function openRediscoverDialog() {
 			if (!state.map) {
 				return;
 			}
 
 			if (!state.canEdit) {
-				openNoticeDialog(T('没有权限'), T('当前用户没有创建 / 编辑拓扑图的权限（需要角色里的「创建和编辑拓扑图」）。'));
+				openNoticeDialog(T('No permission'), T('Your role cannot create or edit maps (the role needs "Create and edit maps").'));
 
 				return;
 			}
@@ -1275,7 +1275,7 @@
 			});
 
 			if (!seeds.length) {
-				msg(elListMsg, T('当前拓扑图里没有主机元素，无法重新发现'), 'error');
+				msg(elListMsg, T('The current map has no host elements; cannot rediscover'), 'error');
 
 				return;
 			}
@@ -1297,12 +1297,12 @@
 			});
 
 			openDialog({
-				title: T('重新发现并更新拓扑图'),
+				title: T('Rediscover and update map'),
 				build: buildDiscoverBody,
 				buttons: [
-					{label: T('取消'), onClick: closeDialog},
+					{label: T('Cancel'), onClick: closeDialog},
 					{
-						label: T('开始发现'),
+						label: T('Start discovery'),
 						primary: true,
 						onClick: function () {
 							if (discover && discover.finished) {
@@ -1316,7 +1316,7 @@
 				]
 			});
 
-			// 种子主机的名字 / IP 用于新节点的标签；取不到就用 hostid 兜底
+			// Seed host names / IPs are used for new node labels; hostid is the fallback
 			api('hosts', {hostids: seeds.join(',')}).then(function (data) {
 				discover.hosts = data.hosts || [];
 			}).catch(function () {});
@@ -1325,17 +1325,17 @@
 		function buildDiscoverBody(body) {
 			if (isRediscover()) {
 				body.appendChild(make('p', 'tm-discover-tip',
-					T('以当前图里的 ') + discover.hostids.length + T(' 台主机为起点重新扫描；新增设备/链路会并入当前图，')
-					+ T('已配置的带宽/流量监控项保留。')));
+					T('Using the ') + discover.hostids.length + T(' hosts in the current map as seeds; new devices/links are merged in and ')
+					+ T(' existing bandwidth/traffic item settings are kept.')));
 			}
 			else {
 				body.appendChild(make('p', 'tm-discover-tip',
-					T('从交换机读取 LLDP / CDP 邻居表，自动生成拓扑图。起点设备需要配置 SNMP 接口（推荐 v2c）。')));
+					T('Reads the LLDP / CDP neighbor tables from switches and builds the map. Seed devices need an SNMP interface (v2c recommended).')));
 
 				var searchRow = make('div', 'tm-discover-search');
 				var search = make('input', 'tm-input');
 				search.type = 'text';
-				search.placeholder = T('搜索主机名称…');
+				search.placeholder = T('Search host name…');
 				search.autocomplete = 'off';
 
 				var timer = null;
@@ -1348,7 +1348,7 @@
 
 				searchRow.appendChild(search);
 
-				var pick = make('button', 'tm-btn tm-btn-sm', T('全选有 SNMP 的'));
+				var pick = make('button', 'tm-btn tm-btn-sm', T('Select all with SNMP'));
 				pick.type = 'button';
 				pick.addEventListener('click', function () {
 					discover.hosts.forEach(function (host) {
@@ -1360,7 +1360,7 @@
 				});
 				searchRow.appendChild(pick);
 
-				var counter = make('span', 'tm-discover-count', T('已选 0 台'));
+				var counter = make('span', 'tm-discover-count', T('0 selected'));
 				counter.id = 'tm-discover-count';
 				searchRow.appendChild(counter);
 				body.appendChild(searchRow);
@@ -1373,8 +1373,8 @@
 			var opts = make('div', 'tm-discover-opts');
 
 			var depthLabel = make('label', 'tm-discover-field');
-			depthLabel.appendChild(make('span', 'tm-discover-field-name', T('发现深度（1-10 层）')));
-			// 之前是写死的 1~4 层下拉，深层网络到第 5 层就再也发现不下去，改成可自定义的数字框
+			depthLabel.appendChild(make('span', 'tm-discover-field-name', T('Discovery depth (1-10 levels)')));
+			// This used to be a fixed 1–4 level dropdown, so deep networks stopped at level 5; it is now a configurable number field
 			var depth = make('input', 'tm-input');
 			depth.type = 'number';
 			depth.id = 'tm-discover-depth';
@@ -1388,25 +1388,25 @@
 			opts.appendChild(discoverCheck('tm-discover-lldp', 'LLDP', true));
 			opts.appendChild(discoverCheck('tm-discover-cdp', 'CDP', false));
 			opts.appendChild(discoverCheck('tm-discover-edp', 'EDP', false));
-			opts.appendChild(discoverCheck('tm-discover-unmanaged', T('包含未纳管设备'), true));
+			opts.appendChild(discoverCheck('tm-discover-unmanaged', T('Include unmanaged devices'), true));
 
-			// 重新发现专用的两个选项：布局方式、未再发现的自动连线是否移除
+			// Two options specific to rediscovery: layout mode, and whether automatic links no longer discovered are removed
 			if (isRediscover()) {
 				var layoutField = make('label', 'tm-discover-field');
-				layoutField.appendChild(make('span', 'tm-discover-field-name', T('布局')));
+				layoutField.appendChild(make('span', 'tm-discover-field-name', T('Layout')));
 				var layoutSel = make('select', 'tm-input');
 				layoutSel.id = 'tm-rediscover-layout';
-				[['tree', T('全部重排成树形')], ['keep', T('保留现有坐标')]].forEach(function (opt) {
+				[['tree', T('Rebuild as tree')], ['keep', T('Keep current positions')]].forEach(function (opt) {
 					layoutSel.appendChild(make('option', '', opt[1])).value = opt[0];
 				});
 				layoutField.appendChild(layoutSel);
 				opts.appendChild(layoutField);
 
 				var pruneField = make('label', 'tm-discover-field');
-				pruneField.appendChild(make('span', 'tm-discover-field-name', T('未再发现的自动连线')));
+				pruneField.appendChild(make('span', 'tm-discover-field-name', T('Auto links no longer discovered')));
 				var pruneSel = make('select', 'tm-input');
 				pruneSel.id = 'tm-rediscover-prune';
-				[['0', T('保留')], ['1', T('移除')]].forEach(function (opt) {
+				[['0', T('Keep')], ['1', T('Remove')]].forEach(function (opt) {
 					pruneSel.appendChild(make('option', '', opt[1])).value = opt[0];
 				});
 				pruneField.appendChild(pruneSel);
@@ -1415,20 +1415,20 @@
 
 			body.appendChild(opts);
 
-			// 自动关联触发器的关键词：一行一个，发现生成图时按它去匹配端口状态类触发器。
-			// 之前写死在代码里，用户遇到设备描述不一样（比如「处于关闭状态」）就没法改。
+			// Keywords for automatic trigger linking: one per line; the generated map uses them to match port status triggers.
+			// They used to be hard-coded, so users with different device descriptions could not change them.
 			var kwField = make('label', 'tm-discover-field tm-discover-kw');
-			kwField.appendChild(make('span', 'tm-discover-field-name', T('自动关联触发器关键词（一行一个）')));
+			kwField.appendChild(make('span', 'tm-discover-field-name', T('Trigger keywords for auto-linking (one per line)')));
 
 			var keywords = make('textarea', 'tm-input tm-discover-keywords');
 			keywords.id = 'tm-discover-keywords';
 			keywords.rows = 4;
-			keywords.value = T('处于关闭状态');
-			keywords.placeholder = T('一行一个，例如：\n处于关闭状态\nlink down');
+			keywords.value = T('link down');
+			keywords.placeholder = T('One per line, e.g.:\nlink down');
 			kwField.appendChild(keywords);
 			body.appendChild(kwField);
 
-			// 用上次保存过的关键词覆盖默认值（没保存过就保留「处于关闭状态」）
+			// Override the defaults with the last saved keywords (if nothing was saved, keep the defaults)
 			api('settings').then(function (data) {
 				var el = document.getElementById('tm-discover-keywords');
 
@@ -1443,10 +1443,10 @@
 
 			var nameRow = make('div', 'tm-discover-namerow');
 			nameRow.id = 'tm-discover-name-row';
-			// .tm-discover-namerow 是 display:flex，光设 hidden 属性会被作者样式盖掉，
-			// 统一走 setHidden（属性 + 内联 display 一起改）
+			// .tm-discover-namerow uses display:flex, so setting only the hidden attribute is overridden by the author style;
+			// always use setHidden (attribute + inline display together)
 			setHidden(nameRow, true);
-			nameRow.appendChild(make('span', 'tm-discover-field-name', T('拓扑图名称')));
+			nameRow.appendChild(make('span', 'tm-discover-field-name', T('Map name')));
 			var nameInput = make('input', 'tm-input');
 			nameInput.type = 'text';
 			nameInput.id = 'tm-discover-name';
@@ -1475,15 +1475,15 @@
 				return;
 			}
 
-			list.textContent = T('加载中…');
+			list.textContent = T('Loading…');
 
 			api('hosts', {search: search || ''}).then(function (data) {
-				// 只保留有 SNMP 接口的勾选状态，避免「勾了但扫不了」
+				// Keep only the checked state of hosts with an SNMP interface, so nothing is "checked but unscannable"
 				discover.hosts = data.hosts || [];
 				renderDiscoverHosts();
 			}).catch(function (e) {
 				clear(list);
-				list.appendChild(make('div', 'tm-discover-empty', T('加载主机失败：') + e.message));
+				list.appendChild(make('div', 'tm-discover-empty', T('Failed to load hosts: ') + e.message));
 			});
 		}
 
@@ -1497,7 +1497,7 @@
 			clear(list);
 
 			if (!discover.hosts.length) {
-				list.appendChild(make('div', 'tm-discover-empty', T('没有匹配的主机（试试清空搜索词）')));
+				list.appendChild(make('div', 'tm-discover-empty', T('No matching hosts (try clearing the search)')));
 
 				return;
 			}
@@ -1528,7 +1528,7 @@
 				}
 
 				item.appendChild(make('span', 'tm-discover-host-tag' + (host.snmp ? '' : ' tm-dim'),
-					host.snmp ? 'SNMP' : T('无 SNMP')));
+					host.snmp ? 'SNMP' : T('No SNMP')));
 				list.appendChild(item);
 			});
 
@@ -1539,7 +1539,7 @@
 			var counter = document.getElementById('tm-discover-count');
 
 			if (counter) {
-				counter.textContent = T('已选 ') + Object.keys(discover.picked).length + T(' 台');
+				counter.textContent = T('Selected ') + Object.keys(discover.picked).length + T('');
 			}
 		}
 
@@ -1567,7 +1567,7 @@
 				return (n < 10 ? '0' : '') + n;
 			}
 
-			return T('自动发现 ') + now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
+			return T('Auto discovery ') + now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
 				+ ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
 		}
 
@@ -1596,7 +1596,7 @@
 			var seeds = Object.keys(discover.picked);
 
 			if (!seeds.length) {
-				appendDiscoverLog(T('请先勾选至少一台起点设备。'), 'error');
+				appendDiscoverLog(T('Select at least one seed device first.'), 'error');
 
 				return;
 			}
@@ -1626,7 +1626,7 @@
 				maxDepth = DISCOVER_DEPTH_DEFAULT;
 			}
 
-			// 收敛到 1~10：0 层等于不发现，超过 10 层对 SNMP 扫描来说太贵了
+			// Clamp to 1–10: 0 levels means no discovery, and more than 10 levels is too expensive for SNMP scanning
 			maxDepth = Math.min(DISCOVER_DEPTH_MAX, Math.max(DISCOVER_DEPTH_MIN, maxDepth));
 
 			if (depthEl) {
@@ -1669,28 +1669,28 @@
 				queued[hostid] = true;
 			});
 
-			appendDiscoverLog(T('开始发现：') + seeds.length + T(' 台起点，深度 ') + maxDepth + T('，协议 ')
+			appendDiscoverLog(T('Discovery started: ') + seeds.length + T(' seeds, depth ') + maxDepth + T(', protocol ')
 				+ protocols.join(' / '));
 
-			setDiscoverBusy(true, T('发现中…'));
+			setDiscoverBusy(true, T('Discovering…'));
 
-			// 串行小批量请求：每批 3 台，避免单次请求里的 SNMP 扫描把 fastcgi 超时顶爆
+			// Sequential small batches: 3 hosts per batch, so SNMP scanning in one request does not exceed the fastcgi timeout
 			(async function pump() {
 				while (queue.length) {
 					var batch = queue.splice(0, 3);
 
-					appendDiscoverLog(T('扫描 ') + batch.map(function (item) {
+					appendDiscoverLog(T('Scanning ') + batch.map(function (item) {
 						var host = hostMap[item.hostid];
 
 						return host ? host.name : item.hostid;
-					}).join(T('、')) + T(' …'));
+					}).join(', ') + T(' …'));
 
 					var data = null;
 
 					try {
-						// 后端 SNMP 万一卡在某台设备上，请求会长时间不返回；加一道前端超时，
-						// 至少让发现对话框报「扫描失败」而不是永远停在「扫描 xxx …」。
-						// 后端自己的整批预算是 20s，45s 只在真卡住时才会触发。
+						// If backend SNMP gets stuck on a device, the request may not return for a long time; a frontend timeout
+						// at least lets the discovery dialog report "scan failed" instead of staying at "Scanning xxx …" forever.
+						// The backend's own per-batch budget is 20 s; 45 s only triggers when something is really stuck.
 						data = await withTimeout(api('discover', {
 							hostids: batch.map(function (item) { return item.hostid; }).join(','),
 							protocols: protocols.join(','),
@@ -1698,7 +1698,7 @@
 						}), 45000);
 					}
 					catch (e) {
-						appendDiscoverLog(T('扫描失败：') + e.message, 'error');
+						appendDiscoverLog(T('Scan failed: ') + e.message, 'error');
 					}
 
 					if (data) {
@@ -1727,7 +1727,7 @@
 			}
 
 			if (!res.ok) {
-				appendDiscoverLog('· ' + (res.name || res.hostid) + T('：') + (res.error || T('读取失败')), 'warn');
+				appendDiscoverLog('· ' + (res.name || res.hostid) + ': ' + (res.error || T('read failed')), 'warn');
 
 				return;
 			}
@@ -1735,7 +1735,7 @@
 			var sourceDepth = source ? source.depth : 0;
 
 			if (!res.neighbors.length) {
-				appendDiscoverLog('· ' + (res.name || res.hostid) + T('：没有 LLDP / CDP / EDP 邻居（设备可能没开邻居发现协议）'), 'warn');
+				appendDiscoverLog('· ' + (res.name || res.hostid) + T(': no LLDP / CDP / EDP neighbors (neighbor discovery may be disabled on the device)'), 'warn');
 			}
 
 			res.neighbors.forEach(function (nb) {
@@ -1745,8 +1745,8 @@
 					targetKey = 'h:' + nb.hostid;
 				}
 				else if (includeUnmanaged) {
-					// 终端 / AP / 打印机常常只有 chassisId（MAC），sysName 为空，
-					// 用 chassis 兜底做节点键，否则所有无名邻居会挤成同一个「n:」节点。
+					// Endpoints / APs / printers often have only a chassisId (MAC) and an empty sysName;
+					// the chassis is used as a fallback node key, otherwise all nameless neighbors would collapse into one "n:" node.
 					targetKey = 'n:' + String(nb.sysname || nb.chassis || nb.ip || '').toLowerCase();
 				}
 				else {
@@ -1762,7 +1762,7 @@
 
 					addDiscoverNode(targetKey, {
 						hostid: nb.hostid || '',
-						name: nb.name || (known ? known.name : '') || nb.sysname || nb.chassis || nb.ip || T('未命名设备'),
+						name: nb.name || (known ? known.name : '') || nb.sysname || nb.chassis || nb.ip || T('Unnamed device'),
 						ip: nb.ip || (known ? known.ip : ''),
 						depth: sourceDepth + 1,
 						kind: nb.kind || 'switch'
@@ -1771,7 +1771,7 @@
 
 				addDiscoverLink(sourceKey, targetKey, nb);
 
-				// 已纳管的邻居才有 SNMP 可读，继续往下一层展开
+				// Only managed neighbors are readable via SNMP; continue expanding to the next level
 				if (nb.hostid && !discover.scanned[nb.hostid] && !queued[nb.hostid]
 						&& sourceDepth + 1 < maxDepth) {
 					queued[nb.hostid] = true;
@@ -1786,8 +1786,8 @@
 			}
 		}
 
-		// 端口名归一化键：与后端 TopomapData::ifPortKey 保持一致
-		// （Gi1/0/11 ↔ ge1_0_11 ↔ GigabitEthernet1/0/11 归一后都是 ge1011）。
+		// Port name normalization key: consistent with the backend TopomapData::ifPortKey
+		// (Gi1/0/11 ↔ ge1_0_11 ↔ GigabitEthernet1/0/11 all normalize to ge1011).
 		function portKey(s) {
 			s = String(s || '').split(/\s*\(/)[0];
 			s = s.toLowerCase();
@@ -1804,14 +1804,14 @@
 				return;
 			}
 
-			// 反向重复一律跳过（aiops 踩过同一个坑之后的结论）：
-			// 同一对设备，只要已经按「发现方向」建过链路，反向扫到的那条记录就整个丢掉。
+			// Reverse duplicates are always skipped (the conclusion aiops reached after hitting the same problem):
+			// for a pair of devices, once a link exists in the discovery direction, the record scanned in reverse is dropped entirely.
 			//
-			// 为什么不能只靠下面的「端口对」去重：两端对本地端口名的解析可能对不上
-			// （设备被限流时 lldpLocPortId 回的表不完整，端口名会解析成另一个口），于是
-			// 汇聚报 ge0_0_23 ↔ 接入 Gi0/0_48、接入反扫报 ge0_0_32 ↔ 汇聚 Gi0/0_23，
-			// 端口对不同 → 去重失效 → 多出一条重复链路，还把接入侧那个**不相干端口**
-			// （GigabitEthernet0/0/32）的「处于关闭状态」触发器错绑到这条真实连线上。
+			// Why the port-pair dedup below is not enough: the two ends may resolve local port names differently
+			// (when a device is rate-limited, the lldpLocPortId table is incomplete and the port name resolves to another port), so
+			// the aggregation switch reports ge0_0_23 ↔ access Gi0/0_48 while the reverse scan reports ge0_0_32 ↔ aggregation Gi0/0_23;
+			// the port pairs differ → dedup fails → an extra duplicate link appears, and the "port down" trigger of an **unrelated port** on the access side
+			// (GigabitEthernet0/0/32) gets bound to this real link.
 			var reversed = false;
 
 			Object.keys(discover.links).forEach(function (key) {
@@ -1826,10 +1826,10 @@
 				return;
 			}
 
-			// 去重键要带「两端端口」：链路聚合的多个成员口是同一对设备之间的多条线，
-			// 不能按设备对去重；同方向再扫到同一对端口时按「归一化端口对」的无序键合并。
-			// 归一化是必须的：核心交换机报 Comware 原始数字、对端报 Gi1/0/11，
-			// 不归一化就合不掉，图上只剩视觉重叠的多条重复线。
+			// The dedup key includes both end ports: the members of a link aggregation are several links between the same pair of devices
+			// and cannot be deduplicated by device pair; the same port pair scanned again in the same direction is merged by the unordered normalized port-pair key.
+			// Normalization is required: the core switch reports raw Comware numbers while the other end reports Gi1/0/11;
+			// without it they do not merge and the map shows several visually overlapping duplicate links.
 			var endA = source + '#' + portKey(nb.local_port || '');
 			var endB = target + '#' + portKey(nb.port_id || '');
 			var pair = endA < endB ? endA + '|' + endB : endB + '|' + endA;
@@ -1844,7 +1844,7 @@
 				source_port: nb.local_port || '',
 				target_port: nb.port_id || '',
 				protocol: nb.protocol || '',
-				// 新建时按默认「源端优先」匹配触发器；用户可在链接属性里改
+				// New links match triggers with the default "source first"; users can change it in link properties
 				trigger_source: 0
 			};
 		}
@@ -1853,7 +1853,7 @@
 			var devices = Object.keys(discover.nodes).length;
 			var links = Object.keys(discover.links).length;
 
-			appendDiscoverLog(T('发现完成：') + devices + T(' 台设备、') + links + T(' 条链路'), devices ? 'ok' : 'warn');
+			appendDiscoverLog(T('Discovery complete: ') + devices + T(' devices, ') + links + T(' links'), devices ? 'ok' : 'warn');
 
 			if (devices) {
 				var matched = 0;
@@ -1864,7 +1864,7 @@
 					}
 				});
 
-				appendDiscoverLog(T('其中 ') + matched + T(' 台已在 Zabbix 里，') + (devices - matched) + T(' 台为未纳管设备。'));
+				appendDiscoverLog(T('Of which ') + matched + T(' are in Zabbix and ') + (devices - matched) + T(' are unmanaged devices.'));
 			}
 
 			var nameRow = document.getElementById('tm-discover-name-row');
@@ -1881,7 +1881,7 @@
 
 			if (buttons[1]) {
 				buttons[1].disabled = devices === 0;
-				buttons[1].textContent = isRediscover() ? T('更新拓扑图') : T('生成拓扑图');
+				buttons[1].textContent = isRediscover() ? T('Update map') : T('Generate map');
 			}
 
 			document.querySelectorAll('#tm-dialog-body input, #tm-dialog-body select').forEach(function (el) {
@@ -1889,7 +1889,7 @@
 			});
 		}
 
-		// 读发现页的关键词文本框：一行一个，去空行、去首尾空格、去重。
+		// Read the keyword text box of the discovery page: one per line, empty lines removed, trimmed, deduplicated.
 		function discoverKeywords() {
 			var el = document.getElementById('tm-discover-keywords');
 			var seen = {};
@@ -1907,7 +1907,7 @@
 			});
 		}
 
-		// 把当前发现结果序列化成后端要的 payload（新建图与重新发现共用）
+		// Serialize the current discovery result into the payload expected by the backend (shared by new maps and rediscovery)
 		function discoverPayload() {
 			var nodes = [];
 
@@ -1924,7 +1924,7 @@
 				});
 			});
 
-			// 按层级排序，后端按顺序在同层里竖排
+			// Sorted by level; the backend stacks them in order within the same level
 			nodes.sort(function (a, b) {
 				return a.depth - b.depth;
 			});
@@ -1933,8 +1933,8 @@
 				return discover.links[key];
 			});
 
-			// 自动关联触发器关键词（发现页填的，一行一个）随生成请求一起提交，
-			// 后端落库后链接属性里改「触发器来源」重匹配也用同一份。
+			// Keywords for automatic trigger linking (entered on the discovery page, one per line) are submitted with the generate request,
+			// and after the backend stores them, re-matching after changing "trigger source" in link properties uses the same set.
 			var payload = {
 				nodes: nodes,
 				links: links,
@@ -1962,7 +1962,7 @@
 			var nameInput = document.getElementById('tm-discover-name');
 			var name = nameInput && nameInput.value.trim() !== '' ? nameInput.value.trim() : defaultDiscoverName();
 
-			setDiscoverBusy(true, T('生成中…'));
+			setDiscoverBusy(true, T('Generating…'));
 
 			api('discoverSave', {
 				name: name,
@@ -1971,19 +1971,19 @@
 				closeDialog();
 
 				return loadList().then(function () {
-					var extra = data.triggers ? T('、关联 ') + data.triggers + T(' 个触发器') : '';
+					var extra = data.triggers ? T(', linked ') + data.triggers + T(' triggers') : '';
 
-					msg(elListMsg, T('已生成「') + data.name + T('」：') + data.devices + T(' 台设备、') + data.links + T(' 条链路') + extra, 'ok');
+					msg(elListMsg, T('Generated "') + data.name + '": ' + data.devices + T(' devices, ') + data.links + T(' links') + extra, 'ok');
 
 					return openMap(data.sysmapid, false);
 				});
 			}).catch(function (e) {
-				appendDiscoverLog(T('生成失败：') + e.message, 'error');
-				setDiscoverBusy(false, T('生成拓扑图'));
+				appendDiscoverLog(T('Generation failed: ') + e.message, 'error');
+				setDiscoverBusy(false, T('Generate map'));
 			});
 		}
 
-		// 重新发现第二步：把本次结果交给后端，就地并入当前图
+		// Rediscovery step 2: send this result to the backend and merge it into the current map in place
 		function applyRediscover() {
 			if (!discover || !state.map) {
 				return;
@@ -1991,7 +1991,7 @@
 
 			var sysmapid = String(state.map.sysmapid);
 
-			setDiscoverBusy(true, T('更新中…'));
+			setDiscoverBusy(true, T('Updating…'));
 
 			api('rediscover', {
 				sysmapid: sysmapid,
@@ -1999,35 +1999,35 @@
 			}).then(function (data) {
 				closeDialog();
 
-				var removed = data.removed_links ? T('，移除 ') + data.removed_links + T(' 条旧连线') : '';
+				var removed = data.removed_links ? T(', removed ') + data.removed_links + T(' old links') : '';
 
 				return openMap(sysmapid, false, true).then(function () {
-					setHint(T('重新发现完成：新增 ') + data.added_devices + T(' 台设备、') + data.added_links
-						+ T(' 条链路，保留 ') + data.kept_links + T(' 条链路配置') + removed);
-					msg(elListMsg, T('已更新拓扑图：新增 ') + data.added_devices + T(' 台设备、')
-						+ data.added_links + T(' 条链路') + removed, 'ok');
+					setHint(T('Rediscovery complete: added ') + data.added_devices + T(' devices, ') + data.added_links
+						+ T(' links, kept ') + data.kept_links + T(' link settings') + removed);
+					msg(elListMsg, T('Map updated: added ') + data.added_devices + T(' devices, ')
+						+ data.added_links + T(' links') + removed, 'ok');
 				});
 			}).catch(function (e) {
-				appendDiscoverLog(T('更新失败：') + e.message, 'error');
-				setDiscoverBusy(false, T('更新拓扑图'));
+				appendDiscoverLog(T('Update failed: ') + e.message, 'error');
+				setDiscoverBusy(false, T('Update map'));
 			});
 		}
 
 		// ---------------------------------------------------------------
-		// 视图状态记忆（对齐原生 map.view / sysmaps.php）
+		// View state memory (aligned with native map.view / sysmaps.php)
 		// ---------------------------------------------------------------
 
-		// 原生：打开 map.view 时把 sysmapid 写进用户 profile（web.maps.sysmapid），
-		// 打开列表页 sysmaps.php 时把它删掉；左侧菜单固定指 action=map.view，
-		// 于是「从菜单点回来」总是回到上次的视图。
-		// 本模块列表与画布同属一个 action，所以只在打开/返回时各同步一次。
+		// Native: opening map.view writes the sysmapid to the user profile (web.maps.sysmapid),
+		// and opening the list page sysmaps.php deletes it; the left menu always points to action=map.view,
+		// so "coming back from the menu" always returns to the last view.
+		// Here the list and the canvas are one action, so it is synced once on open and once on return.
 		function rememberMap(sysmapid) {
-			// 失败保持静默：最坏结果只是「下次点菜单回不到这张图」，不该弹错打断用户。
+			// Failures stay silent: the worst case is only that the menu does not return to this map next time; no error popup should interrupt the user.
 			api('remember', {sysmapid: sysmapid || ''}).catch(function () {});
 		}
 
-		// 地址栏也跟状态走，浏览器后退才能像原生一样从画布退回列表。
-		// 只动 sysmapid 参数，其他查询参数（action 等）原样保留。
+		// The address bar follows the state too, so the browser back button returns from canvas to list as in native.
+		// Only the sysmapid parameter is touched; other query parameters (action etc.) are kept.
 		function viewUrl(sysmapid) {
 			var params = new URLSearchParams(window.location.search);
 
@@ -2041,7 +2041,7 @@
 			return window.location.pathname + '?' + params.toString();
 		}
 
-		// mode: 'push'（用户动作，默认）/ 'replace'（页面初始状态）/ 'none'（响应后退，别再记一笔）
+		// mode: 'push' (user action, default) / 'replace' (initial page state) / 'none' (responding to back, do not record again)
 		function syncViewUrl(sysmapid, mode) {
 			if (mode === 'none' || !window.history || !window.history.pushState) {
 				return;
@@ -2059,21 +2059,21 @@
 				);
 			}
 			catch (e) {
-				// file:// 等特殊环境下 pushState 会抛 SecurityError。
-				// 地址栏同步只是锦上添花，绝不能因此打断「打开拓扑图」本身。
+				// In special environments such as file:// pushState throws a SecurityError.
+				// Syncing the address bar is only a nicety and must never interrupt opening the map itself.
 			}
 		}
 
 		// ---------------------------------------------------------------
-		// 打开 / 关闭画布
+		// Open / close the canvas
 		// ---------------------------------------------------------------
 
 		function openMap(sysmapid, editing, keepView, urlMode) {
-			setHint(T('加载中…'));
+			setHint(T('Loading…'));
 
 			return api('get', {sysmapid: sysmapid}).then(function (data) {
 				state.map = normalizeMap(data.map);
-				// 已绑定的触发器只有 triggerid，名字取回来给「链接」对话框的 chip 用
+				// Bound triggers only have a triggerid; their names are fetched for the chips of the "link" dialog
 				var triggerids = [];
 				state.map.links.forEach(function (link) {
 					(link.linktriggers || []).forEach(function (lt) {
@@ -2099,23 +2099,23 @@
 
 				setHidden(elListView, true);
 				setHidden(elCanvasView, false);
-				// 画布页右上角不该再出现「创建拓扑图」（那是列表页的动作）
+				// "Create map" must not appear at the top right of the canvas page (it is a list page action)
 				setHidden(elHeaderControls, true);
 				elCanvasTitle.textContent = state.map.name;
 
-				// 记住「现在看的是哪张图」并同步地址栏
+				// Remember which map is being viewed and sync the address bar
 				rememberMap(state.map.sysmapid);
 				syncViewUrl(String(state.map.sysmapid), urlMode || 'push');
 
 				setEditing(!!editing && state.canEdit);
 				renderCanvas();
 
-				// 一进来就按内容收紧画布：以前存的大画布（比如 3000×3000）不会再让整屏空白。
-				// 只在内存里算，落库要等用户点保存。
+				// Shrink the canvas to the content on entry: large canvases saved earlier (e.g. 3000×3000) no longer leave the screen blank.
+				// Only computed in memory; saving waits for the user to click Save.
 				autoSizeCanvas();
 
 				if (!keepView) {
-					// 进入时按 100% 显示（原生 map.view 也是 100%），不要自动缩放
+					// Show at 100% on entry (native map.view is also 100%); no automatic zoom
 					resetView();
 				}
 
@@ -2126,14 +2126,14 @@
 				});
 			}).catch(function (e) {
 				setHint('');
-				msg(elListMsg, T('打开失败：') + e.message, 'error');
+				msg(elListMsg, T('Open failed: ') + e.message, 'error');
 			});
 		}
 
 		// ---------------------------------------------------------------
-		// 画布自动刷新：链路触发器报警态 / 主机状态 / 带宽流量值都要跟着库走，
-		// 否则页面开着的时候「测试不会变红、指标一直是一个值」。
-		// 编辑态不刷（有未保存修改），回到列表也停。
+		// Canvas auto-refresh: link trigger alarm state / host status / bandwidth and traffic values must follow the database,
+		// otherwise while the page is open "links never turn red and metrics keep one value".
+		// No refresh in edit mode (unsaved changes), and it stops when returning to the list.
 		// ---------------------------------------------------------------
 
 		var autoRefreshTimer = null;
@@ -2164,22 +2164,22 @@
 					return;
 				}
 
-				// 只换数据，不动缩放/平移/选中，避免每分钟把用户视野重置一次
+				// Only the data is replaced; zoom/pan/selection are untouched so the user's view is not reset every minute
 				state.map = normalizeMap(data.map);
 				state.canEdit = !!data.can_edit;
 				state.selected = selected;
 				state.dirty = false;
-				// 增量刷新：保留元素 DOM（尤其 <img>），只更新状态 / 标签 / 高亮 / 连线，
-				// 整层重建会让所有主机图标闪一下，而 Zabbix 自带拓扑图是原地更新。
+				// Incremental refresh: keep the element DOM (especially <img>) and only update status / labels / highlights / links;
+				// rebuilding the whole layer makes every host icon flicker, while the built-in Zabbix maps update in place.
 				refreshCanvas();
 			}).catch(function () {
-				// 自动刷新失败不打扰用户，下一轮再试
+				// Auto-refresh failures do not bother the user; try again next round
 			});
 		}
 
 		/**
-		 * 自动刷新用的增量重绘：复用已有 .tm-el 节点（图标不重建），
-		 * 只改位置 / 状态类名 / 标签，再重画高亮层与连线（纯 SVG，没有图片加载）。
+		 * Incremental redraw for auto-refresh: reuses existing .tm-el nodes (icons are not rebuilt),
+		 * only position / status class / label change, then the highlight layer and links are redrawn (pure SVG, no image loading).
 		 */
 		function refreshCanvas() {
 			var map = state.map;
@@ -2223,7 +2223,7 @@
 				}
 			}
 			else if (!hint) {
-				elStage.appendChild(make('div', 'tm-blank-hint', T('这张拓扑图还没有元素')));
+				elStage.appendChild(make('div', 'tm-blank-hint', T('This map has no elements yet')));
 			}
 
 			drawShapes(map);
@@ -2234,7 +2234,7 @@
 
 		function backToList() {
 			if (state.editing && state.dirty) {
-				confirmDialog(T('放弃未保存的修改？'), T('当前拓扑图有未保存的修改，返回列表会丢失这些修改。'), T('放弃修改')).then(function (ok) {
+				confirmDialog(T('Discard unsaved changes?'), T('The current map has unsaved changes; returning to the list will discard them.'), T('Discard changes')).then(function (ok) {
 					if (ok) {
 						doBackToList();
 					}
@@ -2253,12 +2253,12 @@
 			state.dirty = false;
 			clearModes();
 
-			// 回到列表 = 忘掉上次的图 + 地址栏去掉 sysmapid（对齐原生 sysmaps.php 的 CProfile::delete）
+			// Back to list = forget the last map + remove sysmapid from the address bar (aligned with CProfile::delete in native sysmaps.php)
 			rememberMap('');
 			syncViewUrl('', urlMode || 'push');
 
-			// 只清 stage 的直接子节点（元素 div 与空白提示），SVG 留着复用。
-			// 注意不能遍历 querySelectorAll('*')：img/span 是 div 的后代，removeChild 会抛 NotFoundError。
+			// Only direct children of the stage (element divs and the empty hint) are cleared; the SVG is kept for reuse.
+			// Do not iterate querySelectorAll('*'): img/span are descendants of the div and removeChild would throw NotFoundError.
 			var node = elStage.firstChild;
 
 			while (node) {
@@ -2293,11 +2293,11 @@
 				clearModes();
 			}
 
-			setHint(state.editing ? '' : T('预览模式'));
+			setHint(state.editing ? '' : T('Preview mode'));
 
-			// 编辑工具条出现/消失会改变画布顶部位置，重新算一次可用高度
+			// Showing/hiding the edit toolbar changes the canvas top position; recompute the available height
 			layoutCanvasWrap();
-			// 画布高度变了，可能高于当前画布尺寸（退出编辑时），顺手补满
+			// The canvas height changed and may exceed the current canvas size (when leaving edit mode); fill it up
 			ensureCanvasFitsViewport();
 		}
 
@@ -2308,10 +2308,10 @@
 			state.bendLink = null;
 			state.shapeSel = null;
 			syncModeButtons();
-			setHint(state.editing ? '' : T('预览模式'));
+			setHint(state.editing ? '' : T('Preview mode'));
 		}
 
-		// 移除 / 链接模式在工具条上高亮，避免「按了不知道在哪个模式」
+		// Remove / link modes are highlighted on the toolbar so the user always knows the current mode
 		function syncModeButtons() {
 			var buttons = elEditbar.querySelectorAll('button[data-group]');
 
@@ -2327,12 +2327,12 @@
 
 		function markDirty() {
 			state.dirty = true;
-			// 折点编辑中还停在提示条上，用户才知道怎么加点 / 删点
-			setHint(state.bendLink ? BEND_HINT : T('有未保存的修改'));
+			// While editing waypoints the hint bar stays, so the user knows how to add / delete points
+			setHint(state.bendLink ? BEND_HINT : T('Unsaved changes'));
 		}
 
 		// ---------------------------------------------------------------
-		// 画布渲染
+		// Canvas rendering
 		// ---------------------------------------------------------------
 
 		function renderCanvas() {
@@ -2380,11 +2380,11 @@
 			}
 
 			drawShapes(map);
-			// 高亮层要在连线下面（原生分层：shapes → highlights → links → elements），
-			// 这样连线会压过高亮圆、直接画到主机图标上，而不是停在圆边上。
+			// The highlight layer must be below the links (native layering: shapes → highlights → links → elements),
+			// so links run over the highlight circle straight to the host icon instead of stopping at the circle edge.
 			drawHighlights(map);
 			drawLinks(map);
-			// 控制点画在最上层，避免被连线压住
+			// Handles are drawn on top so links do not cover them
 			drawShapeHandles();
 
 			map.selements.forEach(function (se) {
@@ -2392,20 +2392,20 @@
 			});
 
 			if (!map.selements.length) {
-				var hint = make('div', 'tm-blank-hint', state.editing ? T('点击「地图元素: 添加」开始布置拓扑图') : T('这张拓扑图还没有元素'));
+				var hint = make('div', 'tm-blank-hint', state.editing ? T('Click "Map elements: Add" to start building the map') : T('This map has no elements yet'));
 				elStage.appendChild(hint);
 			}
 		}
 
 		// ---------------------------------------------------------------
-		// 形：渲染（与原生 SVGMapShape 同一套语义）
+		// Shapes: rendering (same semantics as native SVGMapShape)
 		// ---------------------------------------------------------------
 
 		function svgNode(tag) {
 			return document.createElementNS('http://www.w3.org/2000/svg', tag);
 		}
 
-		// 原生会把点线/虚线的 dash 数组按线宽放大（线宽 > 1 时才放大）
+		// Native maps scale the dash arrays of dotted/dashed lines by line width (only when the width > 1)
 		function shapeDashArray(shape) {
 			var raw = SHAPE_BORDER_DASHES[shape.border_type] || '';
 			var width = Math.max(0, num(shape.border_width, 0));
@@ -2441,14 +2441,14 @@
 			if (dash !== '' && dash !== 'none') {
 				node.setAttribute('stroke-dasharray', dash);
 
-				// 点线在粗描边下让笔画圆头，和原生一致
+				// Dotted lines get round caps on thick strokes, as in native
 				if (shape.border_type === 2 && width > 2) {
 					node.setAttribute('stroke-linecap', 'round');
 				}
 			}
 		}
 
-		// 几何：矩形/椭圆按 x,y,width,height 画；线把 width,height 当终点坐标（原生语义）
+		// Geometry: rectangles/ellipses use x,y,width,height; lines treat width,height as the end coordinates (native semantics)
 		function applyShapeGeometry(node, shape) {
 			if (shape.type === 2) {
 				node.setAttribute('x1', String(shape.x));
@@ -2474,17 +2474,17 @@
 			return shape.type === 2 ? 'line' : (shape.type === 1 ? 'ellipse' : 'rect');
 		}
 
-		// 形状文本里的 {MAP.NAME} 宏：库中保存的是宏原文，渲染时按当前拓扑图名称展开。
-		// 每次打开/重命名都重新渲染，所以不需要回写数据库。
+		// {MAP.NAME} macro in shape text: the raw macro is stored and expanded with the current map name at render time.
+		// It is re-rendered on every open/rename, so nothing needs to be written back to the database.
 		function shapeDisplayText(shape) {
 			return String(shape.text || '').replace(/\{MAP\.NAME\}/gi, state.map ? String(state.map.name || '') : '');
 		}
 
-		// 文字：对齐方式、字体、内边距都按原生（内边距 5px），并裁剪在形内部
+		// Text: alignment, font and padding follow native (5px padding) and are clipped inside the shape
 		function drawShapeText(shape, clipId) {
 			var display_text = shapeDisplayText(shape);
 
-			// 原生对线不画文字
+			// Native maps do not draw text on lines
 			if (shape.type === 2 || !display_text) {
 				return;
 			}
@@ -2543,8 +2543,8 @@
 		}
 
 		function drawShapes(map) {
-			// 幂等：先清掉上一轮的形（含文字与裁剪路径）。这样拖拽中也能单独重画形，
-			// 不必走 paintCanvas() 重建元素 DOM（否则拖拽中的节点引用会失效）。
+			// Idempotent: clear the previous shapes first (including text and clip paths). This allows redrawing shapes alone while dragging
+			// without paintCanvas() rebuilding the element DOM (which would invalidate the node being dragged).
 			var olds = elSvg.querySelectorAll('.tm-shape, .tm-shape-text, .tm-shape-clip');
 
 			for (var k = 0; k < olds.length; k++) {
@@ -2574,7 +2574,7 @@
 					startShapeDrag(shape, e);
 				});
 
-				// 原生：单击选中出控制点，双击打开属性窗口
+				// Native: single click selects and shows handles, double click opens the properties window
 				node.addEventListener('click', function (e) {
 					if (!state.editing) {
 						return;
@@ -2633,7 +2633,7 @@
 			drawShapeHandles();
 		}
 
-		// 选中控制点：矩形/椭圆 8 个（四角 + 四边中点），线 2 个端点 —— 与原生一致
+		// Selection handles: 8 for rectangles/ellipses (four corners + four edge midpoints), 2 end points for lines — as in native
 		function drawShapeHandles() {
 			var olds = elSvg.querySelectorAll('.tm-shape-handle');
 
@@ -2650,7 +2650,7 @@
 			var handles = [];
 
 			if (shape.type === 2) {
-				// 线的 x,y 与 width,height 都是绝对坐标（起点 / 终点）
+				// For lines x,y and width,height are both absolute coordinates (start / end)
 				handles = [
 					{x: shape.x, y: shape.y, dir: 'p1', cursor: 'move'},
 					{x: shape.width, y: shape.height, dir: 'p2', cursor: 'move'}
@@ -2776,16 +2776,16 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 树形布局的连线锚点
+		// Link anchors in the tree layout
 		// ---------------------------------------------------------------
 
-		// 连线末端与图标 / 文字块之间留的间隙；直角走线从父锚点先竖直走的「主干」长度
+		// Gap between link ends and the icon / text block; length of the vertical "trunk" leaving the parent anchor in orthogonal routing
 		var LINK_EDGE_GAP = 6;
 		var LINK_TRUNK_GAP = 30;
 
-		// 图标下方标签文字块的高度：名称行 + 状态行（正常 / 问题 / 已停用 / 在维护中），
-		// 每行 16px、距图标底 3px，和 .tm-el-label 的样式一致。
-		// 标签不在下方（左侧 / 右侧 / 顶部）时不占图标下方的空间，按 0 算。
+		// Height of the label text block below the icon: name line + status line (OK / Problem / Disabled / In maintenance),
+		// 16px per line, 3px below the icon, matching the .tm-el-label style.
+		// When the label is not below (left / right / top) it takes no space below the icon and counts as 0.
 		function elementBottomLabelHeight(se) {
 			var loc = se.label_location === -1 && state.map ? state.map.label_location : se.label_location;
 
@@ -2800,8 +2800,8 @@
 			return count ? 3 + count * 16 : 0;
 		}
 
-		// 「同一层」判定：两个元素中心在垂直方向相差不到 3/4 个图标高度。
-		// 同层的左右相邻主机仍按中心连，不能被拉到上下锚点上。
+		// "Same level" check: the element centers differ vertically by less than 3/4 of an icon height.
+		// Neighboring hosts on the same level still connect by center and must not be pulled to top/bottom anchors.
 		function sameRowElements(a, b) {
 			var sa = iconSize(iconForElement(a));
 			var sb = iconSize(iconForElement(b));
@@ -2810,11 +2810,11 @@
 		}
 
 		/*
-		 * 连线两端锚点。上下两层的连线用树形锚点：
-		 *   父（上面那台）＝ 图标 + 名称 + 「正常 / 问题」文字块的下沿，再留 6px；
-		 *   子（下面那台）＝ 图标顶边上方 6px。
-		 * 同层或斜向相邻的连线仍按元素中心连。
-		 * 返回的 pa 永远是「父」这一端，pb 是「子」这一端（线本身没有箭头，方向无所谓）。
+		 * Link end anchors. Links between upper and lower levels use tree anchors:
+		 *   parent (the upper one) = bottom of icon + name + "OK / Problem" text block, plus 6px;
+		 *   child (the lower one) = 6px above the top of the icon.
+		 * Links on the same level or diagonal neighbors still connect by element center.
+		 * The returned pa is always the parent end and pb the child end (links have no arrows, so direction does not matter).
 		 */
 		function elementAnchors(a, b) {
 			var ca = elementCenter(a);
@@ -2845,8 +2845,8 @@
 		}
 
 		/*
-		 * 链路聚合的成员偏移：整束都落在「子节点那一侧」，不再像以前那样对称偏移。
-		 * 对称偏移时靠另一侧的那条会横穿同一父节点下「正下方那台主机」的竖线，视觉上就是交叉。
+		 * Link aggregation member offset: the whole bundle now lies on the child side instead of the earlier symmetric offset.
+		 * With a symmetric offset, the link on the other side crossed the vertical line of the host right below the same parent, which looked like a crossing.
 		 */
 		function treeMemberOffset(index, total, dx) {
 			if (total <= 1) {
@@ -2860,10 +2860,10 @@
 			return (dx < 0 ? -1 : 1) * (index + 0.5) * LINK_PAIR_SPACING;
 		}
 
-		// 树形直角：父锚点 → 竖直走一小段到主干 → 横向分到子节点上方 → 竖直落到子锚点。
-		// 传进来的 pa / pb 已经带好聚合成员偏移，所以两端都是竖直的，不会再出现斜的尖角；
-		// railOff 只让同一组各成员的横段上下错开几像素，不至于完全重叠成一条线。
-		// 层级挨得近时把主干往上收，保证横段落在子图标上方，不会从子图标顶上穿过去。
+		// Tree orthogonal: parent anchor → short vertical segment to the trunk → horizontal to above the child → vertical down to the child anchor.
+		// pa / pb already include the aggregation member offset, so both ends are vertical and no slanted corners appear;
+		// railOff only shifts the horizontal segments of group members a few pixels apart so they do not overlap into one line.
+		// When levels are close, the trunk is pulled up so the horizontal segment stays above the child icon instead of crossing it.
 		function treeRoute(pa, pb, railOff) {
 			var rail = Math.min(pa.y + LINK_TRUNK_GAP + railOff, pb.y - 8);
 
@@ -2878,14 +2878,14 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 链路指标（带宽 / 上行 / 下行）
+		// Link metrics (bandwidth / upstream / downstream)
 		// ---------------------------------------------------------------
 
-		// 每链路三组监控项 ID。用户自己从 Zabbix 监控项里挑；聚合成员口就是多条，显示时求和。
+		// Three groups of item IDs per link, chosen by the user from Zabbix items; aggregated member ports mean several, summed for display.
 		var METRIC_KINDS = [
-			{key: 'bw', label: T('带宽'), prefix: '≡', color: '#FACC15'},
-			{key: 'in', label: T('上行流量'), prefix: '↑', color: '#00D4FF'},
-			{key: 'out', label: T('下行流量'), prefix: '↓', color: '#00FF88'}
+			{key: 'bw', label: T('Bandwidth'), prefix: '≡', color: '#FACC15'},
+			{key: 'in', label: T('Inbound traffic'), prefix: '↑', color: '#00D4FF'},
+			{key: 'out', label: T('Outbound traffic'), prefix: '↓', color: '#00FF88'}
 		];
 
 		function normalizeMetrics(raw) {
@@ -2900,7 +2900,7 @@
 			return out;
 		}
 
-		// 折点归一：只保留 {x,y} 数字对，取整并钳制为非负（和 sysmaps 坐标一致）
+		// Normalize waypoints: keep only numeric {x,y} pairs, rounded and clamped to non-negative (same as sysmaps coordinates)
 		function normalizeWaypointList(raw) {
 			if (!Array.isArray(raw)) {
 				return [];
@@ -2948,7 +2948,7 @@
 			return null;
 		}
 
-		// 一条链路两端元素对应的 Zabbix 主机（图片元素没有 hostid）。指标监控项只从这两台里挑。
+		// Zabbix hosts of the elements at both ends of a link (image elements have no hostid). Metric items are chosen only from these two.
 		function linkHostids(link) {
 			var out = [];
 
@@ -2963,7 +2963,7 @@
 			return out;
 		}
 
-		// 监控项选择器默认勾选的主机：**优先源端**（selementid1），源端不是主机时回退本端。
+		// Hosts checked by default in the item selector: **source end first** (selementid1); falls back to the local end when the source is not a host.
 		function defaultPickHostids(link) {
 			var ends = linkEnds(link);
 
@@ -2978,7 +2978,7 @@
 			return [];
 		}
 
-		// 链路两端的主机（源端 = selementid1，本端 = selementid2）。
+		// Hosts at both ends of the link (source = selementid1, local = selementid2).
 		function linkEnds(link) {
 			var a = selementById(link.selementid1);
 			var b = selementById(link.selementid2);
@@ -2989,7 +2989,7 @@
 			};
 		}
 
-		// 两端主机（去重）：手工绑定触发器时要在这两端的主机里挑
+		// Hosts at both ends (deduplicated): manual trigger binding picks from the hosts at these two ends
 		function linkEndHostids(link) {
 			var ends = linkEnds(link);
 			var ids = [];
@@ -3003,18 +3003,18 @@
 			return ids;
 		}
 
-		// 按当前「触发器来源」口径重新匹配这条链路的端口状态类触发器。
-		// 命中后原生地图与模块画布都会在报警时把这条线画红。
+		// Re-match the port status triggers of this link with the current "trigger source" scope.
+		// Once matched, both the native map and the module canvas draw the link red on alarm.
 		function rematchLinkTriggers(link) {
 			var ends = linkEnds(link);
 
-			// 两端都要有主机、且至少有一个端口名，才有东西可匹配。
-			// 手工建的线没有端口信息，这时不重匹配，免得把用户手工绑的触发器清空。
+			// Both ends must be hosts and at least one port name must exist for anything to match.
+			// Manual links have no port information; they are not re-matched so the user's manually bound triggers are not cleared.
 			if ((!ends.srcHostid && !ends.tgtHostid) || (!link.source_port && !link.target_port)) {
 				return;
 			}
 
-			// 保留用户在这条线上已调好的线型/颜色（按 triggerid 复用）
+			// Keep the line style/color the user set on this link (reused by triggerid)
 			var previous = {};
 
 			(link.linktriggers || []).forEach(function (lt) {
@@ -3046,12 +3046,12 @@
 				markDirty();
 				renderCanvas();
 			}).catch(function () {
-				// 重匹配失败不打断编辑；用户稍后重新点「应用」即可
+				// Re-match failures do not interrupt editing; the user can click "Apply" again later
 			});
 		}
 
-		// 一组监控项最新值的和（聚合成员口求和）；取不到数值就返回 null。
-		// units 取第一个有单位的监控项。
+		// Sum of the latest values of a group of items (aggregated member ports are summed); null if no numeric value is available.
+		// units comes from the first item that has units.
 		function sumMetricItems(itemids) {
 			var items = (state.map && state.map.metric_items) || {};
 			var total = null;
@@ -3105,9 +3105,9 @@
 		}
 
 		/*
-		 * 指标值 → 显示文本。
-		 * 单位是 bps（小写 b，比特/秒）的按速率换算；单位是 Bps / B / bytes / octets（字节）
-		 * 的先 ×8 换成比特/秒再换算；其它单位（%、个、s…）直接显示数值 + 单位。
+		 * Metric value → display text.
+		 * Units of bps (lowercase b, bits per second) are converted as rates; Bps / B / bytes / octets (bytes)
+		 * are first multiplied by 8 into bits per second and then converted; other units (%, count, s…) show the value + unit as is.
 		 */
 		function metricText(res) {
 			if (!res) {
@@ -3127,7 +3127,7 @@
 			return trimNum(res.value) + (units ? ' ' + units : '');
 		}
 
-		// 连线上要画的小字：标签 + 已配置的指标（数据取不到就写「-」）。
+		// Small text drawn on links: label + configured metrics ("-" when data is unavailable).
 		function linkMetricLines(link) {
 			var m = normalizeMetrics(link.metrics);
 			var lines = [];
@@ -3146,8 +3146,8 @@
 			return lines;
 		}
 
-		// 连线上绑定的触发器里只要有一个处于问题态，就用触发器自己的颜色画线（自动发现建的是 DD0000）；
-		// 否则保持连线自身颜色（自动发现建的是 00CC00，手工建的是用户选的色）。
+		// If any trigger bound to a link is in problem state, the link is drawn in the trigger's own color (DD0000 for auto discovery);
+		// otherwise the link keeps its own color (00CC00 for auto discovery, the user's choice for manual links).
 		function linkProblemColor(link) {
 			var list = link.linktriggers || [];
 
@@ -3160,7 +3160,7 @@
 			return '';
 		}
 
-		// 「元素对」的无序键（与方向无关）：同一对元素之间的多条连线归为同一组。
+		// Unordered key of an element pair (direction-independent): all links between the same pair belong to one group.
 		function linkPairKey(link) {
 			var a = String(link.selementid1);
 			var b = String(link.selementid2);
@@ -3169,10 +3169,10 @@
 		}
 
 		/*
-		 * 同一对元素之间的所有连线（链路聚合的多个成员口、LLDP 双向重复线）算「一条链路」：
-		 * 共用一份配置（标签 / 指标 / 触发器来源），点任意一条打开的都是同一个「链接」对话框，
-		 * 编辑与移除都作用于整组 —— 对齐 aiops 的做法，不让用户逐条去改。
-		 * 线本身还是按成员口画成多条贴近成束的曲线，保留聚合的视觉信息。
+		 * All links between the same pair of elements (members of a link aggregation, duplicate bidirectional LLDP links) count as one link:
+		 * they share one configuration (label / metrics / trigger source), clicking any of them opens the same "link" dialog,
+		 * and editing and removal apply to the whole group — as aiops does, so users do not have to edit them one by one.
+		 * The lines themselves are still drawn per member port as a close bundle of curves, preserving the visual aggregation information.
 		 */
 		function linkFamily(link) {
 			var key = linkPairKey(link);
@@ -3188,7 +3188,7 @@
 			return family.length ? family : [link];
 		}
 
-		// 整组的指标监控项：合并所有成员口的配置并去重（老数据可能分散在各条线上）。
+		// Metric items of the whole group: merge and deduplicate the settings of all member ports (old data may be spread across links).
 		function familyMetrics(family) {
 			var out = normalizeMetrics(null);
 			var seen = {};
@@ -3209,7 +3209,7 @@
 			return out;
 		}
 
-		// 组的标签：取第一个非空值（整组共用一份标签）
+		// Group label: the first non-empty value (the group shares one label)
 		function familyLabel(family) {
 			for (var i = 0; i < family.length; i++) {
 				if (family[i].label) {
@@ -3220,9 +3220,9 @@
 			return '';
 		}
 
-		// 组的绑定触发器：合并所有成员（按 triggerid 去重）。
-		// 原生拓扑图里同一对元素的并行链路是各自独立的，每条可能有不同的链接指示器；
-		// 只取第一条会把另一条上的触发器吞掉（用户反馈「关联多个只显示 1 个」就是这个）。
+		// Bound triggers of the group: merged across all members (deduplicated by triggerid).
+		// In native maps, parallel links between the same pair of elements are independent, each possibly with different link indicators;
+		// taking only the first would swallow the triggers of the others (the cause of the "several linked but only 1 shown" report).
 		function familyLinkTriggers(family) {
 			var out = [];
 			var seen = {};
@@ -3243,8 +3243,8 @@
 			return out;
 		}
 
-		// 组的端口名（聚合时是多个成员口）：在「链接」对话框里列出来，方便确认这条链路覆盖了哪些口。
-		// 端口名不再画在连线上（用户要求移掉），只在对话框里作为信息展示。
+		// Port names of the group (several member ports when aggregated): listed in the "link" dialog to confirm which ports the link covers.
+		// Port names are no longer drawn on the links (removed at the user's request) and are only shown as information in the dialog.
 		function familyPorts(family) {
 			var src = [];
 			var tgt = [];
@@ -3265,7 +3265,7 @@
 			return {src: src, tgt: tgt};
 		}
 
-		// 移除整组连线（链路聚合的多成员口一起消失）
+		// Remove the whole group of links (all member ports of a link aggregation disappear together)
 		function removeLinkFamily(link) {
 			var family = linkFamily(link);
 
@@ -3277,20 +3277,20 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 走线 / 折点
+		// Routing / waypoints
 		// ---------------------------------------------------------------
 
-		var BEND_HINT = T('折点模式：点击空白处添加折点，拖动圆点调整，双击圆点删除，Esc 完成');
+		var BEND_HINT = T('Waypoint mode: click empty space to add a point, drag dots to adjust, double-click a dot to delete, Esc to finish');
 
-		// 自动直角布线：与障碍物（其它元素图标 + 标签文字框）保持的间距、
-		// 每拐一次弯的代价（越大越倾向于少拐弯）、以及只考虑连线附近多大范围内的障碍物
+		// Automatic orthogonal routing: clearance from obstacles (other element icons + label text boxes),
+		// the cost of each turn (higher means fewer turns), and how far around the link obstacles are considered
 		var ORTHO_GAP = 18;
 		var ORTHO_PAD = 8;
 		var ORTHO_BEND_COST = 26;
 		var ORTHO_MARGIN = 220;
 
-		// 估算一个元素占的矩形：图标本身 + 标签文字框（含状态行），
-		// 让自动直角能绕开图标和文字，而不是从中间穿过去。
+		// Estimate the rectangle an element occupies: the icon itself + the label text box (including status lines),
+		// so automatic orthogonal routing goes around icons and text instead of through them.
 		function elementObstacleRect(se) {
 			var size = iconSize(iconForElement(se));
 			var pad = ORTHO_PAD;
@@ -3369,7 +3369,7 @@
 			return out;
 		}
 
-		// 线段是否穿过任何障碍矩形（横/竖线段都按外接矩形判，够用且快）
+		// Whether a segment crosses any obstacle rectangle (horizontal/vertical segments are checked by bounding box, which is enough and fast)
 		function orthoSegmentFree(x1, y1, x2, y2, obstacles) {
 			var minX = Math.min(x1, x2);
 			var maxX = Math.max(x1, x2);
@@ -3440,7 +3440,7 @@
 			return top;
 		}
 
-		// 合并重复点、去掉同一直线上的中间点
+		// Merge duplicate points and remove intermediate points on the same straight line
 		function compressRoute(points) {
 			var out = [];
 
@@ -3475,8 +3475,8 @@
 			return clean;
 		}
 
-		// 正交 A*：在障碍物的边界及其外侧通道上找一条横平竖直、绕开障碍的路径。
-		// 找不到时退回原来的「中点折一次」路径。
+		// Orthogonal A*: find a horizontal/vertical path around obstacles along their borders and the channels outside them.
+		// If none is found, fall back to the original "one bend at the midpoint" path.
 		function orthogonalRoute(pa, pb, obstacles) {
 			var near = [];
 			var left = Math.min(pa.x, pb.x) - ORTHO_MARGIN;
@@ -3489,7 +3489,7 @@
 					return;
 				}
 
-				// 起点/终点落在障碍里（元素重叠）时忽略该障碍，否则永远无解
+				// When the start/end lies inside an obstacle (overlapping elements), ignore that obstacle, otherwise there is never a solution
 				var hasPa = pa.x >= o.x && pa.x <= o.x + o.w && pa.y >= o.y && pa.y <= o.y + o.h;
 				var hasPb = pb.x >= o.x && pb.x <= o.x + o.w && pb.y >= o.y && pb.y <= o.y + o.h;
 
@@ -3585,7 +3585,7 @@
 				}
 			});
 
-			// 状态 = 网格点 × 进入方向（0 起点 / 1 横向 / 2 纵向）
+			// State = grid point × entry direction (0 start / 1 horizontal / 2 vertical)
 			var total = nx * ny;
 			var g = [];
 			var prev = [];
@@ -3682,9 +3682,9 @@
 			return compressRoute(seq);
 		}
 
-		// 折线点集：routing 1 = 自动直角（绕开图标 / 文字框），routing 2 = 手动折点。
-		// 返回 null 表示按原来的二次贝塞尔画（routing 0）。
-		// off 是链路聚合成员线的垂直偏移，只作用在中间点/折点上，两端仍落在元素中心。
+		// Polyline points: routing 1 = automatic orthogonal (around icons / text boxes), routing 2 = manual waypoints.
+		// Returns null to draw the original quadratic Bézier (routing 0).
+		// off is the vertical offset of link aggregation members, applied only to intermediate points/waypoints; both ends stay at the element centers.
 		function linkPolyline(link, pa, pb, nx, ny, off, obstacles) {
 			var routing = num(link.routing, 0);
 			var points;
@@ -3730,7 +3730,7 @@
 			return d;
 		}
 
-		// 折线总长的中点：标签 / 指标框放在这里，而不是首尾的中点
+		// Midpoint of the total polyline length: the label / metric box goes here rather than at the midpoint of the ends
 		function polylineMidpoint(points) {
 			if (!points.length) {
 				return {x: 0, y: 0};
@@ -3770,7 +3770,7 @@
 			return {x: points[points.length - 1].x, y: points[points.length - 1].y};
 		}
 
-		// 当前正在编辑折点的整组连线（链路聚合整组共享一份折点）
+		// The group of links whose waypoints are being edited (the whole aggregation group shares one set of waypoints)
 		function bendFamily() {
 			if (!state.bendLink) {
 				return [];
@@ -3781,7 +3781,7 @@
 			return family.length ? family : [state.bendLink];
 		}
 
-		// 把同一组折点写到整组的每条成员线（每条线各自存一份，保存时按 linkid 落库）
+		// Write the same waypoints to every member link of the group (each link stores its own copy, saved by linkid)
 		function setFamilyWaypoints(family, points) {
 			family.forEach(function (link) {
 				link.routing = 2;
@@ -3805,9 +3805,9 @@
 				return;
 			}
 
-			// mousedown 时把折点坐标拷成数字快照：move 里会改写 waypoints，
-			// 若继续引用 origin 对象，每帧的增量会叠加到已经移动过的坐标上，
-			// 鼠标动一点点折点就会飞出去。
+			// On mousedown the waypoint coordinates are copied into a numeric snapshot: move rewrites waypoints,
+			// and if the origin object were still referenced, each frame's delta would add up on already moved coordinates,
+			// making the waypoint fly away with the slightest mouse movement.
 			var originX = Number(origin.x) || 0;
 			var originY = Number(origin.y) || 0;
 			var moved = false;
@@ -3862,13 +3862,13 @@
 			}
 
 			state.bendLink = null;
-			setHint(state.dirty ? T('有未保存的修改') : (state.editing ? '' : T('预览模式')));
+			setHint(state.dirty ? T('Unsaved changes') : (state.editing ? '' : T('Preview mode')));
 			drawLinks(state.map);
 
 			return true;
 		}
 
-		// 估算 SVG 文本宽度（够用即可）：中日韩等全角字符按字号算，半角按 0.6 倍算。
+		// Estimate SVG text width (good enough): full-width characters (CJK etc.) count as the font size, half-width as 0.6 of it.
 		function textWidth(text, size) {
 			var w = 0;
 
@@ -3879,8 +3879,8 @@
 			return w;
 		}
 
-		// 高亮层：原生 SVG 图的分层是 shapes → highlights → links → elements。
-		// 单独放一层，位置固定在「所有形之后、所有连线之前」，重画时不会跑到连线上面去。
+		// Highlight layer: native SVG maps are layered shapes → highlights → links → elements.
+		// It is a separate layer fixed after all shapes and before all links, so redrawing does not move it above the links.
 		var hlLayer = null;
 
 		function highlightLayer() {
@@ -3891,7 +3891,7 @@
 				elSvg.appendChild(hlLayer);
 			}
 
-			// 形是往末尾重画的，把高亮层重新挪到所有形之后、第一条连线之前
+			// Shapes are redrawn at the end, so the highlight layer is moved back after all shapes and before the first link
 			var firstLink = elSvg.querySelector('.tm-link-group');
 
 			elSvg.insertBefore(hlLayer, firstLink || null);
@@ -3900,11 +3900,11 @@
 		}
 
 		/**
-		 * 元素高亮（原生 sysmaps.highlight）。
+		 * Element highlight (native sysmaps.highlight).
 		 *
-		 * 问题中画的是「正圆」：原生用 ellipse 但 rx = ry = floor(图标宽/2)+10、圆心取元素中心，
-		 * 所以图标不是正方形时也还是圆。之前用 CSS 百分比画（宽高都 +20px、border-radius 50%），
-		 * 图标高一点就变成椭圆了。
+		 * Problems are drawn as a true circle: native uses an ellipse with rx = ry = floor(icon width/2)+10 centered on the element,
+		 * so it stays a circle even when the icon is not square. It used to be drawn with CSS percentages (+20px width/height, border-radius 50%),
+		 * which turned into an ellipse for slightly taller icons.
 		 */
 		function drawHighlights(map) {
 			var layer = highlightLayer();
@@ -3953,7 +3953,7 @@
 			});
 		}
 
-		// 拖拽时只挪这一个高亮（不重建整层，避免拖拽过程中高亮闪）
+		// While dragging only this one highlight moves (the layer is not rebuilt, so the highlight does not flicker during the drag)
 		function syncHighlight(se) {
 			var node = hlLayer && hlLayer.parentNode === elSvg
 				? hlLayer.querySelector('[data-hl-id="' + se.selementid + '"]')
@@ -3993,14 +3993,14 @@
 				byId[String(se.selementid)] = se;
 			});
 
-			// 同一对元素之间可能有多条连线（链路聚合的多个成员口、双向重复线），
-			// 从元素中心到中心画直线会完全重叠成一条。按「元素对」分组，
-			// 组内给每条线一个对称的垂直偏移，画成二次贝塞尔曲线把线拉开，
-			// 标签也跟着落在曲线中点上。
+			// There may be several links between the same pair of elements (members of a link aggregation, duplicate bidirectional links);
+			// straight center-to-center lines would overlap completely. They are grouped by element pair,
+			// each line in the group gets a symmetric perpendicular offset and is drawn as a quadratic Bézier curve to spread them,
+			// and labels follow to the curve midpoint.
 			var pairCount = {};
 			var pairSeq = {};
-			// 标签框收集起来最后统一插入：SVG 按插入顺序叠，晚插入的才盖在上面。
-			// 链路聚合时同组线只隔 12px，若逐条边画边插，后画的成员线会从框中间穿过去。
+			// Label boxes are collected and inserted at the end: SVG stacks in insertion order, so later inserts are on top.
+			// Aggregated links are only 12px apart; if boxes were inserted while drawing each line, later member lines would cross the boxes.
 			var pendingBadges = [];
 
 			map.links.forEach(function (link) {
@@ -4012,12 +4012,12 @@
 				pairCount[countKey] = (pairCount[countKey] || 0) + 1;
 			});
 
-			// 自动直角布线的障碍物：画布上其它元素的图标 + 标签文字框。
-			// 整张图算一次，每条连线再剔掉自己两端（不能让起点/终点所在元素挡住自己）。
+			// Obstacles for automatic orthogonal routing: icons + label text boxes of other elements on the canvas.
+			// Computed once per map; each link then removes its own two ends (the start/end elements must not block the link).
 			var linkObstacles = collectLinkObstacles(map);
 
-			// 树形布局：每个父元素下面挂了几个「子元素」（按元素对去重，链路聚合的多个成员口算一台）。
-			// 只有 1 台子元素走直线，多台才自动直角从共用主干分叉。
+			// Tree layout: how many child elements hang under each parent (deduplicated by element pair; aggregation members count as one).
+			// With only 1 child the link is straight; with several, automatic orthogonal routing branches from a shared trunk.
 			var treeChildren = {};
 
 			map.links.forEach(function (link) {
@@ -4043,7 +4043,7 @@
 					return;
 				}
 
-				// 上下两层的连线接「父节点文字块下方 → 子节点图标上方」，同层仍接中心
+				// Links between levels go from below the parent's text block to above the child's icon; links on the same level still use centers
 				var anchors = elementAnchors(a, b);
 				var pa = anchors.pa;
 				var pb = anchors.pb;
@@ -4051,25 +4051,25 @@
 				var width = link.drawtype === 2 ? 4 : 1.6;
 				var dash = link.drawtype === 3 ? '2 4' : (link.drawtype === 4 ? '6 4' : '');
 
-				// 组内序号 → 垂直偏移；单条线偏移 0，等价于原来的直线。
+				// Index within the group → perpendicular offset; a single link has offset 0, equivalent to the original straight line.
 				var pairKey = linkPairKey(link);
 				var total = pairCount[pairKey] || 1;
 				var index = pairSeq[pairKey] || 0;
 				pairSeq[pairKey] = index + 1;
-				// 徽标只画在组中间那条线上（单条线就是它自己）
+				// The badge is drawn only on the middle link of the group (a single link is its own middle)
 				var midIndex = Math.floor((total - 1) / 2);
 
 				var dx = pb.x - pa.x;
 				var dy = pb.y - pa.y;
 				var len = Math.sqrt(dx * dx + dy * dy) || 1;
-				// 垂直于连线的单位向量
+				// Unit vector perpendicular to the link
 				var nx = -dy / len;
 				var ny = dx / len;
 				var midX = (pa.x + pb.x) / 2;
 				var midY = (pa.y + pb.y) / 2;
 				var off = (index - (total - 1) / 2) * LINK_PAIR_SPACING;
-				// 走线模式：0 自动曲线（二次贝塞尔）/ 1 自动直角 / 2 手动折点。
-				// 折线只把中间点 / 折点做聚合偏移，两端仍接在锚点上。
+				// Routing mode: 0 automatic curve (quadratic Bézier) / 1 automatic orthogonal / 2 manual waypoints.
+				// Polylines only apply the aggregation offset to intermediate points / waypoints; both ends stay on the anchors.
 				var ownA = String(link.selementid1);
 				var ownB = String(link.selementid2);
 				var obstacles = linkObstacles.filter(function (o) {
@@ -4077,26 +4077,26 @@
 				});
 				var routing = num(link.routing, 0);
 				var polyline;
-				// 树形直角时指标框不放在走线中点（会落在横干上、看不出属于哪台主机），
-				// 改放在子节点图标正上方
+				// With tree orthogonal routing the metric box is not placed at the routing midpoint (it would land on the horizontal trunk and not show which host it belongs to),
+				// but right above the child icon
 				var badgeAnchor = null;
 
 				if (anchors.vertical && routing === 1) {
-					// 树形直角：父锚点先竖直走到主干，再横向分到各子节点上方，最后竖直落到子锚点。
-					// 只有 1 台子元素时直接连直线；聚合的多个成员口两端都按同样偏移并排，
-					// 画成两条平行的竖线（以前只偏中间点，两端收成尖角，很难看）。
+					// Tree orthogonal: from the parent anchor vertically to the trunk, horizontally to above each child, then vertically down to the child anchor.
+					// With only 1 child, a straight line; the member ports of an aggregation are offset identically at both ends and run side by side
+					// as two parallel vertical lines (previously only the midpoint was offset and both ends converged into an ugly sharp corner).
 					var childCount = Object.keys(treeChildren[String(anchors.parent.selementid)] || {}).length;
 					var treeOff = treeMemberOffset(index, total, pb.x - pa.x);
 					var from = {x: pa.x + treeOff, y: pa.y};
 					var to = {x: pb.x + treeOff, y: pb.y};
-					// 同组各成员的横段上下错开一个线间距，避免整段重叠成一条
+					// Horizontal segments of group members are shifted by one line spacing so they do not overlap into one
 					var railOff = (index - (total - 1) / 2) * LINK_PAIR_SPACING;
 
-					// 只有父节点下挂了多台子元素才分叉走直角；
-					// 只有 1 台子元素时直接直线（链路聚合的多个成员口就是几条平行直线，
-					// 不能因为成员口数量 > 1 就强行拐直角）。
+					// Only parents with several children branch with orthogonal routing;
+					// with only 1 child the link is straight (aggregation members are several parallel straight lines;
+					// more than one member port must not force a right angle).
 					polyline = childCount > 1 ? treeRoute(from, to, railOff) : [from, to];
-					// 指标框落在最后一段（竖线）的中点，居中在子节点正上方
+					// The metric box sits at the midpoint of the last (vertical) segment, centered right above the child
 					var tail = polyline[polyline.length - 1];
 					var prev = polyline[polyline.length - 2];
 					badgeAnchor = {x: pb.x, y: (prev.y + tail.y) / 2};
@@ -4117,13 +4117,13 @@
 					labelY = lineMid.y;
 				}
 				else {
-					// 二次贝塞尔控制点偏移 off*2：曲线在 t=0.5 处的点正好落在 中点 + 垂直偏移 off
+					// Quadratic Bézier control point offset off*2: the curve point at t=0.5 lands exactly on midpoint + perpendicular offset off
 					var cx = midX + nx * off * 2;
 					var cy = midY + ny * off * 2;
 
 					pathData = 'M ' + pa.x + ' ' + pa.y + ' Q ' + cx + ' ' + cy + ' ' + pb.x + ' ' + pb.y;
-					// 整组只在中间那条线上画一个标签框（t=0.5，即曲线中点）：
-					// 链路聚合的多条线共用一份配置，逐条画标签只会互相叠住、也没法分别编辑。
+					// The group draws only one label box, on the middle link (t=0.5, i.e. the curve midpoint):
+					// aggregated links share one configuration; labels drawn per link would only overlap and could not be edited separately.
 					var t = 0.5;
 					var it = 1 - t;
 
@@ -4170,7 +4170,7 @@
 						return;
 					}
 
-					// 点组内任意一条线，打开的都是同一个「链接」对话框：整组共用一份配置
+					// Clicking any link of the group opens the same "link" dialog: the whole group shares one configuration
 					if (!state.removeMode && !state.linkMode) {
 						openLinkDialog(link, false);
 					}
@@ -4178,8 +4178,8 @@
 
 				group.appendChild(hit);
 
-				// 整组只画一个标签框（落在组中间那条线上）：标签 + 带宽 / 上行 / 下行。
-				// 指标取整组（聚合的多个成员口）配置的并集；线本身不再标注两端端口。
+				// The group draws only one label box (on the middle link): label + bandwidth / upstream / downstream.
+				// Metrics are the union of the settings of the whole group (aggregated member ports); the end ports are no longer labeled on the links.
 				if (index !== midIndex) {
 					elSvg.appendChild(group);
 
@@ -4199,8 +4199,8 @@
 				});
 
 				if (lines.length) {
-					// 标签 + 指标画在一个圆角矩形框里（对齐 aiops）：框底用浅色，文字统一黑色。
-					// 用浅色底是为了黑色文字在深色主题下也能看清。
+					// Label + metrics are drawn in one rounded box (aligned with aiops): light background, black text.
+					// The light background keeps black text readable in the dark theme as well.
 					var step = 13;
 					var padX = 6;
 					var boxW = 0;
@@ -4214,15 +4214,15 @@
 					var boxH = (lines.length - 1) * step + 20;
 
 					if (badgeAnchor) {
-						// 树形直角：框居中在子节点正上方，纵向落在「主干拐点 → 子节点锚点」这段竖线的中点；
-						// 子节点下移、层间距变大时线段变长，框会自动跟着居中（对齐 Zabbix 自带拓扑图）
+						// Tree orthogonal: the box is centered right above the child, vertically at the midpoint of the segment "trunk bend → child anchor";
+						// when the child moves down or level spacing grows the segment gets longer and the box re-centers automatically (aligned with built-in Zabbix maps)
 						labelX = badgeAnchor.x;
 						labelY = badgeAnchor.y;
 					}
 
-					var startY = labelY - boxH / 2 + 14;   // 第一行文字的基线
+					var startY = labelY - boxH / 2 + 14;   // Baseline of the first text line
 
-					// 框单独放进一个「徽标层」：延后到整组的线都插进 SVG 之后再叠上去
+					// Boxes go into a separate "badge layer": added after all links of the group are in the SVG
 					badgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 					badgeGroup.setAttribute('class', 'tm-link-badge-group');
 
@@ -4235,10 +4235,10 @@
 					rect.setAttribute('rx', '5');
 					rect.setAttribute('ry', '5');
 					rect.setAttribute('fill', isDark ? '#f4f7f8' : '#ffffff');
-					// 边框跟随连线本身的颜色：正常绿、断开/报警红
+					// The border follows the link color: green when normal, red when down/alarming
 					rect.setAttribute('stroke', color);
 					rect.setAttribute('stroke-width', '1.5');
-					// 框压在连线的命中区上面，必须让它「不接收指针事件」，否则点线打不开「链接」对话框
+					// The box sits over the link's hit area and must not receive pointer events, otherwise clicking the link would not open the "link" dialog
 					rect.setAttribute('pointer-events', 'none');
 					badgeGroup.appendChild(rect);
 
@@ -4262,7 +4262,7 @@
 
 				elSvg.appendChild(group);
 
-				// 框延后插入：等整组的线都进 SVG 之后再叠上去（SVG 按插入顺序叠，没有 z-index）
+				// Deferred box insertion: added after all links of the group are in the SVG (SVG stacks in insertion order, there is no z-index)
 				if (badgeGroup) {
 					pendingBadges.push(badgeGroup);
 				}
@@ -4272,7 +4272,7 @@
 				elSvg.appendChild(badgeGroup);
 			});
 
-			// 折点手柄：只在折点编辑模式下画，放在最上层（要能盖住线、框，方便拖动/双击）
+			// Waypoint handles: drawn only in waypoint editing mode, on the top layer (they must cover links and boxes for dragging/double-clicking)
 			if (state.bendLink) {
 				var family = bendFamily();
 				var points = (family[0] && family[0].waypoints) || [];
@@ -4352,7 +4352,7 @@
 
 			box.addEventListener('click', function (e) {
 				if (!state.editing) {
-					// 预览模式和自带拓扑图一样：点主机图标弹主机菜单
+					// Preview mode works like the built-in maps: clicking a host icon opens the host menu
 					openHostMenu(se, box, e);
 
 					return;
@@ -4360,7 +4360,7 @@
 
 				e.stopPropagation();
 
-				// 刚拖拽过的这一次 click 不打开弹窗
+				// The click right after a drag does not open the dialog
 				if (se._suppressClick) {
 					return;
 				}
@@ -4379,7 +4379,7 @@
 
 				if (!isEditableElement(se)) {
 					renderCanvas();
-					openNoticeDialog(T('无法编辑该元素'), T('该元素类型（主机组 / 触发器 / 嵌套图）由 Zabbix 原生拓扑图编辑器维护，在自动拓扑图里只能预览和移动位置。'));
+					openNoticeDialog(T('Cannot edit this element'), T('This element type (host group / trigger / nested map) is maintained by the native Zabbix map editor; here it can only be previewed and moved.'));
 
 					return;
 				}
@@ -4390,9 +4390,9 @@
 			return box;
 		}
 
-		// 元素上「跟状态有关」的部分：位置 / 尺寸 / 状态类名 / 标签 / 悬停提示。
-		// 自动刷新时只调它，<img> 保持原节点 —— 整层重建会让所有主机图标闪一下，
-		// 而 Zabbix 自带拓扑图是原地更新，不闪。
+		// Status-related parts of an element: position / size / status class / label / hover tooltip.
+		// Auto-refresh calls only this and keeps the original <img> node — rebuilding the layer makes every host icon flicker,
+		// while the built-in Zabbix maps update in place without flicker.
 		function paintElementState(se, box) {
 			var size = iconSize(iconForElement(se));
 
@@ -4419,7 +4419,7 @@
 			}
 		}
 
-		// 原生拓扑图不在图标右上角放问题数角标，问题数只写在标签行里，所以这里没有 badge。
+		// Native maps do not show a problem badge at the top right of the icon; the count is only in the label lines, so there is no badge here.
 		function paintElementLabel(se, box) {
 			var old = box.querySelector('.tm-el-label');
 
@@ -4457,19 +4457,19 @@
 
 		function elementName(se) {
 			if (se.elementtype === ET_HOST) {
-				return se._hostName || T('未知主机');
+				return se._hostName || T('Unknown host');
 			}
 
 			if (se.elementtype === ET_IMAGE) {
-				return T('图片');
+				return T('Image');
 			}
 
 			return se.label || '';
 		}
 
-		// 主机元素标签里的原生宏 {HOST.NAME} / {HOST.CONN}。
-		// 标签在库里存的是宏原文，只有渲染时才展开，所以主机改名或重新发现后
-		// 每次打开画布都会用 host.get 的最新值替换。
+		// Native macros {HOST.NAME} / {HOST.CONN} in host element labels.
+		// Labels store the raw macros and are expanded only at render time, so after a host is renamed or rediscovered
+		// every canvas open replaces them with the latest host.get values.
 		function expandHostMacros(text, se) {
 			text = String(text || '');
 
@@ -4482,7 +4482,7 @@
 				.replace(/\{HOST\.CONN\}/gi, se._conn || se._ip || '');
 		}
 
-		// 标签第一段：具体显示什么由 label_type 决定，语义对齐 7.0.28 maps.inc.php
+		// First part of the label: what is shown depends on label_type, with semantics aligned with 7.0.28 maps.inc.php
 		function elementLabel(se) {
 			var type = num(se._labelType, LT_LABEL);
 
@@ -4498,7 +4498,7 @@
 				return se._ip || '';
 			}
 
-			// LT_LABEL / LT_CUSTOM：用元素自己的标签文本，主机元素展开原生宏
+			// LT_LABEL / LT_CUSTOM: the element's own label text, with native macros expanded for host elements
 			if (se.elementtype === ET_HOST) {
 				return expandHostMacros(se.label, se);
 			}
@@ -4506,8 +4506,8 @@
 			return se.label || '';
 		}
 
-		// 标签第二段：状态行。原生拓扑图在主机标签下面追加「正常 / 问题 / 已停用 / 在维护中」，
-		// 颜色跟着严重级别走 —— 这就是用户说的「原生预览会显示正常，有问题也会显示」。
+		// Second part of the label: status lines. Native maps append "OK / Problem / Disabled / In maintenance" below the host label,
+		// colored by severity — this is the user's "the native preview shows OK, and problems too".
 		function elementStatusLines(se) {
 			var map = state.map;
 			var lines = [];
@@ -4517,49 +4517,49 @@
 			}
 
 			if (se._status === 1) {
-				lines.push({text: T('已停用'), color: statusColor('disabled')});
+				lines.push({text: T('Disabled'), color: statusColor('disabled')});
 
 				return lines;
 			}
 
 			if (se._maintenance === 1) {
-				// 维护中只要没有未确认问题，原生就显示维护色
+				// In maintenance, as long as there are no unacknowledged problems, native maps use the maintenance color
 				if (!se._problems) {
-					lines.push({text: T('在维护中'), color: statusColor('maintenance')});
+					lines.push({text: T('In maintenance'), color: statusColor('maintenance')});
 
 					return lines;
 				}
 			}
 
 			if (!se._problems) {
-				// 原生 getSelementLabelColor(false, ack)：没问题时 ack = true，用「已确认正常」色
-				lines.push({text: T('正常'), color: statusColor('ok_ack')});
+				// Native getSelementLabelColor(false, ack): with no problems ack = true and the "acknowledged OK" color is used
+				lines.push({text: T('OK'), color: statusColor('ok_ack')});
 
 				return lines;
 			}
 
 			lines = problemLines(se, map.show_unack, map.expandproblem);
 
-			return lines.length ? lines : [{text: se._problems + T(' 个问题'), color: statusColor('problem')}];
+			return lines.length ? lines : [{text: se._problems + T(' problems'), color: statusColor('problem')}];
 		}
 
-		// 对齐 7.0.28 maps.inc.php getSelementInfo() 里 show_unack × expandproblem 的组合。
-		// expandproblem：0 = 展开单个问题，1 = 只显示问题数量，2 = 数量 + 展开最严重的那条。
-		// 唯一的偏离：只要**只有 1 个问题**就写触发器名称 —— 用户的图 expandproblem=1，
-		// 1 个问题时原生只写「1 problem」，看不出是哪个触发器，他明确要触发器名称。
+		// Aligned with the show_unack × expandproblem combinations in getSelementInfo() of 7.0.28 maps.inc.php.
+		// expandproblem: 0 = expand a single problem, 1 = show only the problem count, 2 = count + expand the most severe one.
+		// The only deviation: whenever there is **only 1 problem** the trigger name is written — the user's map has expandproblem=1,
+		// with 1 problem the native map only writes "1 problem" without showing which trigger, and the user explicitly wants the trigger name.
 		function problemLines(se, showUnack, expand) {
 			var lines = [];
 			var total = se._problems;
 			var unack = se._unack;
 			var title = se._title || '';
-			// 全部已确认时用「已确认问题」色，有未确认用未确认色（原生 getSelementLabelColor）
+			// When all are acknowledged use the "acknowledged problem" color, otherwise the unacknowledged color (native getSelementLabelColor)
 			var color = statusColor(unack > 0 ? 'problem' : 'problem_ack');
 
 			function countLine(n, word) {
-				return word ? TF('%s 个未确认问题', n) : TF('%s 个问题', n);
+				return word ? TF('%s unacknowledged problems', n) : TF('%s problems', n);
 			}
 
-			// total > 0 的那一段（show_unack 为 0 全部 / 2 两者都显示）
+			// The total > 0 part (show_unack 0 shows all / 2 shows both)
 			if (showUnack !== 1 && total > 0) {
 				if (total === 1) {
 					lines.push({text: title || countLine(1, ''), color: color});
@@ -4576,35 +4576,35 @@
 				}
 			}
 
-			// 未确认那一段（show_unack 为 1 只看未确认 / 2 两者都显示）
+			// The unacknowledged part (show_unack 1 shows only unacknowledged / 2 shows both)
 			if (showUnack !== 0 && unack > 0) {
 				if (showUnack === 1) {
 					var unackColor = statusColor('problem');
 
 					if (unack === 1) {
-						lines.push({text: title || countLine(1, T('未确认')), color: unackColor});
+						lines.push({text: title || countLine(1, T('Unacknowledged')), color: unackColor});
 					}
 					else if (expand === 1) {
-						lines.push({text: countLine(unack, T('未确认')), color: unackColor});
+						lines.push({text: countLine(unack, T('Unacknowledged')), color: unackColor});
 					}
 					else if (expand === 2) {
-						lines.push({text: title || countLine(unack, T('未确认')), color: unackColor});
-						lines.push({text: countLine(unack, T('未确认')), color: unackColor});
+						lines.push({text: title || countLine(unack, T('Unacknowledged')), color: unackColor});
+						lines.push({text: countLine(unack, T('Unacknowledged')), color: unackColor});
 					}
 					else {
-						lines.push({text: countLine(unack, T('未确认')), color: unackColor});
+						lines.push({text: countLine(unack, T('Unacknowledged')), color: unackColor});
 					}
 				}
 				else if (showUnack === 2) {
-					// 两者都显示时，未确认那行固定用「未确认问题」色
-					lines.push({text: countLine(unack, T('未确认')), color: statusColor('problem')});
+					// When both are shown, the unacknowledged line always uses the "unacknowledged problem" color
+					lines.push({text: countLine(unack, T('Unacknowledged')), color: statusColor('problem')});
 				}
 			}
 
 			return lines;
 		}
 
-		// 一个元素标签占几行（画布内容外接框要把它算进去）；标签文本支持换行
+		// How many lines an element label takes (the canvas content bounding box must include it); label text supports line breaks
 		function labelLineCount(se) {
 			var text = elementLabel(se);
 
@@ -4615,21 +4615,21 @@
 			var parts = [];
 
 			if (se.elementtype === ET_HOST) {
-				parts.push(se._hostName || T('未知主机'));
+				parts.push(se._hostName || T('Unknown host'));
 
 				if (se._status === 1) {
-					parts.push(T('已停用'));
+					parts.push(T('Disabled'));
 				}
 
 				if (se._problems > 0) {
-					parts.push(T('当前问题 ') + se._problems + T(' 个'));
+					parts.push(T('Current problems: ') + se._problems + T(''));
 				}
 			}
 
 			if (se.tags && se.tags.length) {
-				parts.push(T('问题标签：') + se.tags.map(function (tag) {
+				parts.push(T('Problem tags: ') + se.tags.map(function (tag) {
 					return tag.tag + (tag.value ? '=' + tag.value : '');
-				}).join(T('、')));
+				}).join(', '));
 			}
 
 			return parts.join(' · ');
@@ -4640,17 +4640,17 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 画布尺寸（自动）与画布容器高度（铺满视口）
+		// Canvas size (automatic) and canvas container height (fills the viewport)
 		// ---------------------------------------------------------------
 
-		// 让画布区域一直顶到视口底部：视口高度 − 容器上方到内容区顶部的距离 − 页脚高度。
-		// 不写死 calc(100vh - 235px)，因为页头、工具条、编辑工具条、页脚都可能变高。
+		// Keep the canvas area reaching the bottom of the viewport: viewport height − distance from the top to the content area − footer height.
+		// calc(100vh - 235px) is not hard-coded because the header, toolbar, edit toolbar and footer may all grow.
 		function layoutCanvasWrap() {
 			if (!elWrap || elCanvasView.hidden) {
 				return;
 			}
 
-			// 页面被滚动过时 top 可能是负数，夹到 0 以免算出超过视口的高度
+			// When the page is scrolled, top may be negative; clamp to 0 so the height does not exceed the viewport
 			var top = Math.max(0, elWrap.getBoundingClientRect().top);
 			var footer = document.getElementById('page-footer') || document.querySelector('footer');
 			var footerH = footer ? footer.offsetHeight : 0;
@@ -4660,10 +4660,10 @@
 			elWrap.style.height = Math.max(300, Math.round(avail)) + 'px';
 		}
 
-		// 画布至少要铺满可视区域：这样「画布边界」就落到看不见的地方，
-		// 在屏幕上任意位置拖动元素都不会顶到画布宽高。
+		// The canvas must at least fill the visible area: this puts the canvas boundary out of sight,
+		// so dragging an element anywhere on screen never hits the canvas width/height.
 		function canvasMinSize() {
-			// clientWidth/Height 已排除边框，正是画布应该铺满的内容区
+			// clientWidth/Height already exclude the border, which is exactly the content area the canvas must fill
 			return {
 				w: Math.max(MIN_CANVAS_W, elWrap.clientWidth || 0),
 				h: Math.max(MIN_CANVAS_H, elWrap.clientHeight || 0)
@@ -4710,7 +4710,7 @@
 			applyView();
 		}
 
-		// 内容外接框：元素图标（含下方标签）与形的右下角
+		// Content bounding box: bottom-right corner of element icons (including labels below) and shapes
 		function contentExtent() {
 			var map = state.map;
 			var right = 0;
@@ -4729,7 +4729,7 @@
 				bottom = Math.max(bottom, shape.y + num(shape.height, 0));
 			});
 
-			// 手动折点可能伸到元素/形之外，画布范围也要把它包进来
+			// Manual waypoints may reach beyond elements/shapes, so the canvas range must include them too
 			map.links.forEach(function (link) {
 				normalizeWaypointList(link.waypoints).forEach(function (point) {
 					right = Math.max(right, point.x);
@@ -4740,7 +4740,7 @@
 			return {w: right, h: bottom};
 		}
 
-		// 拖拽/添加时只在需要时向右下扩展，绝不缩小 —— 所以拖动不会有硬边界
+		// Dragging/adding only expands to the bottom-right when needed and never shrinks — so dragging has no hard boundary
 		function growCanvasTo(needW, needH) {
 			var map = state.map;
 			var changed = false;
@@ -4764,8 +4764,8 @@
 			}
 		}
 
-		// 内容外接框的左上角。往左/往上拖过之后内容会整体偏到右下，
-		// 保存前要用它把内容贴回 (0, 0)，否则画布左边/上边会留一片空白。
+		// Top-left of the content bounding box. After dragging left/up the content shifts to the bottom-right as a whole,
+		// so before saving it is used to move the content back to (0, 0), otherwise blank space remains on the left/top of the canvas.
 		function contentMin() {
 			var map = state.map;
 			var minX = Infinity;
@@ -4794,7 +4794,7 @@
 			};
 		}
 
-		// 保存前把画布收缩到内容大小（不低于可视区域），避免留下一大片空白
+		// Before saving, shrink the canvas to the content size (not below the visible area) to avoid large blank areas
 		function autoSizeCanvas() {
 			var map = state.map;
 			var origin;
@@ -4818,7 +4818,7 @@
 					shape.y -= origin.y;
 				});
 
-				// 折点与元素/形一起平移，否则保存后连线会歪
+				// Waypoints move together with elements/shapes, otherwise links would be skewed after saving
 				map.links.forEach(function (link) {
 					(link.waypoints || []).forEach(function (point) {
 						point.x = Math.max(0, point.x - origin.x);
@@ -4826,7 +4826,7 @@
 					});
 				});
 
-				// 视觉上别跳：pan 反向补偿（内容左移多少，视图就右移多少）
+				// Avoid a visual jump: pan compensates in the opposite direction (the view moves right by as much as the content moves left)
 				state.panX += origin.x * state.zoom;
 				state.panY += origin.y * state.zoom;
 			}
@@ -4838,13 +4838,13 @@
 			map.height = clamp(Math.ceil(Math.max(extent.h + CANVAS_PAD, min.h)), MIN_CANVAS_H, CANVAS_MAX);
 			resizeStage();
 
-			// 坐标变了，重画一次（openMap / saveMap 都不在拖拽过程中，可以整块重绘）
+			// Coordinates changed; redraw once (openMap / saveMap never run during a drag, so a full redraw is fine)
 			paintCanvas();
 			applyView();
 		}
 
 		// ---------------------------------------------------------------
-		// 视图缩放 / 平移
+		// View zoom / pan
 		// ---------------------------------------------------------------
 
 		function applyView() {
@@ -4852,13 +4852,13 @@
 			elZoomReset.textContent = Math.round(state.zoom * 100) + '%';
 
 			if (elCanvasSize && state.map) {
-				elCanvasSize.textContent = T('自动 · ') + state.map.width + ' × ' + state.map.height + ' px';
-				elCanvasSize.title = T('画布尺寸不固定：最小铺满可视区域，往右/下拖元素时会自动扩展，')
-					+ T('拖到边缘时视图会自动跟着平移；保存时收缩到内容大小。这里显示的是当前实际尺寸。');
+				elCanvasSize.textContent = T('Auto · ') + state.map.width + ' × ' + state.map.height + ' px';
+				elCanvasSize.title = T('The canvas size is not fixed: at least the viewport, it expands when elements are dragged right/down, ')
+					+ T('and the view pans when you drag to the edge; it shrinks to the content size on save. This shows the current actual size.');
 			}
 		}
 
-		// 100%：1 个单位 = 1 像素，从画布左上角开始（和原生视图一致）
+		// 100%: 1 unit = 1 pixel, starting at the top-left of the canvas (as in the native view)
 		function resetView() {
 			state.zoom = 1;
 			state.panX = 0;
@@ -4911,7 +4911,7 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 拖拽
+		// Dragging
 		// ---------------------------------------------------------------
 
 		function startPan(e) {
@@ -4920,7 +4920,7 @@
 			var ox = state.panX;
 			var oy = state.panY;
 
-			// 给「折点模式点空白加点」用：拖动画布超过 3px 就不算点击，避免平移后误加折点
+			// Used by "click empty space to add a waypoint": dragging the canvas more than 3px is not a click, so no waypoint is added after panning
 			panDragged = false;
 
 			elWrap.classList.add('tm-panning');
@@ -4945,14 +4945,14 @@
 			document.addEventListener('mouseup', up);
 		}
 
-		// 拖拽时指针贴住画布边缘就自动平移视图 —— 元素永远能继续往下/往右拖，
-		// 不会出现「拖到屏幕边缘就拖不动、还得先松开手去平移」的手感。
-		// 往左/往上不靠平移，而是 shiftContent() 把内容整体外推（见下方），
-		// 那种情况下 map 坐标不能为负，只能靠「画布向左上长出来」实现无限延伸。
+		// When the pointer reaches the canvas edge while dragging, the view pans automatically — elements can always be dragged further down/right,
+		// without the "stuck at the screen edge, release and pan first" feeling.
+		// Left/up does not use panning; shiftContent() pushes the whole content outwards instead (see below),
+		// since map coordinates cannot be negative there, infinite extension is achieved by growing the canvas to the top-left.
 		function autoPan(ev) {
 			var rect = elWrap.getBoundingClientRect();
 
-			// 画布还没布局出来（宽或高小到两边都算边缘）时不平移，否则会一直往一个方向漂
+			// No panning before the canvas is laid out (when width or height is so small that both sides count as edges), otherwise it keeps drifting one way
 			if (rect.width < DRAG_EDGE * 2 || rect.height < DRAG_EDGE * 2) {
 				return false;
 			}
@@ -4974,7 +4974,7 @@
 			return moved;
 		}
 
-		// 指针位置 → 地图坐标（要算上当前缩放与平移）
+		// Pointer position → map coordinates (taking the current zoom and pan into account)
 		function pointerToMap(ev) {
 			var rect = elWrap.getBoundingClientRect();
 
@@ -4984,9 +4984,9 @@
 			};
 		}
 
-		// 内容整体平移：元素/形的坐标同加 (dx, dy)，画布同量变大，视图反向偏移 ——
-		// 屏幕上已经画着的元素原地不动，效果等于「画布往左上长出来一块」。
-		// sysmaps_elements.x/y 与原生编辑器一样不能为负，所以往左/上无限拖只能这么做。
+		// Shift the whole content: element/shape coordinates get (dx, dy), the canvas grows by the same amount and the view shifts back —
+		// elements already drawn on screen stay put, as if the canvas grew a piece to the top-left.
+		// sysmaps_elements.x/y cannot be negative, as in the native editor, so this is the only way to drag infinitely left/up.
 		function shiftContent(dx, dy) {
 			var map = state.map;
 
@@ -5007,7 +5007,7 @@
 				shape.y += dy;
 			});
 
-			// 折点跟随内容一起平移，绕行关系保持不变
+			// Waypoints move with the content, so routes stay the same
 			map.links.forEach(function (link) {
 				(link.waypoints || []).forEach(function (point) {
 					point.x += dx;
@@ -5018,12 +5018,12 @@
 			map.width = Math.min(CANVAS_MAX, map.width + dx);
 			map.height = Math.min(CANVAS_MAX, map.height + dy);
 
-			// 视图反向平移，保证屏幕上的内容不跳
+			// The view pans in the opposite direction so the content on screen does not jump
 			state.panX -= dx * state.zoom;
 			state.panY -= dy * state.zoom;
 
 			syncElementNodes();
-			// 先形后链接：链接要压在形上面（高亮层夹在形与链接之间）
+			// Shapes first, then links: links must be above shapes (the highlight layer sits between shapes and links)
 			drawShapes(map);
 			drawHighlights(map);
 			drawLinks(map);
@@ -5032,7 +5032,7 @@
 			return true;
 		}
 
-		// 只同步元素节点的 left/top，不重建 DOM（拖拽中的节点引用必须保住）
+		// Only sync left/top of element nodes without rebuilding the DOM (references to nodes being dragged must stay valid)
 		function syncElementNodes() {
 			var map = state.map;
 			var byId = {};
@@ -5061,7 +5061,7 @@
 		function startElementDrag(se, box, e) {
 			var startX = e.clientX;
 			var startY = e.clientY;
-			// 抓取偏移：保证拖动时元素跟着指针走，指针停在元素哪个点就一直停在那个点
+			// Grab offset: the element follows the pointer while dragging, and the grabbed point stays under the pointer
 			var startPt = pointerToMap(e);
 			var grabX = startPt.x - se.x;
 			var grabY = startPt.y - se.y;
@@ -5078,8 +5078,8 @@
 				var nx = Math.round(pt.x - grabX);
 				var ny = Math.round(pt.y - grabY);
 
-				// 拖到左/上边界之外：把整张图往右下推，拖的这块贴回 0（视觉上原地不动），
-				// 画布同量变宽变高 —— 于是左、上方向也没有边界。
+				// Dragging beyond the left/top boundary: push the whole map to the bottom-right and snap the dragged piece back to 0 (visually it stays put),
+				// and the canvas grows by the same amount — so there is no boundary on the left and top either.
 				if (nx < 0 || ny < 0) {
 					shiftContent(nx < 0 ? -nx : 0, ny < 0 ? -ny : 0);
 					nx = Math.max(0, nx);
@@ -5088,7 +5088,7 @@
 
 				se.x = nx;
 				se.y = ny;
-				// 拖到当前画布右/下边缘之外就顺手把画布撑大，不设死边界
+				// Dragging beyond the current right/bottom canvas edge simply enlarges the canvas; there is no hard boundary
 				growCanvasTo(se.x + size.w + CANVAS_PAD, se.y + size.h + CANVAS_PAD);
 				box.style.left = se.x + 'px';
 				box.style.top = se.y + 'px';
@@ -5106,7 +5106,7 @@
 
 				if (moved) {
 					markDirty();
-					// 拖拽后不应该再触发 click 打开弹窗
+					// A click after dragging must not open the dialog
 					se._suppressClick = true;
 					setTimeout(function () {
 						se._suppressClick = false;
@@ -5136,7 +5136,7 @@
 				var nx = Math.round(pt.x - grabX);
 				var ny = Math.round(pt.y - grabY);
 
-				// 同元素拖拽：越过左/上边界时把整张图往右下推，画布跟着长
+				// Dragging an element across the left/top boundary pushes the whole map to the bottom-right and the canvas grows
 				if (nx < 0 || ny < 0) {
 					shiftContent(nx < 0 ? -nx : 0, ny < 0 ? -ny : 0);
 					nx = Math.max(0, nx);
@@ -5167,7 +5167,7 @@
 		}
 
 		var repaintPending = false;
-		// 本次按下后是否拖动过画布（折点模式下区分「点击加点」和「拖动平移」）
+		// Whether the canvas was dragged after this press (distinguishes "click to add a point" from "drag to pan" in waypoint mode)
 		var panDragged = false;
 
 		function repaintSoon() {
@@ -5205,7 +5205,7 @@
 				return;
 			}
 
-			// 点空白处取消形的选中（原生也是点别处就收起点）
+			// Clicking empty space deselects the shape (native maps also hide the handles when clicking elsewhere)
 			if (state.shapeSel) {
 				state.shapeSel = null;
 				drawShapeHandles();
@@ -5214,8 +5214,8 @@
 			startPan(e);
 		});
 
-		// 折点模式：点击空白处追加折点。拖动平移不会触发（panDragged 为 true 时跳过），
-		// 点在元素 / 形 / 连线 / 折点圆点上也不会追加。
+		// Waypoint mode: clicking empty space adds a waypoint. Panning does not trigger it (skipped when panDragged is true),
+		// and clicks on elements / shapes / links / waypoint dots do not add one either.
 		elWrap.addEventListener('click', function (e) {
 			if (!state.bendLink || !state.editing || panDragged) {
 				return;
@@ -5252,12 +5252,12 @@
 		});
 
 		// ---------------------------------------------------------------
-		// 编辑操作：添加 / 移除
+		// Editing: add / remove
 		// ---------------------------------------------------------------
 
-		// 新增元素需要一个「临时 selementid」给链接引用，真实 id 由 map.update 落库时替换。
-		// 必须是纯数字且远大于任何真实 id：Zabbix 的 dbConditionId() 会把 selementid 当 bigint 过滤，
-		// 传 "n1" 这种字符串在 PostgreSQL 上会直接报类型错误（MySQL 只是隐式转 0）。
+		// New elements need a temporary selementid for links to reference; the real id replaces it when map.update saves.
+		// It must be purely numeric and far larger than any real id: Zabbix's dbConditionId() filters selementid as bigint,
+		// and a string like "n1" causes a type error on PostgreSQL (MySQL just casts it to 0).
 		function nextTempId() {
 			var id;
 
@@ -5284,7 +5284,7 @@
 				iconid_on: '0',
 				iconid_disabled: '0',
 				iconid_maintenance: '0',
-				label: T('新的组件'),
+				label: T('New element'),
 				label_location: -1,
 				x: Math.max(0, Math.round(center.x - size.w / 2)),
 				y: Math.max(0, Math.round(center.y - size.h / 2)),
@@ -5312,8 +5312,8 @@
 
 			state.tmpSeq += 1;
 
-			// 默认值与原生 Shape 构造器完全一致：10,10 起、50×50、黑框 2px、
-			// Helvetica 11 号黑字，形按钮点一下就是这套值再按需改。
+			// Defaults match the native Shape constructor exactly: starting at 10,10, 50×50, 2px black border,
+			// black Helvetica 11 text; clicking the shape button gives these values, which can then be changed.
 			var shape = {
 				_tmpid: 's' + state.tmpSeq,
 				type: 0,
@@ -5382,7 +5382,7 @@
 			state.linkMode = false;
 			state.linkFirst = null;
 			syncModeButtons();
-			setHint(T('移除模式：点击画布上要移除的') + (kind === 'element' ? T('地图元素') : (kind === 'shape' ? T('形') : T('链接'))) + T('（Esc 取消）'));
+			setHint(T('Remove mode: click the ') + (kind === 'element' ? T('map element') : (kind === 'shape' ? T('shape') : T('link'))) + T(' to remove (Esc to cancel)'));
 			renderCanvas();
 		}
 
@@ -5391,7 +5391,7 @@
 			state.removeMode = null;
 			state.linkFirst = null;
 			syncModeButtons();
-			setHint(T('链接模式：依次点击两个元素建立链接（Esc 取消）'));
+			setHint(T('Link mode: click two elements in order to create a link (Esc to cancel)'));
 			renderCanvas();
 		}
 
@@ -5399,7 +5399,7 @@
 			if (!state.linkFirst) {
 				state.linkFirst = se;
 				state.selected = se.selementid;
-				setHint(T('链接模式：已选中「') + (elementLabel(se) || T('元素')) + T('」，再点击另一个元素'));
+				setHint(T('Link mode: selected "') + (elementLabel(se) || T('element')) + T('", now click another element'));
 				renderCanvas();
 
 				return;
@@ -5427,7 +5427,7 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 通用弹层
+		// Common popups
 		// ---------------------------------------------------------------
 
 		function openDialog(options) {
@@ -5459,7 +5459,7 @@
 			clear(elDialogBody);
 			clear(elDialogFoot);
 
-			// Esc / 右上角 × / 点遮罩关闭确认框时，按「取消」处理，避免 Promise 悬空
+			// Esc / × at the top right / clicking the overlay closes the confirmation as "Cancel", so the Promise never hangs
 			if (state.pendingConfirm) {
 				var resolve = state.pendingConfirm;
 				state.pendingConfirm = null;
@@ -5500,27 +5500,27 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 属性（重命名 / 删除）
+		// Properties (rename / delete)
 		// ---------------------------------------------------------------
 
 		function openPropertiesDialog(map) {
 			openDialog({
-				title: T('拓扑图属性'),
+				title: T('Map properties'),
 				build: function (body) {
 					var tbody = dialogForm(body);
-					var nameRow = formRow(tbody, T('名称'), true);
+					var nameRow = formRow(tbody, T('Name'), true);
 					var input = make('input', 'tm-input tm-input-block');
 					input.type = 'text';
 					input.maxLength = 128;
 					input.value = map.name;
 					nameRow.td.appendChild(input);
 
-					// 画布尺寸改成自动：拖动时会扩展，保存时收紧到内容大小，不再让用户填数字
-					var sizeRow = formRow(tbody, T('画布尺寸'), false);
+					// The canvas size is now automatic: it expands while dragging and shrinks to the content on save; users no longer enter numbers
+					var sizeRow = formRow(tbody, T('Canvas size'), false);
 					sizeRow.td.appendChild(make('div', 'tm-size-auto',
-						T('自动（当前 ') + map.width + ' × ' + map.height + T(' px）')));
+						T('Auto (current ') + map.width + ' × ' + map.height + ' px)'));
 					sizeRow.td.appendChild(make('div', 'tm-hint',
-						T('往右 / 往下拖元素时画布会跟着变大，保存时按内容收紧，不会留下大片空白')));
+						T('The canvas grows when you drag elements right/down and shrinks to fit on save, leaving no large empty area')));
 
 					var warn = make('div', 'tm-msg');
 					warn.style.marginTop = '6px';
@@ -5536,7 +5536,7 @@
 
 						if (!name) {
 							warn.className = 'tm-msg tm-msg-error';
-							warn.textContent = T('名称不能为空');
+							warn.textContent = T('The name cannot be empty');
 
 							return;
 						}
@@ -5544,15 +5544,15 @@
 						api('rename', {sysmapid: map.sysmapid, name: name}).then(function () {
 							closeDialog();
 							loadList();
-							msg(elListMsg, T('已保存「') + name + T('」的属性'), 'ok');
+							msg(elListMsg, T('Saved "') + name + T('" properties'), 'ok');
 						}).catch(function (e) {
 							warn.className = 'tm-msg tm-msg-error';
-							warn.textContent = T('保存失败：') + saveError(e.message);
+							warn.textContent = T('Save failed: ') + saveError(e.message);
 						});
 					};
 
 					openDialog.remove = function () {
-						confirmDialog(T('删除拓扑图？'), T('将永久删除「') + map.name + T('」及其所有元素、链接、形。此操作不可撤销。'), T('删除')).then(function (ok) {
+						confirmDialog(T('Delete map?'), T('This will permanently delete "') + map.name + T('" and all its elements, links and shapes. This action cannot be undone.'), T('Delete')).then(function (ok) {
 							if (!ok) {
 								return;
 							}
@@ -5561,24 +5561,24 @@
 								closeDialog();
 								delete state.checked[map.sysmapid];
 								loadList();
-								msg(elListMsg, T('已删除「') + map.name + T('」'), 'ok');
+								msg(elListMsg, T('Deleted "') + map.name + '"', 'ok');
 							}).catch(function (e) {
 								warn.className = 'tm-msg tm-msg-error';
-								warn.textContent = T('删除失败：') + e.message;
+								warn.textContent = T('Deletion failed: ') + e.message;
 							});
 						});
 					};
 				},
 				buttons: [
-					{label: T('应用'), primary: true, onClick: function () { openDialog.rename(); }},
-					{label: T('删除'), onClick: function () { openDialog.remove(); }},
-					{label: T('关闭'), onClick: closeDialog}
+					{label: T('Apply'), primary: true, onClick: function () { openDialog.rename(); }},
+					{label: T('Delete'), onClick: function () { openDialog.remove(); }},
+					{label: T('Close'), onClick: closeDialog}
 				]
 			});
 		}
 
 		// ---------------------------------------------------------------
-		// 元素属性弹窗（对照原生「地图元素」表单）
+		// Element properties dialog (mirrors the native "map element" form)
 		// ---------------------------------------------------------------
 
 		function openElementDialog(se, isNew) {
@@ -5587,45 +5587,45 @@
 			var iconExtraRows = [];
 
 			openDialog({
-				title: T('元素属性'),
+				title: T('Element properties'),
 				build: function (body) {
 					var tbody = dialogForm(body);
 
-					// 类型
-					var typeRow = formRow(tbody, T('类型'), false);
-					var typeSel = makeSelect([[ET_IMAGE, T('图片')], [ET_HOST, T('主机')]], draft.elementtype, 'tm-w-200');
+					// Type
+					var typeRow = formRow(tbody, T('Type'), false);
+					var typeSel = makeSelect([[ET_IMAGE, T('Image')], [ET_HOST, T('Host')]], draft.elementtype, 'tm-w-200');
 					typeSel.style.width = '180px';
 					typeRow.td.appendChild(typeSel);
 
-					// 标签：选择主机后自动写入「主机名 + IP」，用户手改过就不再覆盖
-					var labelTouched = !!String(draft.label || '').trim() && draft.label !== T('新的组件');
+					// Label: "host name + IP" is written automatically after choosing a host, unless the user edited it
+					var labelTouched = !!String(draft.label || '').trim() && draft.label !== T('New element');
 
-					var labelRow = formRow(tbody, T('标签'), false);
+					var labelRow = formRow(tbody, T('Label'), false);
 					var labelInput = make('textarea');
 					labelInput.rows = 2;
 					labelInput.value = draft.label || '';
 					labelInput.maxLength = 2048;
-					labelInput.placeholder = T('可换行；选择主机后会自动填「主机名 + IP」');
+					labelInput.placeholder = T('Line breaks are allowed; selecting a host fills in "host name + IP"');
 					labelInput.addEventListener('input', function () {
 						labelTouched = true;
 					});
 					labelRow.td.appendChild(labelInput);
 
-					// 标签位置
-					var locRow = formRow(tbody, T('标签位置'), false);
+					// Label position
+					var locRow = formRow(tbody, T('Label position'), false);
 					var locSel = makeSelect(LABEL_LOCS, draft.label_location === undefined ? -1 : draft.label_location);
 					locSel.style.width = '180px';
 					locRow.td.appendChild(locSel);
 
-					// 主机
-					var hostRow = formRow(tbody, T('主机'), true);
+					// Host
+					var hostRow = formRow(tbody, T('Host'), true);
 					var hostLine = make('div', 'tm-inline');
 					var hostInput = make('input', 'tm-input tm-grow');
 					hostInput.type = 'text';
-					hostInput.placeholder = T('在此输入搜索');
+					hostInput.placeholder = T('Type to search');
 					hostInput.value = draft._hostName || '';
 					hostInput.readOnly = true;
-					var hostBtn = make('button', 'tm-btn', T('选择'));
+					var hostBtn = make('button', 'tm-btn', T('Select'));
 					hostBtn.type = 'button';
 					hostLine.appendChild(hostInput);
 					hostLine.appendChild(hostBtn);
@@ -5639,22 +5639,22 @@
 							draft._hostName = host.name;
 							draft._ip = host.ip || '';
 							draft.elements = [{hostid: host.hostid}];
-							hostInput.value = host.name + (host.ip ? T('（') + host.ip + T('）') : '');
+							hostInput.value = host.name + (host.ip ? ' (' + host.ip + ')' : '');
 
-							// 标签仍是空 / 「新的组件」占位时，默认填两行宏文本：
-							// 第一行主机名、第二行连接地址（渲染时按主机最新值展开）
+							// When the label is still empty or the "new element" placeholder, fill in two lines of macros by default:
+							// host name on the first line, connection address on the second (expanded with the host's latest values at render time)
 							if (!labelTouched) {
 								labelInput.value = '{HOST.NAME}\n{HOST.CONN}';
 							}
 						});
 					});
 
-					// 问题标签
-					var tagRow = formRow(tbody, T('问题标签'), false);
+					// Problem tags
+					var tagRow = formRow(tbody, T('Problem tags'), false);
 					var tagsBox = make('div', 'tm-tags');
 					var evalLine = make('div', 'tm-tags-eval');
 					var evalName = 'tm-eval-' + Date.now();
-					[[0, T('与/或 (默认)')], [2, T('或')]].forEach(function (pair) {
+					[[0, T('And/Or (default)')], [2, T('Or')]].forEach(function (pair) {
 						var lab = make('label');
 						var radio = make('input');
 						radio.type = 'radio';
@@ -5670,7 +5670,7 @@
 					var tagList = make('div');
 					tagsBox.appendChild(tagList);
 
-					var addTag = make('button', 'tm-linkbtn tm-tags-add', T('添加'));
+					var addTag = make('button', 'tm-linkbtn tm-tags-add', T('Add'));
 					addTag.type = 'button';
 					addTag.addEventListener('click', function () {
 						tagList.appendChild(buildTagRow({tag: '', operator: 0, value: ''}));
@@ -5683,8 +5683,8 @@
 						tagList.appendChild(buildTagRow(tag));
 					});
 
-					// 自动选择图标
-					var autoRow = formRow(tbody, T('自动选择图标'), false);
+					// Automatic icon selection
+					var autoRow = formRow(tbody, T('Auto-select icon'), false);
 					var autoLine = make('label', 'tm-checkline');
 					var autoBox = make('input');
 					autoBox.type = 'checkbox';
@@ -5693,8 +5693,8 @@
 					autoRow.td.appendChild(autoLine);
 					hostRows.push(autoRow.tr);
 
-					// 图标
-					var iconRow = formRow(tbody, T('图标'), false);
+					// Icons
+					var iconRow = formRow(tbody, T('Icon'), false);
 					var iconBox = make('div', 'tm-icons-box');
 					var iconTable = make('table', 'tm-icons-table');
 					var iconBody = make('tbody');
@@ -5706,14 +5706,14 @@
 					var iconMaint = buildIconSelect(draft.iconid_maintenance, true);
 					var iconDisabled = buildIconSelect(draft.iconid_disabled, true);
 
-					appendIconRow(iconBody, T('默认'), iconOff, null);
-					appendIconRow(iconBody, T('问题'), iconOn, iconExtraRows);
-					appendIconRow(iconBody, T('维护'), iconMaint, iconExtraRows);
-					appendIconRow(iconBody, T('停用'), iconDisabled, iconExtraRows);
+					appendIconRow(iconBody, T('Default'), iconOff, null);
+					appendIconRow(iconBody, T('problem'), iconOn, iconExtraRows);
+					appendIconRow(iconBody, T('Maintenance'), iconMaint, iconExtraRows);
+					appendIconRow(iconBody, T('Disabled'), iconDisabled, iconExtraRows);
 
 					iconRow.td.appendChild(iconBox);
 
-					// 类型切换：图片只留「默认」图标；主机显示主机/标签/自动图标/四个图标
+					// Type switch: images keep only the "default" icon; hosts show host/tags/automatic icon/four icons
 					function syncType() {
 						var type = num(typeSel.value, ET_IMAGE);
 						var isHost = type === ET_HOST;
@@ -5736,7 +5736,7 @@
 					autoBox.addEventListener('change', syncType);
 					syncType();
 
-					// 弹窗内部状态挂到闭包里，供底部按钮读取
+					// The dialog's internal state is kept in the closure for the footer buttons
 					openElementDialog.collect = function () {
 						draft.elementtype = num(typeSel.value, ET_IMAGE);
 						draft.label = labelInput.value;
@@ -5781,7 +5781,7 @@
 							draft.iconid_disabled = '0';
 						}
 						else if (!draft._hostid) {
-							return T('请选择主机');
+							return T('Select a host');
 						}
 						else {
 							draft.elements = [{hostid: draft._hostid}];
@@ -5791,9 +5791,9 @@
 					};
 				},
 				buttons: [
-					{label: T('应用'), primary: true, onClick: function () { applyElement(); }},
-					{label: T('移除'), onClick: function () { closeDialog(); removeElement(se); }},
-					{label: T('关闭'), onClick: closeDialog}
+					{label: T('Apply'), primary: true, onClick: function () { applyElement(); }},
+					{label: T('Remove'), onClick: function () { closeDialog(); removeElement(se); }},
+					{label: T('Close'), onClick: closeDialog}
 				]
 			});
 
@@ -5816,7 +5816,7 @@
 					var host = state.map.hosts[draft._hostid];
 
 					if (host) {
-						// 换了主机就把状态/问题一起换成新主机的，别沿用旧主机的问题数
+						// When the host changes, status/problems switch to the new host too; do not keep the old host's problem count
 						draft._hostName = host.name;
 						draft._ip = String(host.ip || draft._ip || '');
 						draft._status = num(host.status, 0);
@@ -5846,7 +5846,7 @@
 
 				var name = make('input', 'tm-input tm-tag-name');
 				name.type = 'text';
-				name.placeholder = T('标记');
+				name.placeholder = T('Tag');
 				name.value = tag.tag || '';
 				name.maxLength = 255;
 
@@ -5854,11 +5854,11 @@
 
 				var value = make('input', 'tm-input tm-tag-value');
 				value.type = 'text';
-				value.placeholder = T('值');
+				value.placeholder = T('Value');
 				value.value = tag.value || '';
 				value.maxLength = 255;
 
-				var del = make('button', 'tm-linkbtn', T('移除'));
+				var del = make('button', 'tm-linkbtn', T('Remove'));
 				del.type = 'button';
 				del.addEventListener('click', function () {
 					row.parentNode.removeChild(row);
@@ -5876,7 +5876,7 @@
 				var options = [];
 
 				if (withDefault) {
-					options.push(['0', T('默认')]);
+					options.push(['0', T('Default')]);
 				}
 
 				state.icons.forEach(function (icon) {
@@ -5884,7 +5884,7 @@
 				});
 
 				if (!options.length) {
-					options.push(['0', T('（无可用图标）')]);
+					options.push(['0', T('(no icons available)')]);
 				}
 
 				return makeSelect(options, String(value || '0'));
@@ -5906,19 +5906,19 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 形属性弹窗
+		// Shape properties dialog
 		// ---------------------------------------------------------------
 
 		function openShapeDialog(shape, isNew) {
 			var draft = copy(shape);
 
 			openDialog({
-				title: T('拓扑图形状'),
+				title: T('Map shape'),
 				build: function (body) {
 					var tbody = dialogForm(body);
 
-					// 形：矩形 / 椭圆 / 线 —— 原生是并排的三段按钮
-					var typeRow = formRow(tbody, T('形'), false);
+					// Shape: rectangle / ellipse / line — natively a three-way button
+					var typeRow = formRow(tbody, T('shape'), false);
 					var seg = make('div', 'tm-seg');
 					var typeButtons = [];
 
@@ -5935,14 +5935,14 @@
 					});
 					typeRow.td.appendChild(seg);
 
-					var textRow = formRow(tbody, T('文本'), false);
+					var textRow = formRow(tbody, T('Text'), false);
 					var textInput = make('textarea');
 					textInput.rows = 2;
 					textInput.maxLength = 255;
 					textInput.value = draft.text || '';
 					textRow.td.appendChild(textInput);
 
-					// 字体 / 字体大小 / 颜色（原生放在文本下方，没有单独行标题）
+					// Font / font size / color (natively below the text, without a separate row label)
 					var fontRow = formRow(tbody, '');
 					var fontLine = make('div', 'tm-inline');
 					var fontSel = makeSelect(SHAPE_FONT_NAMES.map(function (name, index) {
@@ -5954,32 +5954,32 @@
 					fontSize.type = 'text';
 					fontSize.value = String(draft.font_size || 11);
 					fontSize.style.width = '52px';
-					fontLine.appendChild(make('span', 'tm-hint', T('字体')));
+					fontLine.appendChild(make('span', 'tm-hint', T('Font')));
 					fontLine.appendChild(fontSel);
-					fontLine.appendChild(make('span', 'tm-hint', T('字体大小')));
+					fontLine.appendChild(make('span', 'tm-hint', T('Font size')));
 					fontLine.appendChild(fontSize);
-					fontLine.appendChild(make('span', 'tm-hint', T('颜色')));
+					fontLine.appendChild(make('span', 'tm-hint', T('Color')));
 					fontLine.appendChild(fontColor.wrap);
 					fontRow.td.appendChild(fontLine);
 
 					var alignRow = formRow(tbody, '');
 					var alignLine = make('div', 'tm-inline');
-					var halignSel = makeSelect([[0, T('居中')], [1, T('左')], [2, T('右')]], draft.text_halign);
-					var valignSel = makeSelect([[0, T('居中')], [1, T('上')], [2, T('下')]], draft.text_valign);
-					alignLine.appendChild(make('span', 'tm-hint', T('横向对齐')));
+					var halignSel = makeSelect([[0, T('Center')], [1, T('Left')], [2, T('Right')]], draft.text_halign);
+					var valignSel = makeSelect([[0, T('Center')], [1, T('Top')], [2, T('Bottom')]], draft.text_valign);
+					alignLine.appendChild(make('span', 'tm-hint', T('Horizontal align')));
 					alignLine.appendChild(halignSel);
-					alignLine.appendChild(make('span', 'tm-hint', T('纵向对齐')));
+					alignLine.appendChild(make('span', 'tm-hint', T('Vertical align')));
 					alignLine.appendChild(valignSel);
 					alignRow.td.appendChild(alignLine);
 
-					var fillRow = formRow(tbody, T('背景'));
+					var fillRow = formRow(tbody, T('Background'));
 					var fillColor = buildColorInput(draft.background_color);
 					var fillLine = make('div', 'tm-inline');
-					fillLine.appendChild(make('span', 'tm-hint', T('颜色')));
+					fillLine.appendChild(make('span', 'tm-hint', T('Color')));
 					fillLine.appendChild(fillColor.wrap);
 					fillRow.td.appendChild(fillLine);
 
-					var borderRow = formRow(tbody, T('边框'));
+					var borderRow = formRow(tbody, T('Border'));
 					var borderLabel = borderRow.tr.firstChild;
 					var borderLine = make('div', 'tm-inline');
 					var borderSel = makeSelect(SHAPE_BORDERS, draft.border_type);
@@ -5988,15 +5988,15 @@
 					borderWidth.type = 'text';
 					borderWidth.value = String(num(draft.border_width, 2));
 					borderWidth.style.width = '52px';
-					borderLine.appendChild(make('span', 'tm-hint', T('类型')));
+					borderLine.appendChild(make('span', 'tm-hint', T('Type')));
 					borderLine.appendChild(borderSel);
-					borderLine.appendChild(make('span', 'tm-hint', T('宽(px)')));
+					borderLine.appendChild(make('span', 'tm-hint', T('Width (px)')));
 					borderLine.appendChild(borderWidth);
-					borderLine.appendChild(make('span', 'tm-hint', T('颜色')));
+					borderLine.appendChild(make('span', 'tm-hint', T('Color')));
 					borderLine.appendChild(borderColor.wrap);
 					borderRow.td.appendChild(borderLine);
 
-					var coordRow = formRow(tbody, T('坐标'));
+					var coordRow = formRow(tbody, T('Coordinates'));
 					var coordLabel = coordRow.tr.firstChild;
 					var coordLine = make('div', 'tm-inline');
 					var xLabel = make('span', 'tm-hint', 'X');
@@ -6015,10 +6015,10 @@
 					coordLine.appendChild(yInput);
 					coordRow.td.appendChild(coordLine);
 
-					var sizeRow = formRow(tbody, T('大小'));
+					var sizeRow = formRow(tbody, T('Size'));
 					var sizeLine = make('div', 'tm-inline');
-					var wLabel = make('span', 'tm-hint', T('宽(px)'));
-					var hLabel = make('span', 'tm-hint', T('高度(px)'));
+					var wLabel = make('span', 'tm-hint', T('Width (px)'));
+					var hLabel = make('span', 'tm-hint', T('Height (px)'));
 					var wInput = make('input', 'tm-input');
 					wInput.type = 'text';
 					wInput.value = String(draft.width);
@@ -6033,8 +6033,8 @@
 					sizeLine.appendChild(hInput);
 					sizeRow.td.appendChild(sizeLine);
 
-					// 线的语义和图形不同：x,y 是起点、width,height 是终点；
-					// 原生切到线时把「宽/高」换算成终点的绝对坐标，切回来再取外接框。
+					// Lines have different semantics from shapes: x,y is the start and width,height the end;
+					// native maps convert "width/height" to absolute end coordinates when switching to a line, and take the bounding box when switching back.
 					function setShapeType(type) {
 						var isLine = type === 2;
 						var wasLine = draft.type === 2;
@@ -6064,15 +6064,15 @@
 							btn.setAttribute('aria-pressed', String(num(btn.getAttribute('data-shape-type'), 0) === type));
 						});
 
-						// 线没有文本和背景，标签也换成原生的「线 / 点 / X1,Y1 / X2,Y2」
+						// Lines have no text or background, and the labels become the native "line / dot / X1,Y1 / X2,Y2"
 						setHidden(textRow.tr, isLine);
 						setHidden(fillRow.tr, isLine);
-						borderLabel.textContent = isLine ? T('线') : T('边框');
-						coordLabel.textContent = isLine ? T('点') : T('坐标');
+						borderLabel.textContent = isLine ? T('Line') : T('Border');
+						coordLabel.textContent = isLine ? T('Point') : T('Coordinates');
 						xLabel.textContent = isLine ? 'X1' : 'X';
 						yLabel.textContent = isLine ? 'Y1' : 'Y';
-						wLabel.textContent = isLine ? 'X2' : T('宽(px)');
-						hLabel.textContent = isLine ? 'Y2' : T('高度(px)');
+						wLabel.textContent = isLine ? 'X2' : T('Width (px)');
+						hLabel.textContent = isLine ? 'Y2' : T('Height (px)');
 					}
 
 					var active = SHAPE_TYPES.some(function (pair) {
@@ -6095,7 +6095,7 @@
 						draft.x = Math.max(0, num(xInput.value, draft.x));
 						draft.y = Math.max(0, num(yInput.value, draft.y));
 
-						// 线的终点允许 0；矩形/椭圆最小 1（与原生一致）
+						// Line end points may be 0; rectangles/ellipses have a minimum of 1 (as in native)
 						var minSize = draft.type === 2 ? 0 : 1;
 						draft.width = Math.max(minSize, num(wInput.value, draft.width));
 						draft.height = Math.max(minSize, num(hInput.value, draft.height));
@@ -6104,7 +6104,7 @@
 					};
 				},
 				buttons: [
-					{label: T('应用'), primary: true, onClick: function () {
+					{label: T('Apply'), primary: true, onClick: function () {
 						openShapeDialog.collect();
 
 						Object.keys(draft).forEach(function (key) {
@@ -6115,32 +6115,32 @@
 						closeDialog();
 						renderCanvas();
 					}},
-					{label: T('移除'), onClick: function () {
+					{label: T('Remove'), onClick: function () {
 						closeDialog();
 						removeShape(shape);
 					}},
-					{label: T('关闭'), onClick: closeDialog}
+					{label: T('Close'), onClick: closeDialog}
 				]
 			});
 		}
 
 		// ---------------------------------------------------------------
-		// 链接属性弹窗
+		// Link properties dialog
 		// ---------------------------------------------------------------
 
 		function openLinkDialog(link, isNew) {
-			// 整组连线共用一个对话框：同一对元素之间的多条线（链路聚合的成员口）
-			// 在这里一次改完，不做逐条编辑。
+			// The whole group of links shares one dialog: several links between the same pair of elements (aggregation members)
+			// are edited here at once, not one by one.
 			var family = linkFamily(link);
 			var draft = copy(link);
-			// 触发器跨成员合并展示（每条成员连线的链接指示器都要出现在列表里）
+			// Triggers are shown merged across members (the link indicators of every member link must appear in the list)
 			var triggersEdited = false;
 
 			draft.metrics = familyMetrics(family);
 			draft.label = familyLabel(family);
 			draft.linktriggers = familyLinkTriggers(family);
-			// 打开时整组已有的触发器集合：应用时据此判断哪些是本次新加的，
-			// 只把新增项同步给每个成员，避免把 A 成员独有的触发器复制到 B 成员。
+			// The set of triggers of the whole group when opened: on apply it tells which ones were added now,
+			// so only new items are synced to every member and triggers unique to member A are not copied to member B.
 			var initialTriggerIds = {};
 
 			draft.linktriggers.forEach(function (lt) {
@@ -6151,32 +6151,32 @@
 			draft.waypoints = normalizeWaypointList(draft.waypoints);
 
 			openDialog({
-				title: T('链接属性'),
+				title: T('Link properties'),
 				linkDialog: true,
 				build: function (body) {
 					var tbody = dialogForm(body);
 
 					if (family.length > 1) {
 						var groupHint = make('div', 'tm-hint');
-						groupHint.textContent = T('这条链路共 ') + family.length
-							+ T(' 条成员连线（链路聚合），修改会同时应用到全部成员。');
+						groupHint.textContent = T('This link has ') + family.length
+							+ T(' member connections (link aggregation); changes apply to all members.');
 						body.appendChild(groupHint);
 					}
 
-					var labelRow = formRow(tbody, T('标签'), false);
+					var labelRow = formRow(tbody, T('Label'), false);
 					var labelInput = make('textarea', 'tm-input tm-link-labelbox');
 					labelInput.rows = 2;
 					labelInput.maxLength = 2048;
 					labelInput.value = draft.label || '';
 					labelRow.td.appendChild(labelInput);
 
-					// 显示标签：和原生链接属性完全一致的三选一（分段按钮）
-					var showRow = formRow(tbody, T('显示标签'), false);
+					// Show label: exactly the same three options as native link properties (segmented buttons)
+					var showRow = formRow(tbody, T('Show labels'), false);
 					var showLine = make('div', 'tm-seg-radio');
 					var showRadios = [];
 					var showName = 'tm-link-show-' + Date.now();
 
-					[[-1, T('默认')], [1, T('始终')], [0, T('自动隐藏')]].forEach(function (pair) {
+					[[-1, T('Default')], [1, T('Always')], [0, T('Auto-hide')]].forEach(function (pair) {
 						var lab = make('label');
 						var radio = make('input');
 						radio.type = 'radio';
@@ -6199,29 +6199,29 @@
 					updateShowSeg();
 					showRow.td.appendChild(showLine);
 
-					var colorRow = formRow(tbody, T('颜色 (OK)'), false);
+					var colorRow = formRow(tbody, T('Color (OK)'), false);
 					var colorInput = make('input', 'tm-trig-color');
 					colorInput.type = 'color';
 					colorInput.value = '#' + String(draft.color || DEFAULT_LINK_COLOR).replace('#', '');
 					colorRow.td.appendChild(colorInput);
 
-					var typeRow = formRow(tbody, T('类型 (OK)'), false);
+					var typeRow = formRow(tbody, T('Type (OK)'), false);
 					var typeSel = makeSelect(LINK_DRAWTYPES, draft.drawtype);
 					typeSel.style.width = '68px';
 					typeRow.td.appendChild(typeSel);
 
-					// 走线：自动曲线 / 自动直角 / 手动折点。选手动后点按钮进画布加折点。
-					var routeRow = formRow(tbody, T('走线'), false);
+					// Routing: automatic curve / automatic orthogonal / manual waypoints. After choosing manual, click the button to add waypoints on the canvas.
+					var routeRow = formRow(tbody, T('Routing'), false);
 					var routeWrap = make('div', 'tm-metric-row');
 					var routeSel = makeSelect(LINK_ROUTINGS, num(draft.routing, 0));
 					routeSel.style.width = '180px';
-					var bendBtn = make('button', 'tm-btn tm-btn-sm', T('在画布上点选折点'));
+					var bendBtn = make('button', 'tm-btn tm-btn-sm', T('Pick waypoints on canvas'));
 					bendBtn.type = 'button';
 
 					bendBtn.addEventListener('click', function () {
 						openLinkDialog.collect();
 
-						// 整组共用一份走线：切到手动折点后进画布，点击空白处加点
+						// The whole group shares one routing: after switching to manual waypoints, go to the canvas and click empty space to add points
 						family.forEach(function (item) {
 							item.routing = 2;
 							item.waypoints = normalizeWaypointList(item.waypoints);
@@ -6238,27 +6238,27 @@
 					routeRow.td.appendChild(routeWrap);
 
 					var routeHint = make('div', 'tm-hint');
-					routeHint.textContent = T('自动直角按横/竖折线走；选「手动折点」后点按钮，')
-						+ T('在画布空白处点击加点、拖动圆点调整、双击圆点删除，Esc 完成。');
+					routeHint.textContent = T('Auto orthogonal routes along horizontal/vertical segments; when "manual waypoints" is selected, click the button, ')
+						+ T('then click empty canvas to add points, drag dots to adjust, double-click a dot to delete, Esc to finish.');
 					routeRow.td.appendChild(routeHint);
 
-					// 触发器来源端：连线方向是 源端(selementid1) → 本端(selementid2)。
-					// 自动发现默认按「源端优先」匹配端口状态类触发器；这里可改成只按某端、
-					// 两端都关联或干脆不关联（改完点「应用」会立刻重新匹配一次）。
-					var srcRow = formRow(tbody, T('触发器来源'), false);
+					// Trigger source: the link direction is source (selementid1) → local (selementid2).
+					// Auto discovery matches port status triggers "source first" by default; here it can be changed to one end only,
+					// both ends or none at all (clicking "Apply" re-matches immediately).
+					var srcRow = formRow(tbody, T('Trigger source'), false);
 					var srcSel = makeSelect(TRIGGER_SOURCES, num(draft.trigger_source, 0));
 					srcSel.style.width = '220px';
 					srcRow.td.appendChild(srcSel);
 
-					// 端口信息只在 tooltip 里给排查用，不再占位拼进来源文本：
-					// 那一长串端口名会把「触发器来源」这一栏撑宽，右侧下拉框跟着错位。
+					// Port information is only in the tooltip for troubleshooting and no longer added to the source text:
+					// the long list of port names widened the "trigger source" column and misaligned the dropdown on the right.
 					var ports = familyPorts(family);
-					srcSel.title = T('源端端口：') + (ports.src.length ? ports.src.join(T('、')) : T('未知'))
-						+ T('　本端端口：') + (ports.tgt.length ? ports.tgt.join(T('、')) : T('未知'))
-						+ T('（源端 = 连线起点，本端 = 连线终点）');
+					srcSel.title = T('Source port: ') + (ports.src.length ? ports.src.join(', ') : T('unknown'))
+						+ T('  Target port: ') + (ports.tgt.length ? ports.tgt.join(', ') : T('unknown'))
+						+ T(' (source = link start, target = link end)');
 
-					// 带宽 / 上行 / 下行：从两端主机（聚合成员口）的监控项里手工多选，
-					// 显示时把选中的监控项最新值求和，再按单位换算。
+					// Bandwidth / upstream / downstream: multi-select items manually from the hosts at both ends (aggregation members);
+					// for display the latest values of the selected items are summed and then converted by unit.
 					var rows = {};
 					var metricRows = [];
 
@@ -6267,9 +6267,9 @@
 						metricRows.push(defRow);
 						var wrap = make('div', 'tm-metric-row');
 						var summary = make('span', 'tm-metric-summary');
-						var pick = make('button', 'tm-btn tm-btn-sm', T('选择…'));
+						var pick = make('button', 'tm-btn tm-btn-sm', T('Select…'));
 						pick.type = 'button';
-						var clearBtn = make('button', 'tm-btn tm-btn-sm', T('清空'));
+						var clearBtn = make('button', 'tm-btn tm-btn-sm', T('Clear'));
 						clearBtn.type = 'button';
 
 						function refresh() {
@@ -6297,24 +6297,24 @@
 					});
 
 					var tip = make('div', 'tm-hint');
-					tip.textContent = T('监控项只从这条链路两端的主机里选；链路聚合的多个成员口可以全选，显示时求和。');
+					tip.textContent = T('Items are chosen only from the hosts at both ends of this link; for aggregated links you can select multiple member ports and the values are summed.');
 					body.appendChild(tip);
 
 					Object.keys(rows).forEach(function (key) {
 						rows[key]();
 					});
 
-					// 链接指示器：与原生 8.0 链接表单保持一致。
-					// 表头「空 / 触发器 / 空」，行首是每个触发器的颜色，行尾「移除」，
-					// 下方一个「添加」链接打开原生 popup.generic 触发器多选弹层。
-					var trigRow = formRow(tbody, T('指标'), true);
+					// Link indicators: consistent with the native 8.0 link form.
+					// Header "empty / trigger / empty": each row starts with the trigger's color and ends with "remove",
+					// and an "add" link below opens the native popup.generic trigger multi-select popup.
+					var trigRow = formRow(tbody, T('Metrics'), true);
 					var trigTable = make('table', 'tm-trig-table');
 					var trigHead = make('thead');
 					var trigHeadRow = make('tr');
 					var trigBody = make('tbody');
 
 					trigHeadRow.appendChild(make('th', 'tm-trig-sev', ''));
-					trigHeadRow.appendChild(make('th', null, T('触发器')));
+					trigHeadRow.appendChild(make('th', null, T('Trigger')));
 					trigHeadRow.appendChild(make('th', 'tm-trig-act', ''));
 					trigHead.appendChild(trigHeadRow);
 					trigTable.appendChild(trigHead);
@@ -6328,13 +6328,13 @@
 							var tid = String(lt.triggerid);
 							var tr = make('tr');
 
-							// 第一列：每个触发器自己的颜色（原生 linktrigger 的 color，默认 DD0000）
+							// First column: each trigger's own color (native linktrigger color, default DD0000)
 							var tdColor = make('td', 'tm-trig-sev');
 							var colorInput = make('input', 'tm-trig-color');
 							colorInput.type = 'color';
 							colorInput.value = '#' + String(lt.color || DEFAULT_TRIGGER_COLOR).replace('#', '');
 							colorInput.title = TRIGGER_SEVERITY_LABELS[num(state.triggerSeverity[tid], 0)]
-								|| (T('级别 ') + num(state.triggerSeverity[tid], 0));
+								|| (T('Severity ') + num(state.triggerSeverity[tid], 0));
 							colorInput.addEventListener('input', function () {
 								lt.color = colorInput.value.replace('#', '').toUpperCase();
 							});
@@ -6344,7 +6344,7 @@
 							tdName.title = triggerName(tid);
 
 							var tdAct = make('td', 'tm-trig-act');
-							var rm = make('button', 'tm-linkbtn', T('移除'));
+							var rm = make('button', 'tm-linkbtn', T('Remove'));
 							rm.type = 'button';
 							rm.addEventListener('click', function () {
 								draft.linktriggers = (draft.linktriggers || []).filter(function (item) {
@@ -6362,12 +6362,12 @@
 						});
 					}
 
-					var trigAdd = make('button', 'tm-linkbtn tm-trig-add', T('添加'));
+					var trigAdd = make('button', 'tm-linkbtn tm-trig-add', T('Add'));
 					trigAdd.type = 'button';
 					trigRow.td.appendChild(trigAdd);
 
-					// 原生触发器弹层（popup.generic）回传：按 triggerid 去重后追加，
-					// 不重建已有列表——原生 addNewTriggers 也是这个行为。
+					// Values returned by the native trigger popup (popup.generic): appended after deduplicating by triggerid,
+					// without rebuilding the existing list — native addNewTriggers behaves the same way.
 					trigAdd.addEventListener('click', function () {
 						openNativeTriggerPopup(function (values) {
 							var known = {};
@@ -6406,14 +6406,14 @@
 						});
 					});
 
-					// 库里只存 triggerid，名字/严重性按 triggerid 批量取一次再刷新表格
+					// Only triggerids are stored; names/severities are fetched once in bulk by triggerid and the table is refreshed
 					resolveTriggerNames((draft.linktriggers || []).map(function (lt) {
 						return String(lt.triggerid);
 					})).then(renderTriggerTable);
 					renderTriggerTable();
 
-					// 字段顺序向原生链接表单靠：标签 → 显示标签 → 类型(OK) → 颜色(OK)
-					// → 指标（链接指示器），模块专有的来源/走线/监控项放在后面。
+					// Field order follows the native link form: label → show label → type (OK) → color (OK)
+					// → indicators (link indicators); module-specific source/routing/items come after.
 					[labelRow, showRow, typeRow, colorRow, trigRow, srcRow, routeRow]
 						.concat(metricRows).forEach(function (row) {
 						tbody.appendChild(row.tr);
@@ -6435,14 +6435,14 @@
 					};
 				},
 				buttons: [
-					{label: T('应用'), primary: true, onClick: function () {
+					{label: T('Apply'), primary: true, onClick: function () {
 						var previousTriggerSource = num(link.trigger_source, 0);
 
 						openLinkDialog.collect();
 
-						// 整组一起改：标签 / 显示标签 / 颜色 / 线型 / 触发器来源 / 走线；
-						// 绑定触发器按成员各自保留原有项，只把本次新增/移除/线型改动同步过去，
-						// 避免把 A 成员独有的链接指示器复制到 B 成员（原生里每条链路是独立的）。
+						// The whole group changes together: label / show label / color / line style / trigger source / routing;
+						// each member keeps its own bound triggers, and only additions/removals/line style changes made now are synced,
+						// so link indicators unique to member A are not copied to member B (natively each link is independent).
 						var draftTriggers = (draft.linktriggers || []).map(function (lt) {
 							return {
 								triggerid: String(lt.triggerid),
@@ -6457,7 +6457,7 @@
 							draftById[lt.triggerid] = lt;
 						});
 
-						// 整组共用一份折点：应用时把同一组坐标写给每个成员（保存时各自按 linkid 落库）
+						// The whole group shares one set of waypoints: on apply the same coordinates are written to each member (each saved by its linkid)
 						var waypoints = normalizeWaypointList(draft.waypoints);
 
 						family.forEach(function (item) {
@@ -6469,7 +6469,7 @@
 
 							var nextTriggers = [];
 
-							// 成员原有、本次没有移除的触发器：保留并应用表格里的线型/颜色
+							// Triggers the member already had and that were not removed now: kept, applying the line style/color from the table
 							(item.linktriggers || []).forEach(function (lt) {
 								var tid = String(lt.triggerid);
 
@@ -6478,7 +6478,7 @@
 								}
 							});
 
-							// 本次新加的触发器：同步给组内每个成员
+							// Triggers added now: synced to every member of the group
 							draftTriggers.forEach(function (lt) {
 								if (!ownIds[lt.triggerid] && !initialTriggerIds[lt.triggerid]) {
 									nextTriggers.push(copy(lt));
@@ -6497,7 +6497,7 @@
 							item.linktriggers = nextTriggers;
 						});
 
-						// 指标只挂在组里第一条连线上（整组共用一份），避免同一批监控项被重复求和
+						// Metrics are attached only to the first link of the group (the group shares one set), so the same items are not summed twice
 						var metrics = normalizeMetrics(draft.metrics);
 
 						family.forEach(function (item, i) {
@@ -6508,18 +6508,18 @@
 						closeDialog();
 						renderCanvas();
 
-						// 只有用户真的改了「触发器来源」才重新匹配：避免随手改个标签/颜色
-						// 就把人家在原生界面手工绑好的触发器冲掉。
-						// 本次手工挑过触发器（选择/清空/chip 的 ×）就一律不再重匹配。
+						// Re-match only when the user actually changed "trigger source": so a quick label/color change
+						// does not wipe out triggers bound manually in the native interface.
+						// If triggers were picked manually this time (select/clear/× on a chip), never re-match.
 						if (!triggersEdited && num(link.trigger_source, 0) !== previousTriggerSource) {
 							family.forEach(rematchLinkTriggers);
 						}
 					}},
-					{label: T('移除'), onClick: function () {
+					{label: T('Remove'), onClick: function () {
 						closeDialog();
 						removeLinkFamily(link);
 					}},
-					{label: T('关闭'), onClick: closeDialog}
+					{label: T('Close'), onClick: closeDialog}
 				]
 			});
 		}
@@ -6560,7 +6560,7 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 提示 / 确认弹窗
+		// Alert / confirmation dialogs
 		// ---------------------------------------------------------------
 
 		function openNoticeDialog(title, text) {
@@ -6572,7 +6572,7 @@
 					p.style.lineHeight = '1.6';
 					body.appendChild(p);
 				},
-				buttons: [{label: T('关闭'), primary: true, onClick: closeDialog}]
+				buttons: [{label: T('Close'), primary: true, onClick: closeDialog}]
 			});
 		}
 
@@ -6597,15 +6597,15 @@
 						body.appendChild(p);
 					},
 					buttons: [
-						{label: okLabel || T('确定'), primary: true, onClick: function () { done(true); }},
-						{label: T('取消'), onClick: function () { done(false); }}
+						{label: okLabel || T('OK'), primary: true, onClick: function () { done(true); }},
+						{label: T('Cancel'), onClick: function () { done(false); }}
 					]
 				});
 			});
 		}
 
 		// ---------------------------------------------------------------
-		// 主机选择器
+		// Host selector
 		// ---------------------------------------------------------------
 
 		function openHostPicker(callback) {
@@ -6620,13 +6620,13 @@
 
 		function loadHosts(search) {
 			clear(elHostList);
-			elHostList.appendChild(make('div', 'tm-host-empty', T('加载中…')));
+			elHostList.appendChild(make('div', 'tm-host-empty', T('Loading…')));
 
 			api('hosts', {search: search}).then(function (data) {
 				clear(elHostList);
 
 				if (!data.hosts.length) {
-					elHostList.appendChild(make('div', 'tm-host-empty', T('没有匹配的主机')));
+					elHostList.appendChild(make('div', 'tm-host-empty', T('No matching hosts')));
 					return;
 				}
 
@@ -6638,7 +6638,7 @@
 					}
 
 					if (host.status === 1) {
-						item.appendChild(make('span', 'tm-host-dim', T('已停用')));
+						item.appendChild(make('span', 'tm-host-dim', T('Disabled')));
 					}
 
 					item.addEventListener('click', function () {
@@ -6653,7 +6653,7 @@
 				});
 			}).catch(function (e) {
 				clear(elHostList);
-				elHostList.appendChild(make('div', 'tm-host-empty', T('加载失败：') + e.message));
+				elHostList.appendChild(make('div', 'tm-host-empty', T('Loading failed: ') + e.message));
 			});
 		}
 
@@ -6668,30 +6668,30 @@
 		});
 
 		// ---------------------------------------------------------------
-		// 监控项选择器（连线指标：带宽 / 上行 / 下行）
+		// Item selector (link metrics: bandwidth / upstream / downstream)
 		// ---------------------------------------------------------------
 
 		function metricItemInfo(itemid) {
 			return ((state.map && state.map.metric_items) || {})[String(itemid)] || null;
 		}
 
-		// 已选监控项的可读名：优先用后端带回的元信息（加载时 map.metric_items 已经有配置过的项）。
+		// Readable names of selected items: prefer metadata returned by the backend (map.metric_items already has configured items at load time).
 		function metricItemLabel(itemid) {
 			var info = metricItemInfo(itemid);
 
 			if (!info) {
-				return '#' + itemid + T('（已删除或无权访问）');
+				return '#' + itemid + T(' (deleted or no access)');
 			}
 
-			return info.name + T('（') + (info.hostname ? info.hostname + ' · ' : '') + (info.key_ || '') + T('）');
+			return info.name + ' (' + (info.hostname ? info.hostname + ' · ' : '') + (info.key_ || '') + ')';
 		}
 
 		function metricSummaryText(itemids) {
 			if (!itemids || !itemids.length) {
-				return T('未选择');
+				return T('Not selected');
 			}
 
-			return itemids.length + T(' 个监控项');
+			return itemids.length + T(' items');
 		}
 
 		function metricSummaryTitle(itemids) {
@@ -6702,20 +6702,20 @@
 			return itemids.map(metricItemLabel).join('\n');
 		}
 
-		// 监控项「类型」/「信息类型」列的中文名（对齐原生下拉里的叫法）。
+		// Display names of the item "type" / "information type" columns (aligned with the names in the native dropdowns).
 		var ITEM_TYPE_LABELS = {
-			0: T('Zabbix 代理'), 1: T('Zabbix 代理（主动式）'), 2: T('简单检查'), 3: T('SNMP 代理'), 4: T('Zabbix 采集器'),
-			5: T('简单检查'), 7: T('Zabbix 内部'), 9: T('外部检查'), 10: T('数据库监控'), 11: T('聚合'), 12: T('HTTP 代理'),
-			13: T('IPMI 代理'), 14: T('SSH 代理'), 15: T('TELNET 代理'), 16: T('计算'), 17: T('JMX 代理'), 18: T('依赖项'),
-			19: T('HTTP 代理'), 20: T('SNMP 采集器'), 21: T('脚本')
+			0: T('Zabbix agent'), 1: T('Zabbix agent (active)'), 2: T('Simple check'), 3: T('SNMP agent'), 4: T('Zabbix trapper'),
+			5: T('Simple check'), 7: T('Zabbix internal'), 9: T('External check'), 10: T('Database monitor'), 11: T('Aggregate'), 12: T('HTTP agent'),
+			13: T('IPMI agent'), 14: T('SSH agent'), 15: T('TELNET agent'), 16: T('Calculated'), 17: T('JMX agent'), 18: T('Dependent item'),
+			19: T('HTTP agent'), 20: T('SNMP trap'), 21: T('Script')
 		};
-		var VALUE_TYPE_LABELS = {0: T('浮点数'), 1: T('字符'), 2: T('日志'), 3: T('数字（无正负）'), 4: T('文本')};
+		var VALUE_TYPE_LABELS = {0: T('Numeric (float)'), 1: T('Character'), 2: T('Log'), 3: T('Numeric (unsigned)'), 4: T('Text')};
 
-		// 「主机」弹层 /「主机群组」弹层的临时勾选状态（各自打开时重建）。
+		// Temporary selection state of the "host" / "host group" popups (rebuilt every time they open).
 		var hpState = null;
 		var ggState = null;
 
-		// 弹层列表里的空态：漏斗图标 + 主标题 + 副标题（对齐原生弹层的空态样式）。
+		// Empty state of popup lists: funnel icon + title + subtitle (aligned with the native popup empty state).
 		function makeFunnelIcon() {
 			var ns = 'http://www.w3.org/2000/svg';
 			var svg = document.createElementNS(ns, 'svg');
@@ -6756,7 +6756,7 @@
 			return tr;
 		}
 
-		// 通用的「chip 列表」渲染：主机框 / 主机群组框都用它；每颗 chip 带 × 可单独移除。
+		// Generic "chip list" rendering, used by the host box and the host group box; each chip has an × to remove it individually.
 		function renderChips(box, ids, names, emptyText, onRemove) {
 			clear(box);
 
@@ -6780,7 +6780,7 @@
 			});
 		}
 
-		// 主机的显示名：后端只回了 hostid 时，按 hostid 批量取一次名字（用于 chip）。
+		// Host display names: when the backend only returned hostids, fetch the names once in bulk by hostid (for chips).
 		function resolveHostNames(hostids) {
 			if (!hostids || !hostids.length) {
 				return Promise.resolve({});
@@ -6803,7 +6803,7 @@
 				return;
 			}
 
-			renderChips(elItemHostBox, state.itemPick.hostids, state.itemPick.hostNames, T('未设置过滤器'),
+			renderChips(elItemHostBox, state.itemPick.hostids, state.itemPick.hostNames, T('No filter set'),
 				function (hostid) {
 					state.itemPick.hostids = state.itemPick.hostids.filter(function (id) {
 						return id !== hostid;
@@ -6814,7 +6814,7 @@
 		}
 
 		function openItemPicker(kind, hostids, current, onDone) {
-			var def = metricKind(kind) || {label: T('监控项')};
+			var def = metricKind(kind) || {label: T('Item')};
 
 			state.itemPick = {
 				hostids: (hostids || []).map(String),
@@ -6828,7 +6828,7 @@
 				state.itemPick.checked[String(itemid)] = true;
 			});
 
-			elItemTitle.textContent = def.label + T(' 监控项');
+			elItemTitle.textContent = def.label + T(' items');
 			elItemSearch.value = '';
 			elItemAll.checked = false;
 			elItemAll.indeterminate = false;
@@ -6836,7 +6836,7 @@
 			renderHostChips();
 			loadPickerItems('');
 
-			// chip 上的主机名单独取一次（hostids 里可能有本端主机，本地没有它的名字）
+			// Host names on chips are fetched separately (hostids may include the local host, whose name is not known locally)
 			resolveHostNames(state.itemPick.hostids).then(function (names) {
 				if (!state.itemPick) {
 					return;
@@ -6865,14 +6865,14 @@
 			clear(elItemList);
 
 			if (!state.itemPick.hostids.length) {
-				elItemList.appendChild(pickEmptyRow(T('未设置过滤器'), T('使用过滤器显示结果'), 6, true));
+				elItemList.appendChild(pickEmptyRow(T('No filter set'), T('Use the filter to show results'), 6, true));
 				elItemAll.checked = false;
 				elItemAll.indeterminate = false;
 
 				return;
 			}
 
-			elItemList.appendChild(pickEmptyRow(T('加载中…'), '', 6, false));
+			elItemList.appendChild(pickEmptyRow(T('Loading…'), '', 6, false));
 
 			api('items', {hostids: state.itemPick.hostids.join(','), search: search}).then(function (data) {
 				if (!state.itemPick) {
@@ -6883,7 +6883,7 @@
 				renderPickerList();
 			}).catch(function (e) {
 				clear(elItemList);
-				elItemList.appendChild(pickEmptyRow(T('加载失败'), e.message, 6, false));
+				elItemList.appendChild(pickEmptyRow(T('Loading failed'), e.message, 6, false));
 			});
 		}
 
@@ -6903,7 +6903,7 @@
 			clear(elItemList);
 
 			if (!list.length) {
-				elItemList.appendChild(pickEmptyRow(T('未设置过滤器'), T('使用过滤器显示结果'), 6, true));
+				elItemList.appendChild(pickEmptyRow(T('No filter set'), T('Use the filter to show results'), 6, true));
 				elItemAll.checked = false;
 				elItemAll.indeterminate = false;
 
@@ -6951,12 +6951,12 @@
 				tr.appendChild(tdCheck);
 				tr.appendChild(make('td', 'tm-pick-name', item.name));
 				tr.appendChild(make('td', 'tm-pick-key', item.key_ || ''));
-				tr.appendChild(make('td', null, ITEM_TYPE_LABELS[item.type] || (T('类型 ') + item.type)));
-				tr.appendChild(make('td', null, VALUE_TYPE_LABELS[item.value_type] || (T('信息类型 ') + item.value_type)));
+				tr.appendChild(make('td', null, ITEM_TYPE_LABELS[item.type] || (T('Type ') + item.type)));
+				tr.appendChild(make('td', null, VALUE_TYPE_LABELS[item.value_type] || (T('Type of information ') + item.value_type)));
 				tr.appendChild(make('td', 'tm-pick-status ' + (num(item.status, 0) === 0 ? 'tm-on' : 'tm-off'),
-					num(item.status, 0) === 0 ? T('已启用') : T('停用')));
+					num(item.status, 0) === 0 ? T('Enabled') : T('Disabled')));
 
-				// 点整行也能勾选（复选框/标签自身除外，避免重复触发）
+				// Clicking anywhere on the row also toggles it (except the checkbox/label itself, to avoid double triggering)
 				tr.addEventListener('click', function (e) {
 					if (e.target.type === 'checkbox' || (e.target.closest && e.target.closest('label'))) {
 						return;
@@ -7037,12 +7037,12 @@
 		});
 
 		// ---------------------------------------------------------------
-		// 触发器选择器（连线手工绑定触发器）
+		// Trigger selector (manual trigger binding on links)
 		// ---------------------------------------------------------------
 
-		var TRIGGER_SEVERITY_LABELS = [T('未分类'), T('信息'), T('警告'), T('一般严重'), T('严重'), T('灾难')];
+		var TRIGGER_SEVERITY_LABELS = [T('Not classified'), T('Information'), T('Warning'), T('Average'), T('High'), T('Disaster')];
 
-		// 已绑定触发器的名字：库里只存 triggerid，打开画布后按 triggerid 批量取一次描述
+		// Names of bound triggers: only triggerids are stored, so descriptions are fetched once in bulk by triggerid after opening the canvas
 		function resolveTriggerNames(triggerids) {
 			var missing = (triggerids || []).map(String).filter(function (id) {
 				return id !== '' && !state.triggerNames[id];
@@ -7056,7 +7056,7 @@
 				(data.triggers || []).forEach(function (trigger) {
 					var desc = String(trigger.description || '');
 					var host = String(trigger.hostname || '');
-					// 原生链接指示器的 desc_exp 是「主机名: 触发器名」，这里保持一致
+					// Native link indicators use desc_exp "host name: trigger name"; kept consistent here
 					state.triggerNames[String(trigger.triggerid)] = host && desc.indexOf(host + ': ') !== 0
 						? host + ': ' + desc
 						: desc;
@@ -7064,7 +7064,7 @@
 					state.triggerSeverity[String(trigger.triggerid)] = num(trigger.priority, 0);
 				});
 			}).catch(function () {
-				// 取不到名字就退回 #id，不影响编辑
+				// If the name cannot be fetched, fall back to #id without affecting editing
 			});
 		}
 
@@ -7072,8 +7072,8 @@
 			return state.triggerNames[String(triggerid)] || ('#' + triggerid);
 		}
 
-		// 原生触发器多选弹层（popup.generic）。8.0 的 PopUp 是页内 overlay，
-		// 需要 .wrapper 承载；模块页面布局里没有，这里按需补一个只放弹层的容器。
+		// Native trigger multi-select popup (popup.generic). In 8.0 PopUp is an in-page overlay
+		// that needs a .wrapper container; the module page layout has none, so one holding only the popup is added on demand.
 		function ensurePopupHost() {
 			var host = document.getElementById('tm-popup-host');
 
@@ -7081,9 +7081,9 @@
 				return host;
 			}
 
-			// 7.0/7.4 的模块页本身带原生 .wrapper，必须直接复用。
-			// 页面出现两个 .wrapper 时，原生菜单里 `$('.wrapper').append(...)` 会把
-			// 菜单 DOM 克隆到每个 wrapper，点一次主机就弹出两份菜单。
+			// In 7.0/7.4 the module page already has a native .wrapper, which must be reused directly.
+			// With two .wrapper elements on the page, `$('.wrapper').append(...)` in the native menu
+			// clones the menu DOM into each wrapper, and one click on a host opens two menus.
 			var nativeHost = document.querySelector('.wrapper');
 
 			if (nativeHost) {
@@ -7097,9 +7097,9 @@
 			return host;
 		}
 
-		// 原生触发器弹层的「过滤」输入：8.0 的 popup.generic 触发器弹层只带「主机」多选，
-		// 没有过滤框。这里在主机行下方补一行，按触发器名称（弹层里的名称已带主机名前缀）
-		// 即时筛选表格，与主机的服务端筛选叠加；改主机后原生会整块重绘弹层，靠 MutationObserver 重新注入。
+		// "Filter" input for the native trigger popup: the 8.0 popup.generic trigger popup only has a "host" multi-select
+		// and no filter box. A row is added below the host row that filters the table instantly by trigger name (names in the popup are prefixed with the host name),
+		// combined with the server-side host filter; changing the host makes the native popup redraw completely, so a MutationObserver re-injects it.
 		var triggerFilterQuery = '';
 		var triggerPopupObserver = null;
 
@@ -7110,8 +7110,8 @@
 				return null;
 			}
 
-			// 只认「触发器」弹层（表格表单 id 是 triggers）；
-			// 主机多选切主机时还会叠一个主机弹层，别给它加过滤框。
+			// Only applies to the "trigger" popup (the table form id is triggers);
+			// switching hosts in the host multi-select stacks a host popup on top, which must not get a filter box.
 			var dialogs = host.querySelectorAll('.overlay-dialogue');
 			var i;
 
@@ -7137,8 +7137,8 @@
 
 			var query = triggerFilterQuery.toLowerCase();
 
-			// 弹层的主机是单选，按主机名搜索时该主机的所有触发器都算命中；
-			// 触发器名在每行文本里，主机名不一定出现，所以单独取一次已选主机名。
+			// The popup's host is single-select; searching by host name matches all of that host's triggers;
+			// the trigger name is in each row's text but the host name may not be, so the selected host name is read separately.
 			var hostMatch = false;
 
 			Array.prototype.forEach.call(dialog.querySelectorAll('.multiselect .selected li'), function (chip) {
@@ -7174,19 +7174,19 @@
 			if (!input) {
 				var li = make('li');
 				var left = make('div', 'table-forms-td-left');
-				var label = make('label', null, T('过滤'));
+				var label = make('label', null, T('Filter'));
 				label.setAttribute('for', 'tm-popup-trigger-filter');
 				left.appendChild(label);
 
 				var right = make('div', 'table-forms-td-right');
-				// 原生 .table-forms-td-right 是 text-align:right（为了按钮靠右），
-				// 过滤框要像原生 filter 行一样紧贴标签左侧，这里单独左对齐。
+				// Native .table-forms-td-right uses text-align:right (to right-align buttons),
+				// while the filter box must sit right next to the label like a native filter row, so it is left-aligned here.
 				right.style.textAlign = 'left';
 				input = make('input', 'input');
 				input.type = 'text';
 				input.id = 'tm-popup-trigger-filter';
 				input.autocomplete = 'off';
-				input.placeholder = T('在此输入搜索');
+				input.placeholder = T('Type to search');
 				input.style.width = '300px';
 				right.appendChild(input);
 
@@ -7201,7 +7201,7 @@
 					applyNativeTriggerFilter(nativeTriggerDialog());
 				});
 
-				// 原生弹层的表格在 form 里，回车会提交表单，这里只做过滤
+				// The native popup table is inside a form and Enter would submit it; here it only filters
 				input.addEventListener('keydown', function (event) {
 					if (event.key === 'Enter') {
 						event.preventDefault();
@@ -7247,7 +7247,7 @@
 				return false;
 			}
 
-			// 参数与原生拓扑图链接表单完全一致：多选、真实主机、带触发器
+			// Parameters exactly as in the native map link form: multi-select, real hosts, with triggers
 			PopUp('popup.generic', {
 				srctbl: 'triggers',
 				srcfld1: 'triggerid',
@@ -7260,7 +7260,7 @@
 			return true;
 		}
 
-		// 弹层确认后由 Zabbix 核心调用（与原生 addPopupValues 同一约定）
+		// Called by Zabbix core after the popup is confirmed (same convention as native addPopupValues)
 		window.addPopupValues = function (data) {
 			if (!data || data.object !== 'linktrigger' || typeof state.linkTriggerAdd !== 'function') {
 				return;
@@ -7292,7 +7292,7 @@
 			renderTriggerHostChips();
 			loadTriggerList('');
 
-			// chip 上的主机名单独取一次（两端主机里可能有一端本地没有名字）
+			// Host names on chips are fetched separately (one of the two end hosts may have no name locally)
 			resolveHostNames(state.trigPick.hostids).then(function (names) {
 				if (!state.trigPick) {
 					return;
@@ -7305,13 +7305,13 @@
 			setTimeout(function () { elTrigSearch.focus(); }, 0);
 		}
 
-		// 触发器选择器的三行过滤：主机群组 / 主机 / 过滤（对齐监控项选择器）
+		// Three filter rows of the trigger selector: host group / host / filter (aligned with the item selector)
 		function renderTriggerGroupChips() {
 			if (!state.trigPick) {
 				return;
 			}
 
-			renderChips(elTrigGroupBox, state.trigPick.groups, state.trigPick.groupNames, T('未设置过滤器'),
+			renderChips(elTrigGroupBox, state.trigPick.groups, state.trigPick.groupNames, T('No filter set'),
 				function (groupid) {
 					state.trigPick.groups = state.trigPick.groups.filter(function (id) {
 						return id !== groupid;
@@ -7326,7 +7326,7 @@
 				return;
 			}
 
-			renderChips(elTrigHostBox, state.trigPick.hostids, state.trigPick.hostNames, T('未设置过滤器'),
+			renderChips(elTrigHostBox, state.trigPick.hostids, state.trigPick.hostNames, T('No filter set'),
 				function (hostid) {
 					state.trigPick.hostids = state.trigPick.hostids.filter(function (id) {
 						return id !== hostid;
@@ -7352,15 +7352,15 @@
 			clear(elTrigList);
 
 			if (!state.trigPick.hostids.length && !state.trigPick.groups.length) {
-				elTrigList.appendChild(pickEmptyRow(T('未设置过滤器'),
-					T('先用「主机」或「主机群组」选一下，再挑触发器'), 5, true));
+				elTrigList.appendChild(pickEmptyRow(T('No filter set'),
+					T('Select a host or host group first, then pick triggers'), 5, true));
 				elTrigAll.checked = false;
 				elTrigAll.indeterminate = false;
 
 				return;
 			}
 
-			elTrigList.appendChild(pickEmptyRow(T('加载中…'), '', 5, false));
+			elTrigList.appendChild(pickEmptyRow(T('Loading…'), '', 5, false));
 
 			api('hostTriggers', {
 				hostids: state.trigPick.hostids.join(','),
@@ -7375,7 +7375,7 @@
 				renderTriggerList();
 			}).catch(function (e) {
 				clear(elTrigList);
-				elTrigList.appendChild(pickEmptyRow(T('加载失败'), e.message, 5, false));
+				elTrigList.appendChild(pickEmptyRow(T('Loading failed'), e.message, 5, false));
 			});
 		}
 
@@ -7395,7 +7395,7 @@
 			clear(elTrigList);
 
 			if (!list.length) {
-				elTrigList.appendChild(pickEmptyRow(T('没有匹配的触发器'), T('换个关键字试试'), 5, true));
+				elTrigList.appendChild(pickEmptyRow(T('No matching triggers'), T('Try another keyword'), 5, true));
 				elTrigAll.checked = false;
 				elTrigAll.indeterminate = false;
 
@@ -7440,23 +7440,23 @@
 				tdCheck.appendChild(box);
 				tdCheck.appendChild(lbl);
 
-				// 严重级别：色块 + 文案，和原生触发器列表一致
+				// Severity: swatch + text, as in the native trigger list
 				var sev = num(trigger.priority, 0);
 				var tdSev = make('td');
 				var dot = make('span', 'tm-sev-dot');
 				dot.style.background = SEVERITY_COLORS[sev] || SEVERITY_COLORS[0];
 				tdSev.appendChild(dot);
 				tdSev.appendChild(document.createTextNode(
-					TRIGGER_SEVERITY_LABELS[sev] || (T('级别 ') + sev)));
+					TRIGGER_SEVERITY_LABELS[sev] || (T('Severity ') + sev)));
 
 				tr.appendChild(tdCheck);
 				tr.appendChild(make('td', 'tm-pick-name', trigger.description));
 				tr.appendChild(tdSev);
 				tr.appendChild(make('td', 'tm-pick-status ' + (num(trigger.status, 0) === 0 ? 'tm-on' : 'tm-off'),
-					num(trigger.status, 0) === 0 ? T('已启用') : T('停用')));
+					num(trigger.status, 0) === 0 ? T('Enabled') : T('Disabled')));
 				tr.appendChild(make('td', null, trigger.hostname || ''));
 
-				// 点整行也能勾选（复选框/标签自身除外）
+				// Clicking anywhere on the row also toggles it (except the checkbox/label itself)
 				tr.addEventListener('click', function (e) {
 					if (e.target.type === 'checkbox' || (e.target.closest && e.target.closest('label'))) {
 						return;
@@ -7466,7 +7466,7 @@
 					toggle(box.checked);
 				});
 
-				// 勾选过的触发器顺手把名字/严重性缓存下来，表格立刻就有名字和色块
+				// Checked triggers have their name/severity cached right away, so the table shows names and swatches immediately
 				state.triggerNames[tid] = trigger.description;
 				state.triggerProblems[tid] = num(trigger.value, 0) === 1;
 				state.triggerSeverity[tid] = num(trigger.priority, 0);
@@ -7550,7 +7550,7 @@
 		});
 
 		// ---------------------------------------------------------------
-		// 「主机」弹层：主机群组 + 选择 → 主机群组弹层；列表带复选框
+		// "Host" popup: host group + select → host group popup; list with checkboxes
 		// ---------------------------------------------------------------
 
 		function renderGroupChips() {
@@ -7558,7 +7558,7 @@
 				return;
 			}
 
-			renderChips(elHpGroupBox, hpState.groups, hpState.groupNames, T('未设置过滤器'),
+			renderChips(elHpGroupBox, hpState.groups, hpState.groupNames, T('No filter set'),
 				function (groupid) {
 					hpState.groups = hpState.groups.filter(function (id) {
 						return id !== groupid;
@@ -7568,7 +7568,7 @@
 				});
 		}
 
-		// 当前在挑选主机的是哪个弹层（监控项选择器 / 触发器选择器）
+		// Which popup is currently picking hosts (item selector / trigger selector)
 		function activePick() {
 			return state.itemPick || state.trigPick;
 		}
@@ -7607,7 +7607,7 @@
 			}
 
 			clear(elHpList);
-			elHpList.appendChild(pickEmptyRow(T('加载中…'), '', 2, false));
+			elHpList.appendChild(pickEmptyRow(T('Loading…'), '', 2, false));
 
 			api('hosts', {search: search, groupids: hpState.groups.join(',')}).then(function (data) {
 				if (!hpState) {
@@ -7618,7 +7618,7 @@
 				renderPickHostList();
 			}).catch(function (e) {
 				clear(elHpList);
-				elHpList.appendChild(pickEmptyRow(T('加载失败'), e.message, 2, false));
+				elHpList.appendChild(pickEmptyRow(T('Loading failed'), e.message, 2, false));
 			});
 		}
 
@@ -7638,7 +7638,7 @@
 			clear(elHpList);
 
 			if (!list.length) {
-				elHpList.appendChild(pickEmptyRow(T('未设置过滤器'), T('使用过滤器显示结果'), 2, true));
+				elHpList.appendChild(pickEmptyRow(T('No filter set'), T('Use the filter to show results'), 2, true));
 				elHpAll.checked = false;
 				elHpAll.indeterminate = false;
 
@@ -7786,7 +7786,7 @@
 		});
 
 		// ---------------------------------------------------------------
-		// 「主机群组」弹层：搜索框 + 带复选框的列表
+		// "Host group" popup: search box + list with checkboxes
 		// ---------------------------------------------------------------
 
 		function openGroupPicker() {
@@ -7822,7 +7822,7 @@
 			}
 
 			clear(elGgList);
-			elGgList.appendChild(pickEmptyRow(T('加载中…'), '', 2, false));
+			elGgList.appendChild(pickEmptyRow(T('Loading…'), '', 2, false));
 
 			api('hostgroups', {search: search}).then(function (data) {
 				if (!ggState) {
@@ -7833,7 +7833,7 @@
 				renderGroupPickerList();
 			}).catch(function (e) {
 				clear(elGgList);
-				elGgList.appendChild(pickEmptyRow(T('加载失败'), e.message, 2, false));
+				elGgList.appendChild(pickEmptyRow(T('Loading failed'), e.message, 2, false));
 			});
 		}
 
@@ -7853,7 +7853,7 @@
 			clear(elGgList);
 
 			if (!list.length) {
-				elGgList.appendChild(pickEmptyRow(T('未设置过滤器'), T('使用过滤器显示结果'), 2, true));
+				elGgList.appendChild(pickEmptyRow(T('No filter set'), T('Use the filter to show results'), 2, true));
 				elGgAll.checked = false;
 				elGgAll.indeterminate = false;
 
@@ -7991,7 +7991,7 @@
 		});
 
 		// ---------------------------------------------------------------
-		// 保存 / 退出编辑
+		// Save / leave edit mode
 		// ---------------------------------------------------------------
 
 		function saveMap() {
@@ -7999,12 +7999,12 @@
 				return;
 			}
 
-			// 保存前把画布收紧到内容大小，避免图上只摆了几个元素却存着 3000×3000 的大白板
+			// Before saving, shrink the canvas to the content so a map with only a few elements does not store a 3000×3000 empty board
 			autoSizeCanvas();
 
-			// 每链路指标配置（带宽 / 上行 / 下行监控项）：已有链路带 linkid 直接对上；
-			// 新建链路没有 linkid，按它在 links 数组里的出现顺序编号（new_seq），
-			// 后端把新建的 linkid 升序排列后按 new_seq 依次认领。
+			// Per-link metric settings (bandwidth / upstream / downstream items): existing links match directly by linkid;
+			// new links have no linkid and are numbered by their position in the links array (new_seq);
+			// the backend sorts the new linkids ascending and claims them in new_seq order.
 			var linkMetrics = [];
 			var newSeq = 0;
 
@@ -8018,8 +8018,8 @@
 				var targetPort = String(link.target_port || '');
 				var triggerSource = num(link.trigger_source, 0);
 
-				// 指标、两端端口、触发器来源三者全空就不落库；有端口/来源就得写，
-				// 否则下次打开弹窗、重匹配触发器都取不到这些信息。
+				// Rows with empty metrics, end ports and trigger source are not stored; with ports/source they must be written,
+				// otherwise the dialog and trigger re-matching would not find this information next time.
 				if (!m.bw.length && !m.in.length && !m.out.length
 						&& sourcePort === '' && targetPort === '' && triggerSource === 0) {
 					return;
@@ -8037,7 +8037,7 @@
 				});
 			});
 
-			// 每链路走线（自动直角 / 手动折点）：linkid / new_seq 与指标同一套认领规则
+			// Per-link routing (automatic orthogonal / manual waypoints): linkid / new_seq claimed with the same rules as metrics
 			var linkPaths = [];
 			var pathSeq = 0;
 
@@ -8049,8 +8049,8 @@
 				var routing = Math.max(0, Math.min(2, num(link.routing, 0)));
 				var waypoints = normalizeWaypointList(link.waypoints);
 
-				// 「自动曲线」也要落库：自动发现的连线默认自动直角，用户改成自动曲线后
-				// 不写这一行，下次打开又会被默认值渲染回自动直角。
+				// "Automatic curve" must be stored too: discovered links default to automatic orthogonal, and if the user's change to automatic curve
+				// were not written, the next open would render it as automatic orthogonal again.
 				linkPaths.push({
 					linkid: link.linkid ? String(link.linkid) : '',
 					new_seq: link.linkid ? 0 : pathSeq,
@@ -8110,8 +8110,8 @@
 						out.linkid = link.linkid;
 					}
 
-					// 连线绑定的触发器（链路指示器）要原样回写：不传的话 map.update 会把它们清掉。
-					// 空数组也要传：用户在对话框里点「清空」时，靠这个空数组把库里的绑定删掉。
+					// Triggers bound to links (link indicators) must be written back unchanged: without them map.update clears them.
+					// An empty array must be sent too: when the user clicks "clear" in the dialog, this empty array deletes the bindings in the database.
 					out.linktriggers = (link.linktriggers || []).map(function (lt) {
 						return {
 							triggerid: lt.triggerid,
@@ -8153,15 +8153,15 @@
 			};
 
 			elSaveBtn.disabled = true;
-			setHint(T('保存中…'));
+			setHint(T('Saving…'));
 
 			api('save', {sysmapid: state.map.sysmapid, payload: JSON.stringify(payload)}).then(function () {
 				return openMap(state.map.sysmapid, true, true, 'none');
 			}).then(function () {
-				setHint(T('已保存 ') + new Date().toLocaleTimeString(locale()));
+				setHint(T('Saved ') + new Date().toLocaleTimeString(locale()));
 			}).catch(function (e) {
-				setHint(T('保存失败：') + saveError(e.message));
-				openNoticeDialog(T('保存失败'), saveError(e.message));
+				setHint(T('Save failed: ') + saveError(e.message));
+				openNoticeDialog(T('Save failed'), saveError(e.message));
 			}).then(function () {
 				elSaveBtn.disabled = false;
 			});
@@ -8169,7 +8169,7 @@
 
 		function exitEditing() {
 			if (state.dirty) {
-				confirmDialog(T('放弃未保存的修改？'), T('退出编辑模式会丢失本次未保存的修改。'), T('放弃修改')).then(function (ok) {
+				confirmDialog(T('Discard unsaved changes?'), T('Exiting edit mode will discard unsaved changes.'), T('Discard changes')).then(function (ok) {
 					if (ok) {
 						state.dirty = false;
 						setEditing(false);
@@ -8185,13 +8185,13 @@
 		}
 
 		// ---------------------------------------------------------------
-		// 事件绑定
+		// Event binding
 		// ---------------------------------------------------------------
 
 		elCreateBtn.addEventListener('click', openCreateDialog);
 		elDiscoverBtn.addEventListener('click', openDiscoverDialog);
 
-		// 列表：条件检索 / 排序 / 全选 / 批量删除 / 导出
+		// List: search / sort / select all / bulk delete / export
 		elFilterToggle.addEventListener('click', function (e) {
 			e.preventDefault();
 			var hidden = elFilterContainer.style.display === 'none';
@@ -8227,7 +8227,7 @@
 
 		elEditBtn.addEventListener('click', function () {
 			if (!state.canEdit) {
-				openNoticeDialog(T('没有权限'), T('当前用户没有创建 / 编辑拓扑图的权限（需要角色里的「创建和编辑拓扑图」）。'));
+				openNoticeDialog(T('No permission'), T('Your role cannot create or edit maps (the role needs "Create and edit maps").'));
 
 				return;
 			}
@@ -8293,8 +8293,8 @@
 				return;
 			}
 
-			// 三级弹层叠在链接属性弹窗之上，Esc 从最上面一层往下关：
-			// 主机群组 → 主机 → 监控项
+			// Three popup levels stack over the link properties dialog, and Esc closes them from the top down:
+			// host group → host → item
 			if (!elGgOverlay.hidden) {
 				closeGroupPicker();
 				return;
@@ -8331,7 +8331,7 @@
 			}
 		});
 
-		// 浏览器后退 / 前进：按地址栏里的 sysmapid 决定落到画布还是列表
+		// Browser back / forward: the sysmapid in the address bar decides between canvas and list
 		window.addEventListener('popstate', function (event) {
 			var want = (event.state && event.state.tm_sysmapid) || '';
 			var current = state.map ? String(state.map.sysmapid) : '';
@@ -8351,21 +8351,21 @@
 		window.addEventListener('resize', function () {
 			if (state.map) {
 				layoutCanvasWrap();
-				// 窗口变大后画布跟着铺满，不会留下「右边/下边不是画布」的区域
+				// When the window grows the canvas fills it, so no area on the right/bottom is left without canvas
 				ensureCanvasFitsViewport();
 				applyView();
 			}
 		});
 
 		// ---------------------------------------------------------------
-		// 启动
+		// Startup
 		// ---------------------------------------------------------------
 
 		syncSortArrows();
 
-		// 原生菜单/弹层（menuPopup、Overlay）都依赖页面里的 .wrapper 定位。
-		// 模块页没有原生 .wrapper，提前建好容器，否则预览模式点主机时
-		// 菜单定位会对 undefined 调 getBoundingClientRect。
+		// Native menus/popups (menuPopup, Overlay) rely on a .wrapper in the page for positioning.
+		// The module page has no native .wrapper, so the container is created up front; otherwise clicking a host in preview mode
+		// would make menu positioning call getBoundingClientRect on undefined.
 		ensurePopupHost();
 
 		loadIcons().then(loadList);
@@ -8373,11 +8373,11 @@
 		var initial = root.getAttribute('data-sysmapid') || '';
 
 		if (initial) {
-			// 服务端按用户 profile 判断要不要直接进画布；这里是「页面初始状态」，不新增历史记录
+			// The server decides from the user profile whether to open the canvas directly; this is the initial page state, so no history entry is added
 			openMap(initial, false, false, 'replace');
 		}
 		else {
-			// 列表态：地址栏若残留 sysmapid（手改链接等）就抹掉，避免后退/刷新又跳回画布
+			// List state: if a sysmapid remains in the address bar (edited link etc.), remove it so back/refresh does not jump to the canvas again
 			syncViewUrl('', 'replace');
 		}
 	}

@@ -1,99 +1,100 @@
-# Zabbix Reports 模块
+# Zabbix Reports Module
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-这是一个 Zabbix 前端模块，用于生成每日、周、月报表。模块在 Zabbix Web 的报表菜单下新增 Zabbix Reports 菜单，支持报表预览、PDF导出和邮件推送功能。
+Zabbix Reports is a frontend module for Zabbix that generates daily, weekly, and monthly reports. It adds a "Zabbix Reports" submenu under the Reports menu in Zabbix Web, supporting report preview, PDF export, and email delivery.
 
 ![1](images/1.png)
 ![2](images/2.png)
 
-## 功能特性
+## Features
 
-- **报表类型**：支持每日、周、月报表，以及自定义时间范围报表
-- **报表内容**：
-  - 报警数量和状态统计
-  - 报警最多的主机（前10名）
-  - CPU使用率最高的主机（前10名）
-  - 内存使用率最高的主机（前10名）
-- **功能**：
-  - 页面预览报表
-  - 手动导出PDF
-  - 邮件推送报表（HTML格式）
-  - 自定义日期范围选择
-- **国际化支持**：支持中文、英文和俄语界面
-- **响应式设计**：适配不同屏幕尺寸
-- **现代化界面**：采用渐变色彩和动画效果的现代化设计
-- **兼容性**：支持Linux Agent和Windows Agent模板
-- **统计信息**：显示报警总数、活跃问题数等统计数据
+- Report types: daily, weekly, monthly, and custom time range reports
+- Report content:
+  - Problem count and status statistics
+  - Top hosts by number of problems (Top 10)
+  - Top hosts by CPU utilization (Top 10)
+  - Top hosts by memory utilization (Top 10)
+- Functions:
+  - In-page report preview
+  - Manual PDF export
+  - Email delivery of reports (HTML format)
+  - Custom date range selection
+- Internationalization: English and Brazilian Portuguese
+- Responsive design: adapts to different screen sizes
+- Modern UI: gradient colors and animation effects
+- Compatibility: supports Linux Agent and Windows Agent templates
+- Statistics: displays total problems, active issues, etc.
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
 ```bash
-# Zabbix 6.0 / 7.0 部署方法
+# For Zabbix 6.0 / 7.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/modules/
 
-# Zabbix 7.2+ / 7.4 / 8.0 部署方法
+# For Zabbix 7.2+ / 7.4 / 8.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/ui/modules/
 ```
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
+
+If you are using Zabbix 6.0, change the `manifest_version` in `zabbix_reports/manifest.json` to `1.0`:
 
 ```bash
-# ⚠️ 如果使用Zabbix 6.0，修改manifest_version
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_reports/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 转到 **Administration → General → Modules**。
-2. 点击 **Scan directory** 按钮扫描新模块。
-3. 找到 "Zabbix Reports" 模块，点击启用模块。
-4. 刷新页面，模块将在 **Reports** 菜单下显示为 "Zabbix Reports" 子菜单。
+1. Go to Administration → General → Modules.
+2. Click **Scan directory** to detect new modules.
+3. Find and enable the "Zabbix Reports" module.
+4. Refresh the page — the module appears under Reports → Zabbix Reports.
 
-## 注意事项
+## Notes
 
-- **性能考虑**：对于大型环境，建议适当限制查询结果数量。
-- **数据准确性**：显示的信息基于Zabbix数据库的当前状态。
-- **邮件配置**：邮件推送功能依赖于Zabbix的邮件配置。
+- Performance: for large environments, limit query result sizes to improve responsiveness.
+- Data accuracy: displayed information reflects the current state of the Zabbix database.
+- Email configuration: email delivery depends on Zabbix's mail settings being configured.
 
-### 目录归属与保存提示
+### Directory ownership and save errors
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-## 开发
+## Development
 
-插件基于Zabbix模块框架开发。文件结构：
+The module is built on the Zabbix module framework. Key files:
 
-- `manifest.json`：模块配置
-- `Module.php`：菜单注册
-- `actions/CustomReport.php`：自定义报表业务逻辑处理
-- `actions/DailyReport.php`：日报表业务逻辑处理
-- `views/reports.custom.php`：自定义报表页面视图
-- `views/reports.daily.php`：日报表页面视图
-- `lib/LanguageManager.php`：国际化语言管理
-- `lib/ViewRenderer.php`：视图渲染工具
-- `lib/ZabbixVersion.php`：版本兼容工具
+- `manifest.json` — module configuration
+- `Module.php` — menu registration
+- `actions/CustomReport.php` — custom report logic
+- `actions/DailyReport.php` — daily report logic
+- `views/reports.custom.php` — custom report view
+- `views/reports.daily.php` — daily report view
+- `lib/LanguageManager.php` — i18n helper
+- `lib/ViewRenderer.php` — view rendering utilities
+- `lib/ZabbixVersion.php` — version compatibility helper
 
-如需扩展，可参考[Zabbix模块开发文档](https://www.zabbix.com/documentation/7.0/en/devel/modules)。
+See Zabbix module development docs for extension: https://www.zabbix.com/documentation/7.0/en/devel/modules
 
-## 模块配置
+## Module Configuration
 
-在报表菜单选择主机组与报表周期，生成预览后可按页面按钮导出 PDF 或发送邮件。
+Select a host group and report period in the report menu. Generate a preview, then use the page actions to export PDF or send email.
 
-俄语 PDF 导出使用 TCPDF 的 Unicode 字体。未安装 TCPDF 时，俄语报表会导出为可从浏览器打印的 HTML。
+Brazilian Portuguese dates use dd/mm/yyyy. Portuguese PDF exports use TCPDF with a Unicode font (DejaVu Sans); when TCPDF is unavailable, they download as printable HTML.
 
-## 许可证
+## License
 
-本项目遵循Zabbix的许可证。详情请见[Zabbix许可证](https://www.zabbix.com/license)。
+This project follows the Zabbix license. See: https://www.zabbix.com/license

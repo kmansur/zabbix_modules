@@ -13,10 +13,10 @@ use Modules\ZabbixReports\Lib\ReportViewHelper;
 $pageTitle = $data['title'] ?? LanguageManager::t('Custom Report');
 $styleTag = ReportViewHelper::getStyleTag();
 
-// ===== 构建页面内容 =====
+// ===== Build the page content =====
 $content = (new CDiv())->addClass('rpt-container');
 
-// 页面标题 + 操作按钮（使用 buildHeader 与日报一致）
+// Page title + action buttons (buildHeader, consistent with the daily report)
 $titleText = LanguageManager::t('Custom Report');
 if (isset($data['period_text'])) {
     $titleText .= ' - ' . $data['period_text'];
@@ -25,7 +25,7 @@ if (!empty($data['filter_group_name'])) {
     $titleText .= ' [' . $data['filter_group_name'] . ']';
 }
 
-// 构建导出参数
+// Build the export parameters
 $exportParams = ['from_date' => $data['from_date'], 'to_date' => $data['to_date'], 'groupid' => $data['filter_groupid'] ?? ''];
 $content->addItem(
     ReportViewHelper::buildHeader(
@@ -36,7 +36,7 @@ $content->addItem(
     )
 );
 
-// 日期选择表单 - 使用 div + JS 避免 CHtmlPage 嵌套 form 问题
+// Date selection form - div + JS to avoid nested form issues with CHtmlPage
 $dateForm = (new CDiv())
     ->addClass('rpt-date-form')
     ->setAttribute('id', 'custom-report-form');
@@ -72,7 +72,7 @@ $dateForm->addItem(
         )
 );
 
-// 主机群组选择
+// Host group selection
 $allGroups = $data['all_groups'] ?? [];
 $selectedGroupId = $data['filter_groupid'] ?? '';
 
@@ -103,7 +103,7 @@ $generateBtn = (new CButton('generate', LanguageManager::t('Generate Report')))
 $dateForm->addItem($generateBtn);
 $content->addItem($dateForm);
 
-// 错误提示
+// Error message
 if (isset($data['error'])) {
     $content->addItem(
         (new CDiv())
@@ -112,29 +112,29 @@ if (isset($data['error'])) {
     );
 }
 
-// 有报表数据时显示
+// Shown when there is report data
 if (isset($data['report_generated']) && $data['report_generated']) {
 
-    // 统计摘要卡片
+    // Summary statistics cards
     $content->addItem(ReportViewHelper::buildStatsGrid($data));
 
-    // Top CPU / Memory 双列
+    // Top CPU / Memory in two columns
     $content->addItem(ReportViewHelper::buildTopResourceSection($data));
 
-    // 告警级别雷达 + 主机组问题分布双列图表
+    // Severity radar + host group problem distribution, two-column charts
     $content->addItem(ReportViewHelper::buildChartsRow($data['alert_info'] ?? [], $data['hosts_by_group'] ?? []));
 
-    // 问题主机标签
+    // Problem host tags
     $content->addItem(ReportViewHelper::buildTopProblemHosts($data['top_problem_hosts'] ?? []));
 
-    // 告警信息
+    // Alarm information
     $content->addItem(ReportViewHelper::buildAlertSection($data['alert_info'] ?? []));
 
-    // 主机群组信息
+    // Host group information
     $content->addItem(ReportViewHelper::buildHostGroupSection($data['hosts_by_group'] ?? []));
 
 } else if (!isset($data['error'])) {
-    // 空状态引导
+    // Empty state guidance
     $content->addItem(
         (new CDiv())
             ->addClass('rpt-empty')
@@ -146,8 +146,8 @@ if (isset($data['report_generated']) && $data['report_generated']) {
     );
 }
 
-// 渲染页面
+// Render the page
 ViewRenderer::render($pageTitle, $styleTag, $content);
 
-// JS 增强
+// JS enhancements
 echo ReportViewHelper::getScriptTag();

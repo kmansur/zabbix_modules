@@ -1,6 +1,6 @@
 # Zabbix Switch Visual
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -12,7 +12,7 @@
 
 ## Descrição
 
-O Zabbix Switch Visual é um widget de dashboard para monitorar portas de switch. Ele monta um chassi de switch visual com portas RJ45/SFP, status, tráfego e informações de resumo a partir dos itens do Zabbix. A interface está disponível em inglês, chinês simplificado, russo e português do Brasil.
+O Zabbix Switch Visual é um widget de dashboard para monitorar portas de switch. Ele monta um chassi de switch visual com portas RJ45/SFP, status, tráfego e informações de resumo a partir dos itens do Zabbix. A interface está disponível em inglês e português do Brasil.
 
 ![Exemplo do Zabbix Switch Visual em um dashboard](images/1.png)
 
@@ -23,7 +23,7 @@ O Zabbix Switch Visual é um widget de dashboard para monitorar portas de switch
 - **Layout das portas:** configure uma quantidade de portas fixa ou detectada automaticamente, membros da pilha, ordem das fileiras, deslocamento do índice SNMP, exclusões e aliases manuais.
 - **Tendências e resumo:** mostra minigráficos de tráfego por porta e agregados, além de uptime, modelo, número de série, CPU, memória, temperatura, PoE e ventiladores. As métricas opcionais só aparecem quando seus itens estão configurados.
 - **Aparência:** ajuste o estilo e as cores das portas, o zoom e a exibição do resumo.
-- **Idiomas:** usa inglês, chinês simplificado, russo ou português do Brasil conforme o idioma do usuário no Zabbix.
+- **Idiomas:** usa inglês ou português do Brasil conforme o idioma do usuário no Zabbix.
 
 ## Instalação
 
@@ -60,7 +60,7 @@ Mantenha o diretório `zabbix_switch_visual` completo, incluindo `manifest.json`
 - `actions/WidgetView.php`, `includes/DataFetcher.php`: obtenção de dados de hosts e itens.
 - `views/widget.edit.php`, `views/widget.view.php`: formulário de configuração e visualização das portas.
 - `assets/js/class.widget.js`, `assets/css/switch_monitor.css`: interação e estilos do frontend.
-- `includes/Translation.php`: textos da interface em inglês, chinês, russo e português do Brasil.
+- `includes/Translation.php`: textos da interface em inglês e português do Brasil.
 
 Consulte a [documentação oficial de desenvolvimento de widgets do Zabbix](https://www.zabbix.com/documentation/7.0/en/devel/modules/widgets) para as APIs de widgets.
 

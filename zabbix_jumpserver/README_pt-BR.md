@@ -1,6 +1,6 @@
 # Módulo Zabbix JumpServer
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -35,7 +35,7 @@ Ao enviar hosts, o módulo automaticamente:
 - **Detalhes de alarmes expansíveis**: clique no controle de expansão no início de cada linha para ver todos os alarmes ativos do host (severidade, nome, hora)
 - **Conexão com um clique**: hosts já enviados mostram um botão "Conectar" na última coluna, que leva à página de conexão do host no JumpServer
 - **Persistência do ID do ativo**: o ID do ativo do JumpServer é guardado como tag no host do Zabbix (`jumpserver_asset_id`)
-- **Internacionalização**: interface em chinês, inglês, russo e português do Brasil
+- **Internacionalização**: interface em inglês e português do Brasil
 
 ## Instalação
 

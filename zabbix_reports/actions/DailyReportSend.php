@@ -14,7 +14,7 @@ use Modules\ZabbixReports\Lib\ProblemFinder;
 class DailyReportSend extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -35,7 +35,7 @@ class DailyReportSend extends CController {
         $from = mktime(0, 0, 0, date('m', $yesterday), date('d', $yesterday), date('Y', $yesterday));
         $till = mktime(23, 59, 59, date('m', $yesterday), date('d', $yesterday), date('Y', $yesterday));
 
-        // 使用 ProblemFinder 获取与报表周期有交集的所有告警
+        // Use ProblemFinder to get all alarms that overlap the report period
         $problemResult = ProblemFinder::getSimpleProblemsInPeriod($from, $till);
         $problemCount = $problemResult['problemCount'];
         $resolvedCount = $problemResult['resolvedCount'];
@@ -124,8 +124,8 @@ class DailyReportSend extends CController {
         $topCpuHosts = array_slice($cpuUsage, 0, 10, true);
         $topMemHosts = array_slice($memUsage, 0, 10, true);
 
-        // 发送邮件
-        $to = 'admin@example.com'; // 配置收件人
+        // Send the email
+        $to = 'admin@example.com'; // Configure recipients
         $subject = LanguageManager::t('Zabbix Daily Report') . ' - ' . date('Y-m-d', $yesterday);
         $message = "
         <h1>" . LanguageManager::t('Zabbix Daily Report') . "</h1>
@@ -141,7 +141,7 @@ class DailyReportSend extends CController {
 
         mail($to, mb_encode_mimeheader($subject, 'UTF-8', 'B', "\r\n", 9), $message, $headers);
 
-        // 返回成功消息
+        // Return a success message
         $data = ['message' => LanguageManager::t('Report sent successfully')];
         $response = new CControllerResponseData($data);
         $this->setResponse($response);

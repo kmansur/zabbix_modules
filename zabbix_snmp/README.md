@@ -1,110 +1,110 @@
-# Zabbix SNMP 模块
+# Zabbix SNMP Module
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-这是一个 Zabbix 前端模块，提供 SNMP 辅助助手功能。模块在 Zabbix Web 的 **数据采集** 菜单下新增 **SNMP Assistant** 菜单，包含 **MIB 浏览** 和 **SNMP Walk** 两个子页面，帮助运维人员快速浏览 MIB 文件、执行 SNMP Walk、解析 OID，并一键创建监控项或批量生成 SNMP 模板。
+This is a Zabbix frontend module that provides an SNMP assistant. It adds an **SNMP Assistant** menu under the **Data collection** section of Zabbix Web, containing two sub-pages: **MIB Browser** and **SNMP Walk**. It helps operators browse MIB files, run SNMP walks, resolve OIDs, and create monitoring items or generate SNMP templates with a single click.
 
 ![1](images/1.png)
 ![2](images/2.png)
 ![3](images/3.png)
 
-## 功能特性
+## Features
 
-### MIB 浏览（Zabbix Mibs）
+### MIB Browser (Zabbix Mibs)
 
-- **自动扫描 MIB 目录**：自动识别 Linux / Unix / Windows 常见 SNMP MIB 目录，并优先读取 `MIBDIRS` 环境变量中的目录
-- **目录与文件下拉选择**：通过下拉框选择目录和 MIB 文件
-- **对象表格展示**：解析 MIB 文件中的对象，展示 OID、解析 OID、语法/权限/状态、描述等信息
-- **查看源码**：一键查看 MIB 文件原始内容
-- **全屏查看**：对象列表支持全屏对话框查看
-- **复制与测试**：复制 snmpget 命令、对选中主机执行测试
+- **Automatic MIB directory scan**: Detects common Linux / Unix / Windows SNMP MIB directories and prioritizes directories from the `MIBDIRS` environment variable
+- **Directory and file dropdowns**: Select a directory and MIB file via dropdowns
+- **Object table view**: Parses objects from a MIB file and shows OID, resolved OID, syntax/access/status, description, etc.
+- **View source**: View the raw content of a MIB file with one click
+- **Fullscreen view**: The object list supports a fullscreen dialog
+- **Copy and test**: Copy the snmpget command or run a test against the selected host
 
-### SNMP Walk（Zabbix Walk）
+### SNMP Walk (Zabbix Walk)
 
-- **主机分组 + 主机选择**：自动读取主机的 SNMP 接口和连接参数（v1 / v2c / v3，支持宏解析）
-- **结果表格化**：将 snmpwalk 结果解析为表格，展示序号、OID、解析 OID、MIB 文件、模块、数据类型、值
-- **查看原数据**：弹窗查看原始 snmpwalk 输出
-- **复制命令 / 复制 OID**：一键复制 snmpget 命令或数字 OID
-- **客户端分页**：大数据量结果分页渲染（每页 50/100/200），保证页面流畅
-- **创建监控项**：选中单条结果，一键在主机上创建 SNMP 监控项（自动映射数据类型、key 去重）
-- **批量创建模板**：勾选多条结果，填写模板名称和模板群组，一键创建 SNMP 模板并批量添加监控项
+- **Host group + host selection**: Automatically reads the host's SNMP interface and connection parameters (v1 / v2c / v3, with macro resolution)
+- **Tabular results**: Parses snmpwalk output into a table showing index, OID, resolved OID, MIB file, module, data type, and value
+- **View raw data**: View the original snmpwalk output in a popup
+- **Copy command / copy OID**: Copy the snmpget command or numeric OID with one click
+- **Client-side pagination**: Renders large result sets page by page (50/100/200 per page) to keep the page responsive
+- **Create item**: Select a single result to create an SNMP item on the host (automatic value-type mapping and key de-duplication)
+- **Create template in bulk**: Check multiple results, enter a template name and template group, and create an SNMP template with the items added in one click
 
-### 通用
+### General
 
-- **国际化支持**：支持中文、英文和俄语界面
-- **现代化界面**：清晰的表格布局与交互
-- **权限控制**：创建监控项 / 模板需要 Zabbix 管理员权限
+- **Internationalization**: English and Brazilian Portuguese interfaces
+- **Modern interface**: Clean table layout and interactions
+- **Permission control**: Creating items / templates requires Zabbix admin privileges
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
 ```bash
-# Zabbix 6.0 / 7.0 部署方法
+# Zabbix 6.0 / 7.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/modules/
 
-# Zabbix 7.2+ / 7.4 / 8.0 部署方法
+# Zabbix 7.2+ / 7.4 / 8.0 deployment
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/ui/modules/
 ```
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
 
 ```bash
-# ⚠️ 如果使用Zabbix 6.0，修改manifest_version
+# ⚠️ For Zabbix 6.0, modify manifest_version
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_snmp/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 转到 **Administration → General → Modules**。
-2. 点击 **Scan directory** 按钮扫描新模块。
-3. 找到 "Zabbix SNMP" 模块，点击启用模块。
-4. 刷新页面，模块将在 **数据采集** 菜单下显示为 "SNMP Assistant" 子菜单，包含 "Zabbix Mibs" 和 "Zabbix Walk" 两个子项。
+1. Go to **Administration → General → Modules**.
+2. Click **Scan directory** to scan for new modules.
+3. Find the "Zabbix SNMP" module and enable it.
+4. Refresh the page. The module will appear under the **Data collection** menu as "SNMP Assistant" submenu, containing "Zabbix Mibs" and "Zabbix Walk" subitems.
 
-## 注意事项
+## Notes
 
-- **依赖命令**：SNMP Walk 功能依赖 Zabbix Web 服务器上已安装 `net-snmp` 工具（`snmpwalk` / `snmpget` / `snmptranslate`）。
-- **目录权限**：如果 Zabbix Web 运行用户没有目录读取权限，页面中会显示目录但无法读取文件。
-- **模板命名限制**：Zabbix 模板技术名称仅支持英文字母、数字、点号(.)、下划线(_)和连字符(-)，不支持中文；模板群组名称可使用中文。
-- **性能考虑**：对于超大 Walk 结果，结果表格采用客户端分页渲染以保证页面响应速度。
+- **Required commands**: The SNMP Walk feature relies on the `net-snmp` tools (`snmpwalk` / `snmpget` / `snmptranslate`) being installed on the Zabbix web server.
+- **Directory permissions**: If the Zabbix web user cannot read a directory, the page can still list the directory entry but cannot load file content.
+- **Template naming limitation**: Zabbix template technical names only allow English letters, numbers, dots (.), underscores (_) and hyphens (-); accented and other non-ASCII characters are not supported. Template group names may use accents.
+- **Performance**: For very large walk results, the result table uses client-side pagination to keep the page responsive.
 
-### 目录归属与保存提示
+### Directory ownership and save errors
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-## 开发
+## Development
 
-插件基于 Zabbix 模块框架开发。文件结构：
+The module is built on the Zabbix module framework. File structure:
 
-- `manifest.json`：模块配置
-- `Module.php`：菜单注册
-- `actions/Snmp.php`：MIB 浏览业务逻辑处理
-- `actions/SnmpWalk.php`：SNMP Walk 业务逻辑处理
-- `actions/SnmpSource.php`：MIB 源码读取
-- `actions/SnmpItemCreate.php`：创建单个监控项
-- `actions/SnmpTemplateCreate.php`：批量创建模板及监控项
-- `views/snmp.php`：MIB 浏览页面视图
-- `views/snmp.walk.php`：SNMP Walk 页面视图
-- `lib/MibRepository.php`：MIB 解析、Walk 执行与 OID 处理
-- `lib/LanguageManager.php`：国际化语言管理
-- `lib/ViewRenderer.php`：视图渲染工具
-- `lib/ZabbixVersion.php`：版本兼容工具
+- `manifest.json`: Module configuration
+- `Module.php`: Menu registration
+- `actions/Snmp.php`: MIB browser business logic
+- `actions/SnmpWalk.php`: SNMP Walk business logic
+- `actions/SnmpSource.php`: MIB source reading
+- `actions/SnmpItemCreate.php`: Create a single item
+- `actions/SnmpTemplateCreate.php`: Create a template with items in bulk
+- `views/snmp.php`: MIB browser page view
+- `views/snmp.walk.php`: SNMP Walk page view
+- `lib/MibRepository.php`: MIB parsing, walk execution and OID handling
+- `lib/LanguageManager.php`: Internationalization language management
+- `lib/ViewRenderer.php`: View rendering utilities
+- `lib/ZabbixVersion.php`: Version compatibility utilities
 
-如需扩展，可参考[Zabbix模块开发文档](https://www.zabbix.com/documentation/7.0/en/devel/modules)。
+For extensions, refer to [Zabbix module documentation](https://www.zabbix.com/documentation/7.0/en/devel/modules).
 
-## 模块配置
+## Module Configuration
 
-### 默认扫描目录
+### Default directories
 
 - `/usr/share/snmp/mibs`
 - `/usr/local/share/snmp/mibs`
@@ -120,6 +120,6 @@ sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_snmp/manifest
 - `C:\Program Files\Net-SNMP\share\snmp\mibs`
 - `C:\Program Files (x86)\Net-SNMP\share\snmp\mibs`
 
-## 许可证
+## License
 
-本项目遵循Zabbix的许可证。详情请见[Zabbix许可证](https://www.zabbix.com/license)。
+This project follows the Zabbix license. For details, see [Zabbix License](https://www.zabbix.com/license).

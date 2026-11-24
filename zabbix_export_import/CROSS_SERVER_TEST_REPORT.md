@@ -1,62 +1,62 @@
-# 双服务器导入导出交叉测试报告
+# Cross-server import/export test report
 
-测试日期：2026-11-05（Asia/Shanghai）。模块：1.3.0。
+Test date: 2026-11-05 (Asia/Shanghai). Module: 1.3.0.
 
-## 环境与结果
+## Environments and results
 
-| 环境 | Zabbix | 实际 Web PHP | 模块状态 |
+| Environment | Zabbix | Actual web PHP | Module status |
 |---|---|---|---|
-| 192.168.3.243 | 7.0.32 | PHP 8.3.36 | 已有模块，保持启用 |
-| 192.168.3.29 | 7.0.32 | PHP-FPM 8.0.30 | 本次部署并注册启用 |
+| 192.168.3.243 | 7.0.32 | PHP 8.3.36 | Module already present, kept enabled |
+| 192.168.3.29 | 7.0.32 | PHP-FPM 8.0.30 | Deployed, registered and enabled in this run |
 
-目标机没有 PHP CLI；未安装额外软件，使用其真实 Web/PHP-FPM 验证。目标部署前保留备份目录 `/tmp/zabbix-transfer-cross-backup.5BbdAD`，仅为模块目录恢复 SELinux 标签。
+The target machine has no PHP CLI; no extra software was installed, and its real web/PHP-FPM was used for verification. Before deploying to the target, the backup directory `/tmp/zabbix-transfer-cross-backup.5BbdAD` was kept, and SELinux labels were restored only for the module directory.
 
-| 测试集合 | .243 | .29 | 双向 | 合计 |
+| Test set | .243 | .29 | Both directions | Total |
 |---|---:|---:|---:|---:|
-| 主机/监控项业务、分页、权限和 CSRF 回归 | 60 | 60 | — | 120 |
-| 模板、全选、i18n 真实 Web 回归 | 36 | 36 | — | 72 |
-| 恶意上传及执行策略回归 | 35 | 35 | — | 70 |
-| 配置文件双向迁移及补充场景 | — | — | 135 | 135 |
-| **通过项数** | **131** | **131** | **135** | **397** |
+| Host/item business, pagination, permission and CSRF regression | 60 | 60 | — | 120 |
+| Template, select-all, i18n real web regression | 36 | 36 | — | 72 |
+| Malicious upload and execution policy regression | 35 | 35 | — | 70 |
+| Two-way configuration file migration and extra scenarios | — | — | 135 | 135 |
+| **Passed** | **131** | **131** | **135** | **397** |
 
-合计按最后通过的各测试集合计算，不叠加调试重跑。双向步骤：在 .243 创建独立对象并下载文件，上传 .29 导入；随后删除仅本测试创建的 .243 对象，将 .29 的导出文件导回 .243 验证重建。主流程直接上传下载文件原文，不通过手工重建 envelope 替代下载内容。下载原文按字节保存，SHA-256 清单保存在开发证据目录。
+Totals are computed from the last passing run of each test set, without adding debugging reruns. Two-way steps: create independent objects on .243 and download the files, upload them to .29 and import; then delete only the .243 objects created by this test and import the files exported from .29 back into .243 to verify the rebuild. The main flow uploads the downloaded files verbatim instead of rebuilding the envelope by hand. Downloaded originals are saved byte for byte, with a SHA-256 manifest in the development evidence directory.
 
-## 覆盖矩阵
+## Coverage matrix
 
-| 场景 | 验证内容 | 结果 |
+| Scenario | What was verified | Result |
 |---|---|---|
-| JSON/CSV | 主机 CSV、模板 JSON、监控项 JSON 原文跨机上传；CSV/JSON 重复导入与数据往返 | 通过 |
-| 分页与批次 | 55 台停用测试主机，50+5 分页，全量导出，25+25+5 确认 | 通过 |
-| 主机内容 | 分组/子分组、Unicode/引号/换行、标签、资产信息、停用状态、IPv6、SNMPv3 接口 | 通过 |
-| 模板 | 父子模板按依赖顺序恢复、监控项/依赖项、触发器、图形、LLD 规则/原型、仪表盘、值映射 | 通过 |
-| 监控项 | 本地项与继承项区分，目标接口/主监控项 ID 重建、SNMP 引用、预处理 | 通过 |
-| Proxy | 按名称映射到目标 Proxy/Proxy 组，缺失时明确失败 | 通过 |
-| 名称映射 | 主机技术名与模板技术名映射，恢复五个本地项及依赖关系 | 通过 |
-| 重复策略 | 创建时跳过已有、显式更新、重复报错、仅更新不存在对象时跳过 | 通过 |
-| 选择性覆盖 | 默认保留接口/标签/资产信息，勾选覆盖后更新；模板更新保留目标额外对象 | 通过 |
-| 缺失依赖 | 主机组停止/跳过、模板停止/跳过、缺少值映射/主项/接口/Proxy 的错误报告 | 通过 |
-| 部分失败 | 缺少值映射时独立项仍成功，补齐同名值映射后重试成功 | 通过 |
-| 权限 | 低权限用户不能导入，不能导出无权访问的模板或主机 | 通过 |
-| 会话与并发 | 缺少 CSRF、另一登录会话、错误页面类型均不能确认；同一预览并发确认仅执行一次 | 通过 |
-| 上传安全 | PHP/双扩展名/伪装内容/压缩包/HTML/XML/无效编码/NUL/超限文件、脚本与 JS 授权 | 通过 |
-| i18n | 一次性用户的英文与简体中文资料语言自动生效 | 通过 |
-| 文件名时区 | 两台机器、三类文件、Asia/Tokyo 与 America/Phoenix，依据 HTTP 服务端时钟校验 | 通过 |
+| JSON/CSV | Host CSV, template JSON and item JSON originals uploaded across machines; repeated CSV/JSON imports and data round trips | Passed |
+| Pagination and batches | 55 disabled test hosts, 50+5 pagination, full export, 25+25+5 confirmations | Passed |
+| Host content | Groups/subgroups, Unicode/quotes/line breaks, tags, inventory, disabled status, IPv6, SNMPv3 interfaces | Passed |
+| Templates | Parent and child templates restored in dependency order, items/dependent items, triggers, graphs, LLD rules/prototypes, dashboards, value maps | Passed |
+| Items | Local and inherited items distinguished, target interface/master item IDs rebuilt, SNMP references, preprocessing | Passed |
+| Proxy | Mapped by name to the target proxy/proxy group, explicit failure when missing | Passed |
+| Name mapping | Host and template technical name mapping, five local items and their dependencies restored | Passed |
+| Duplicate strategies | Skip existing on create, explicit update, error on duplicates, skip missing objects in update-only mode | Passed |
+| Selective overwrite | Interfaces/tags/inventory kept by default and updated when overwrite is checked; template updates keep extra target objects | Passed |
+| Missing dependencies | Host group stop/skip, template stop/skip, error reports for missing value maps/master items/interfaces/proxies | Passed |
+| Partial failure | Independent items still succeed when a value map is missing; retry succeeds after adding the value map with the same name | Passed |
+| Permissions | Low-privilege users cannot import or export templates or hosts they cannot access | Passed |
+| Session and concurrency | Missing CSRF, another login session and wrong page types cannot confirm; concurrent confirmations of the same preview run only once | Passed |
+| Upload security | PHP/double extensions/disguised content/archives/HTML/XML/invalid encoding/NUL/oversized files, script and JS approval | Passed |
+| i18n | English and Simplified Chinese profile languages of one-time users took effect automatically | Passed |
+| File name time zone | Two machines, three file types, Asia/Tokyo and America/Phoenix, checked against the HTTP server clock | Passed |
 
-## 本次处理的问题与发现
+## Issues handled and findings
 
-1. 目标 .29 尚未部署模块，已部署与 .243 相同的业务代码，并注册启用，完成目标目录可读性与 SELinux 标签处理。
-2. 两台机器 PHP 运行环境不同（8.3.36 / 8.0.30），本次通过真实请求验证兼容性；不把 .29 的 CLI 缺失误判为模块不能运行，也没有安装额外 PHP 包。
-3. 修正测试工具的匿名版本接口授权 Header、标签自动附加只读元数据比较、Windows CSV 原文保存和时区校验基准。这些是测试工具修正，不冒充模块业务缺陷。
-4. 本轮未发现需要修改模块业务逻辑的新缺陷。已验证之前实现的目标 ID 重建、继承项防重复、覆盖开关、脚本防护、预览绑定与并发锁、个人时区等行为。
-5. **值映射前提明确**：模板内的值映射由模板迁移；主机本地值映射定义不由主机/监控项页面自动新建。引用它的本地项要求目标先有同名映射。测试先验证缺失报错，再创建测试映射后验证导入成功，未将预期的依赖错误当成通过的迁移。
+1. The target .29 did not have the module yet; the same business code as on .243 was deployed, registered and enabled, and target directory readability and SELinux labels were handled.
+2. The two machines run different PHP environments (8.3.36 / 8.0.30); compatibility was verified with real requests. The missing CLI on .29 was not mistaken for the module being unable to run, and no extra PHP packages were installed.
+3. Fixed the test tooling: the authorization header of the anonymous version endpoint, comparison of read-only metadata automatically added to tags, saving Windows CSV originals and the time zone reference. These are test tool fixes and are not presented as module defects.
+4. This round found no new defect requiring changes to the module's business logic. Previously implemented behaviors were verified: target ID rebuild, protection against duplicate inherited items, overwrite switches, script protection, preview binding and concurrency lock, personal time zone, etc.
+5. **Value map prerequisite clarified**: value maps inside templates are migrated with the templates; host-local value map definitions are not created automatically by the host/item pages. Local items that reference them require the target to already have a value map with the same name. The test first verified the missing-map error, then created the test map and verified the import succeeded, without counting the expected dependency error as a successful migration.
 
-## 清理与证据
+## Cleanup and evidence
 
-测试均使用随机 `codex-cross-*`、`codex-transfer-*`、`codex-template-*` 独立对象，不导入覆盖已有业务对象。测试脚本清理自己创建的主机、模板、分组、Proxy/Proxy 组和用户。目标 .29 的模块本身按任务要求保留启用。私有预览沿用模块 30 分钟过期策略，不批量删除其他用户预览。
+All tests used random independent `codex-cross-*`, `codex-transfer-*`, `codex-template-*` objects and never imported over existing business objects. The test scripts cleaned up the hosts, templates, groups, proxies/proxy groups and users they created. The module on target .29 was kept enabled as required by the task. Private previews follow the module's 30-minute expiry policy; other users' previews were not deleted in bulk.
 
-本地证据：`.devtools/cross-exact-final/summary.json`、`download-manifest.json`、各次下载原文/目标快照/执行结果；两机回归日志位于 `.devtools/cross-regressions/`。没有把密码写入脚本或报告。
+Local evidence: `.devtools/cross-exact-final/summary.json`, `download-manifest.json`, the downloaded originals/target snapshots/results of each run; regression logs of both machines are in `.devtools/cross-regressions/`. No password was written to scripts or reports.
 
-复现命令（交互提示密码）：
+Reproduction commands (passwords are prompted interactively):
 
 ```powershell
 python tests/cross_server.py --source http://192.168.3.243/zabbix/ --target http://192.168.3.29/zabbix/ --artifacts PATH_TO_EVIDENCE
@@ -65,6 +65,6 @@ python tests/templates_e2e.py --url http://TARGET/zabbix/
 python tests/upload_e2e.py --url http://TARGET/zabbix/
 ```
 
-## 覆盖边界
+## Coverage boundary
 
-不能将有限测试表述为穷尽所有场景。本轮是 Zabbix 7.0.32 的两种 PHP 环境上的配置迁移验证；测试主机停用、执行类测试项禁用，没有验证真实 Agent/SNMP/HTTP 采集、真实 LLD 发现运行、所有监控协议、其他 Zabbix 版本或万台级并发性能。跨环境实际 ID 重建、可移植关系、安全拒绝路径和主要策略均经过实测。
+These limited tests must not be described as covering every scenario. This round verified configuration migration on Zabbix 7.0.32 with two PHP environments; test hosts were disabled and executable test items were disabled, so real agent/SNMP/HTTP collection, real LLD discovery runs, all monitoring protocols, other Zabbix versions and concurrency at the scale of ten thousand hosts were not verified. Cross-environment ID rebuild, portable relationships, security rejection paths and the main strategies were tested for real.

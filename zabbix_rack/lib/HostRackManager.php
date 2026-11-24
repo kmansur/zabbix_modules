@@ -1,7 +1,7 @@
 <?php
 /**
- * 主机机柜管理器
- * 负责主机与机柜位置的关联管理（通过 Zabbix 主机标签）
+ * Host-rack manager
+ * Manages the association between hosts and rack positions (through Zabbix host tags)
  */
 
 namespace Modules\ZabbixRack\Lib;
@@ -12,7 +12,7 @@ require_once __DIR__ . '/RackConfig.php';
 class HostRackManager {
     const CUSTOM_HOST_PREFIX = 'custom:';
     
-    // 标签名称常量
+    // Tag name constants
     const TAG_ROOM = 'rack_room';
     const TAG_RACK = 'rack_name';
     const TAG_U_START = 'rack_u_start';
@@ -38,7 +38,7 @@ class HostRackManager {
     }
 
     /**
-     * 规范化机柜正/背面；无标记或非 back 均视为正面。
+     * Normalize the rack front/rear; no tag or anything other than back counts as front.
      *
      * @param mixed $value
      */
@@ -98,7 +98,7 @@ class HostRackManager {
     }
 
     /**
-     * host.update 仅接受 tag/value，需去掉 automatic 等扩展字段（Zabbix 7+）。
+     * host.update only accepts tag/value; extended fields such as automatic must be removed (Zabbix 7+).
      *
      * @param array<int, array<string, mixed>> $tags
      * @return array<int, array{tag:string,value:string}>
@@ -147,7 +147,7 @@ class HostRackManager {
     }
     
     /**
-     * 获取主机组查询参数名（兼容 Zabbix 6/7）
+     * Get the host group query parameter name (compatible with Zabbix 6/7)
      * Zabbix 7.0+: selectHostGroups
      * Zabbix 6.x:  selectGroups
      */
@@ -156,32 +156,32 @@ class HostRackManager {
     }
     
     /**
-     * 获取标签操作符常量值（兼容不同Zabbix版本）
+     * Get the tag operator constant value (compatible with different Zabbix versions)
      */
     private static function getTagsOperatorEqual(): int {
         if (defined('TAGS_OPERATOR_EQUAL')) {
             return TAGS_OPERATOR_EQUAL;
         }
-        return 0; // 默认值
+        return 0; // Default value
     }
     
     /**
-     * 获取标签评估类型常量值（兼容不同Zabbix版本）
+     * Get the tag evaluation type constant value (compatible with different Zabbix versions)
      */
     private static function getTagEvalTypeAndOr(): int {
         if (defined('TAG_EVAL_TYPE_AND_OR')) {
             return TAG_EVAL_TYPE_AND_OR;
         }
-        return 0; // 默认值 AND/OR
+        return 0; // Default AND/OR
     }
     
     /**
-     * 获取机柜中的所有主机
+     * Get all hosts in a rack
      * 
-     * @param string $roomName 机房名称
-     * @param string $rackName 机柜名称
-     * @param string $side 正面 front / 背面 back
-     * @return array 主机列表，包含位置信息
+     * @param string $roomName room name
+     * @param string $rackName rack name
+     * @param string $side front / back
+     * @return array host list, including position information
      */
     public static function getHostsInRack(
         string $roomName,
@@ -212,7 +212,7 @@ class HostRackManager {
             $uStart = $parsed['u_start'];
             $uEnd = $parsed['u_end'];
             
-            // 获取主接口IP
+            // Get the main interface IP
             $mainIp = '';
             foreach ($host['interfaces'] as $interface) {
                 if ($interface['main'] == 1) {
@@ -221,7 +221,7 @@ class HostRackManager {
                 }
             }
             
-            // 获取主机组名称 - 兼容 Zabbix 6 (groups) 和 Zabbix 7 (hostgroups)
+            // Get host group names - compatible with Zabbix 6 (groups) and Zabbix 7 (hostgroups)
             $groups = [];
             $hostGroups = isset($host['groups']) ? $host['groups'] : (isset($host['hostgroups']) ? $host['hostgroups'] : []);
             foreach ($hostGroups as $group) {
@@ -284,7 +284,7 @@ class HostRackManager {
             }
         }
         
-        // 按U位排序
+        // Sort by U position
         usort($result, function($a, $b) {
             return ($b['u_start'] ?? 0) - ($a['u_start'] ?? 0);
         });
@@ -337,15 +337,15 @@ class HostRackManager {
     }
     
     /**
-     * 分配主机到机柜位置
+     * Assign a host to a rack position
      * 
-     * @param string $hostId 主机ID
-     * @param string $roomName 机房名称
-     * @param string $rackName 机柜名称
-     * @param int $uStart 起始U位
-     * @param int $uEnd 结束U位
-     * @param string $side 正面 front / 背面 back（正面不写标签）
-     * @return bool 是否成功
+     * @param string $hostId host ID
+     * @param string $roomName room name
+     * @param string $rackName rack name
+     * @param int $uStart starting U position
+     * @param int $uEnd ending U position
+     * @param string $side front / back (no tag is written for the front)
+     * @return bool whether it succeeded
      */
     public static function assignHost(
         string $hostId,
@@ -378,12 +378,12 @@ class HostRackManager {
         $host = $hosts[0];
         $tags = $host['tags'] ?? [];
         
-        // 移除旧的机柜标签
+        // Remove the old rack tags
         $tags = array_values(array_filter($tags, static function ($tag) {
             return !in_array($tag['tag'] ?? '', self::$rackTagNames, true);
         }));
         
-        // 添加新的机柜标签
+        // Add the new rack tags
         $tags[] = ['tag' => self::TAG_ROOM, 'value' => $roomName];
         $tags[] = ['tag' => self::TAG_RACK, 'value' => $rackName];
         $tags[] = ['tag' => self::TAG_U_START, 'value' => (string) $uStart];
@@ -396,10 +396,10 @@ class HostRackManager {
     }
     
     /**
-     * 从机柜移除主机
+     * Remove a host from a rack
      * 
-     * @param string $hostId 主机ID
-     * @return bool 是否成功
+     * @param string $hostId host ID
+     * @return bool whether it succeeded
      */
     public static function removeHost(string $hostId): bool {
         self::setLastError('');
@@ -424,7 +424,7 @@ class HostRackManager {
         $host = $hosts[0];
         $tags = $host['tags'] ?? [];
         
-        // 移除机柜相关标签
+        // Remove the rack-related tags
         $tags = array_values(array_filter($tags, static function ($tag) {
             return !in_array($tag['tag'] ?? '', self::$rackTagNames, true);
         }));
@@ -433,11 +433,11 @@ class HostRackManager {
     }
     
     /**
-     * 获取可分配的主机列表
+     * Get the list of assignable hosts
      * 
-     * @param string|null $groupId 主机组ID（可选）
-     * @param string|null $search 搜索关键字（可选）
-     * @return array 主机列表
+     * @param string|null $groupId host group ID (optional)
+     * @param string|null $search search keyword (optional)
+     * @return array host list
      */
     public static function getAvailableHosts(?string $groupId = null, ?string $search = null): array {
         $options = [
@@ -479,7 +479,7 @@ class HostRackManager {
                 $currentSide = $parsed['side'];
             }
             
-            // 获取主接口IP
+            // Get the main interface IP
             $mainIp = '';
             foreach ($host['interfaces'] as $interface) {
                 if ($interface['main'] == 1) {
@@ -488,7 +488,7 @@ class HostRackManager {
                 }
             }
             
-            // 获取主机组名称 - 兼容 Zabbix 6 (groups) 和 Zabbix 7 (hostgroups)
+            // Get host group names - compatible with Zabbix 6 (groups) and Zabbix 7 (hostgroups)
             $groups = [];
             $hostGroups = isset($host['groups']) ? $host['groups'] : (isset($host['hostgroups']) ? $host['hostgroups'] : []);
             foreach ($hostGroups as $group) {
@@ -513,9 +513,9 @@ class HostRackManager {
     }
     
     /**
-     * 获取所有主机组
+     * Get all host groups
      * 
-     * @return array 主机组列表
+     * @return array host group list
      */
     public static function getHostGroups(): array {
         $groups = \API::HostGroup()->get([
@@ -528,15 +528,15 @@ class HostRackManager {
     }
     
     /**
-     * 检查U位是否可用
+     * Check whether the U positions are available
      * 
-     * @param string $roomName 机房名称
-     * @param string $rackName 机柜名称
-     * @param int $uStart 起始U位
-     * @param int $uEnd 结束U位
-     * @param string|null $excludeHostId 排除的主机ID（用于编辑时）
-     * @param string $side 正面 front / 背面 back
-     * @return bool 是否可用
+     * @param string $roomName room name
+     * @param string $rackName rack name
+     * @param int $uStart starting U position
+     * @param int $uEnd ending U position
+     * @param string|null $excludeHostId host ID to exclude (when editing)
+     * @param string $side front / back
+     * @return bool whether available
      */
     public static function isPositionAvailable(
         string $roomName,
@@ -560,7 +560,7 @@ class HostRackManager {
                 continue;
             }
             
-            // 检查是否有重叠
+            // Check for overlaps
             if (!($uEnd < $hostStart || $uStart > $hostEnd)) {
                 return false;
             }
@@ -570,7 +570,7 @@ class HostRackManager {
     }
 
     /**
-     * 合并告警信息并规范化主机字段（供视图展示）。
+     * Merge alarm information and normalize host fields (for the view).
      *
      * @param array<int, array<string, mixed>> $hosts
      * @return array<int, array<string, mixed>>
@@ -624,10 +624,10 @@ class HostRackManager {
     }
     
     /**
-     * 搜索已分配到机柜的主机
+     * Search hosts assigned to racks
      * 
-     * @param string $keyword 搜索关键字
-     * @return array 主机列表
+     * @param string $keyword search keyword
+     * @return array host list
      */
     public static function searchAssignedHosts(string $keyword): array {
         $options = [
@@ -648,7 +648,7 @@ class HostRackManager {
         foreach ($hosts as $host) {
             $parsed = self::parseRackTagsFromList($host['tags'] ?? []);
             
-            // 只返回已分配到机柜的主机
+            // Only return hosts assigned to racks
             if ($parsed['rack'] === '') {
                 continue;
             }
@@ -659,7 +659,7 @@ class HostRackManager {
             $uEnd = $parsed['u_end'];
             $side = $parsed['side'];
             
-            // 获取主接口IP
+            // Get the main interface IP
             $mainIp = '';
             foreach ($host['interfaces'] as $interface) {
                 if ($interface['main'] == 1) {
@@ -686,10 +686,10 @@ class HostRackManager {
     }
     
     /**
-     * 获取主机告警数量
+     * Get host alarm counts
      * 
-     * @param array $hostIds 主机ID数组
-     * @return array 主机ID => 告警数量
+     * @param array $hostIds array of host IDs
+     * @return array host ID => alarm count
      */
     public static function getHostProblems(array $hostIds): array {
         if (empty($hostIds)) {
@@ -705,8 +705,8 @@ class HostRackManager {
         }
         
         try {
-            // 获取活跃告警 - 不使用 recent=>true，只返回当前未恢复的问题
-            // recent=>true 会在告警恢复后仍返回约30分钟，导致页面刷新延迟
+            // Get active alarms - without recent=>true, only currently unresolved problems are returned
+            // recent=>true keeps returning alarms for about 30 minutes after recovery, delaying the page refresh
             $problems = \API::Problem()->get([
                 'output' => ['eventid', 'objectid', 'name', 'severity', 'clock', 'acknowledged'],
                 'hostids' => $hostIds,
@@ -715,25 +715,25 @@ class HostRackManager {
                 'limit' => 1000
             ]);
             
-            // 检查 API 返回值
+            // Check the API return value
             if (!is_array($problems) || empty($problems)) {
                 return $result;
             }
             
-            // 在 PHP 中按严重程度和时间排序
+            // Sort by severity and time in PHP
             usort($problems, function($a, $b) {
                 if ($a['severity'] != $b['severity']) {
-                    return $b['severity'] - $a['severity']; // 严重程度降序
+                    return $b['severity'] - $a['severity']; // Severity descending
                 }
-                return $b['clock'] - $a['clock']; // 时间降序
+                return $b['clock'] - $a['clock']; // Time descending
             });
             
-            // 获取每个告警对应的主机ID
+            // Get the host ID of each alarm
             $triggerIds = array_unique(array_column($problems, 'objectid'));
             $triggerHostMap = [];
             
             if (!empty($triggerIds)) {
-                // 只查询已启用的触发器，过滤掉禁用触发器对应的告警
+                // Only query enabled triggers, filtering out alarms of disabled triggers
                 $triggers = \API::Trigger()->get([
                     'output' => ['triggerid', 'status'],
                     'selectHosts' => ['hostid'],
@@ -742,7 +742,7 @@ class HostRackManager {
                     'preservekeys' => true
                 ]);
                 
-                // 检查 triggers 返回值
+                // Check the triggers return value
                 if (!is_array($triggers)) {
                     $triggers = [];
                 }
@@ -754,7 +754,7 @@ class HostRackManager {
                 }
             }
             
-            // 统计每个主机的告警
+            // Count the alarms of each host
             foreach ($problems as $problem) {
                 $triggerId = $problem['objectid'];
                 if (isset($triggerHostMap[$triggerId])) {
@@ -779,10 +779,10 @@ class HostRackManager {
     }
     
     /**
-     * 获取单个主机的告警详情
+     * Get the alarm details of a single host
      * 
-     * @param string $hostId 主机ID
-     * @return array 告警列表
+     * @param string $hostId host ID
+     * @return array alarm list
      */
     public static function getHostProblemDetails(string $hostId): array {
         try {
@@ -794,12 +794,12 @@ class HostRackManager {
                 'limit' => 100
             ]);
             
-            // 检查 API 返回值
+            // Check the API return value
             if (!is_array($problems)) {
                 return [];
             }
             
-            // 在 PHP 中按严重程度和时间排序
+            // Sort by severity and time in PHP
             usort($problems, function($a, $b) {
                 if ($a['severity'] != $b['severity']) {
                     return $b['severity'] - $a['severity'];
@@ -807,7 +807,7 @@ class HostRackManager {
                 return $b['clock'] - $a['clock'];
             });
             
-            // 获取所有相关触发器ID，过滤掉已禁用的触发器
+            // Get all related trigger IDs, filtering out disabled triggers
             $triggerIds = array_unique(array_column($problems, 'objectid'));
             $enabledTriggerIds = [];
             if (!empty($triggerIds)) {
@@ -824,7 +824,7 @@ class HostRackManager {
             
             $result = [];
             foreach ($problems as $problem) {
-                // 跳过触发器已禁用的告警
+                // Skip alarms whose trigger is disabled
                 if (!in_array($problem['objectid'], $enabledTriggerIds)) {
                     continue;
                 }

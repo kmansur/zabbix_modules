@@ -1,6 +1,6 @@
 # Módulo Zabbix Clonehosts
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -32,7 +32,7 @@ O Zabbix Clonehosts é um módulo de frontend do Zabbix que clona e importa em l
 - **Voltar para edição**: da pré-visualização é possível voltar à tabela online com todos os dados preservados, para corrigir os hosts que não estão prontos sem perder o que já foi digitado.
 - **Acompanhamento da importação**: os hosts são criados um a um via AJAX, com barra de progresso em tempo real e contadores de sucesso/falha.
 - **Exportação do relatório de resultados**: ao final da importação, baixe um relatório CSV (nome do host, IP, ID do host, resultado, mensagem de erro).
-- **Idiomas**: a interface segue o idioma do usuário ou do sistema no Zabbix (chinês, inglês, russo e português do Brasil), sem depender de gettext.
+- **Idiomas**: a interface segue o idioma do usuário ou do sistema no Zabbix (inglês e português do Brasil), sem depender de gettext.
 - **Design responsivo**: adapta-se a diferentes tamanhos de tela.
 - **Interface moderna**: segue a linguagem visual nativa do Zabbix.
 
@@ -60,7 +60,7 @@ sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_clonehosts/ma
 
 1. Acesse Administração → Geral → Módulos.
 2. Clique em **Varrer diretório** para detectar os novos módulos.
-3. Localize e ative o módulo "Host Batch Import / 主机批量导入".
+3. Localize e ative o módulo "Zabbix Clonehosts".
 4. Atualize a página — o módulo aparece em **Coleta de dados → Importação de hosts em lote**, logo após "Hosts".
 
 ## Observações
@@ -83,7 +83,7 @@ O módulo usa o framework de módulos do Zabbix. Arquivos principais:
 - `manifest.json` — configuração do módulo, rotas e declaração de arquivos
 - `Module.php` — registro do menu (compatível com `Zabbix\Core\CModule` e `Core\CModule`)
 - `CompatHelper.php` — compatibilidade com a API do Zabbix 6.0/6.4/7.x/8.x
-- `LangHelper.php` — textos em chinês, inglês, russo e português do Brasil (array PHP puro, sem gettext)
+- `LangHelper.php` — textos em inglês e português do Brasil (array PHP puro, sem gettext)
 - `actions/Clonehosts.php` — controlador da página principal (seleção do host de origem, upload de CSV, tabela)
 - `actions/ClonehostsSource.php` — endpoint AJAX que carrega a configuração do host de origem
 - `actions/ClonehostsPreview.php` — controlador da pré-visualização (detecção de conflitos, status dos campos)
@@ -99,24 +99,24 @@ Para estender o módulo, consulte a documentação de desenvolvimento de módulo
 
 ### Formato do CSV
 
-O módulo inclui o modelo `clonehosts_template.csv`, que pode ser baixado na página de importação pelo botão "Baixar modelo CSV". O cabeçalho do modelo está em chinês; os cabeçalhos traduzidos (por exemplo `Host Name(*)` ou `Nome do host(*)`) também são reconhecidos. Descrição das colunas, na ordem:
+O módulo inclui o modelo `clonehosts_template.csv`, que pode ser baixado na página de importação pelo botão "Baixar modelo CSV". O cabeçalho do arquivo de modelo está em inglês; o modelo baixado pela interface em português usa cabeçalhos em português (por exemplo `Nome do host(*)`), e os dois são reconhecidos. As colunas são lidas pela posição. Descrição das colunas, na ordem:
 
 | Campo (cabeçalho do modelo) | Obrigatório | Descrição |
 | --- | --- | --- |
-| 主机名称(*) — Nome do host | Sim | Identificador do host; deve ser único globalmente (compartilha o espaço de nomes com os templates) |
-| 可见的名称 — Nome visível | Não | Se vazio, usa o nome do host |
-| 接口IP(*) — IP da interface | Sim | Endereço IP da interface do host |
-| 端口 — Porta | Não | Se vazia, usa a porta do host de origem |
-| 主机群组 — Grupos de hosts | Não | Vários grupos separados por `;`; criados automaticamente se não existirem |
-| 模板 — Templates | Não | Vários templates separados por `;`; associados pelo nome técnico ou visível |
-| 标签 — Tags | Não | Formato `tag=valor`, vários pares separados por `;` |
-| 宏 — Macros | Não | Formato `{$MACRO}=valor`, vários pares separados por `;` |
-| 描述 — Descrição | Não | Descrição do host |
+| Host Name(*) — Nome do host | Sim | Identificador do host; deve ser único globalmente (compartilha o espaço de nomes com os templates) |
+| Visible Name — Nome visível | Não | Se vazio, usa o nome do host |
+| Interface IP(*) — IP da interface | Sim | Endereço IP da interface do host |
+| Port — Porta | Não | Se vazia, usa a porta do host de origem |
+| Host Groups — Grupos de hosts | Não | Vários grupos separados por `;`; criados automaticamente se não existirem |
+| Templates — Templates | Não | Vários templates separados por `;`; associados pelo nome técnico ou visível |
+| Tags — Tags | Não | Formato `tag=valor`, vários pares separados por `;` |
+| Macros — Macros | Não | Formato `{$MACRO}=valor`, vários pares separados por `;` |
+| Description — Descrição | Não | Descrição do host |
 
 Exemplo:
 
 ```csv
-主机名称(*),可见的名称,接口IP(*),端口,主机群组,模板,标签,宏,描述
+Host Name(*),Visible Name,Interface IP(*),Port,Host Groups,Templates,Tags,Macros,Description
 web-server-01,Web Server 01,192.168.1.10,10050,Servers;Web Servers,Linux by Zabbix Agent;Nginx by HTTP,env=prod;os=linux,{$SNMP_COMMUNITY}=public,Servidor web 01
 db-server-01,DB Server 01,192.168.1.20,10050,Servers;Database Servers,MySQL by Zabbix Agent,env=prod;os=linux;role=db,{$MYSQL_PORT}=3306,Servidor de banco de dados 01
 ```

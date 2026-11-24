@@ -1,19 +1,19 @@
 <?php
 /**
- * 告警事件查找器
- * 统一处理报表中的告警查询逻辑
+ * Alarm event finder
+ * Centralizes the alarm query logic of the reports
  * 
- * 核心改进：查询与报表周期有交集的所有告警事件，而不仅仅是在周期内产生的告警。
+ * Key improvement: queries all alarm events that overlap the report period, not only alarms raised within the period.
  * 
- * 匹配条件（告警时间范围与报表周期有交集）：
- *   clock <= till AND (r_clock >= from OR r_clock = 0/未恢复)
+ * Match condition (the alarm time range overlaps the report period):
+ *   clock <= till AND (r_clock >= from OR r_clock = 0/unresolved)
  * 
- * 覆盖场景：
- *   A) 在周期内产生并恢复     → clock ∈ [from, till], r_clock ∈ [from, till]
- *   B) 在周期内产生但未恢复   → clock ∈ [from, till], r_clock = 0
- *   C) 在周期前产生，周期内恢复 → clock < from, r_clock ∈ [from, till]
- *   D) 在周期前产生，至今未恢复 → clock < from, r_clock = 0
- *   E) 在周期前产生，周期后恢复 → clock < from, r_clock > till
+ * Covered scenarios:
+ *   A) raised and resolved within the period      → clock ∈ [from, till], r_clock ∈ [from, till]
+ *   B) raised within the period, unresolved      → clock ∈ [from, till], r_clock = 0
+ *   C) raised before the period, resolved within → clock < from, r_clock ∈ [from, till]
+ *   D) raised before the period, still unresolved → clock < from, r_clock = 0
+ *   E) raised before the period, resolved after  → clock < from, r_clock > till
  */
 
 namespace Modules\ZabbixReports\Lib;
@@ -23,12 +23,12 @@ use API;
 class ProblemFinder {
 
     /**
-     * 获取与指定时间周期有交集的所有问题事件（详细版本）
+     * Get all problem events that overlap the given time period (detailed version)
      * 
-     * @param int $from 周期开始时间戳
-     * @param int $till 周期结束时间戳
-     * @param int $limit 最大返回数量
-     * @return array 包含 problemEvents, problemCount, resolvedCount 的结果
+     * @param int $from period start timestamp
+     * @param int $till period end timestamp
+     * @param int $limit maximum number of results
+     * @return array result with problemEvents, problemCount, resolvedCount
      */
     public static function getProblemsInPeriod(int $from, int $till, int $limit = 500, ?array $hostids = null): array {
         // An explicitly empty host selection must not fall back to an unfiltered,
@@ -44,7 +44,7 @@ class ProblemFinder {
             ];
         }
         // ====================================================
-        // 第1步：获取在报表周期内产生的问题事件（场景A和B）
+        // Step 1: get problem events raised within the report period (scenarios A and B)
         // ====================================================
         $eventOptions = [
             'output' => ['eventid', 'objectid', 'name', 'clock', 'r_eventid', 'severity'],
@@ -67,18 +67,18 @@ class ProblemFinder {
         }
 
         // ====================================================
-        // 第2步：获取在报表周期开始前产生但在周期内仍活跃的问题事件（场景C、D、E）
-        // 策略：查询周期开始前产生的事件，然后通过恢复时间过滤
+        // Step 2: get problem events raised before the report period but still active within it (scenarios C, D, E)
+        // Strategy: query events raised before the period start, then filter by recovery time
         // ====================================================
         $eventBeforeOptions = [
             'output' => ['eventid', 'objectid', 'name', 'clock', 'r_eventid', 'severity'],
             'source' => 0,
             'object' => 0,
             'value' => TRIGGER_VALUE_TRUE,
-            'time_till' => $from - 1,  // 在周期开始前产生
+            'time_till' => $from - 1,  // Raised before the period start
             'sortfield' => ['clock'],
             'sortorder' => 'DESC',
-            'limit' => 2000,  // 加大限制以捕获所有跨周期事件
+            'limit' => 2000,  // Raise the limit to capture all events spanning periods
             'selectHosts' => ['hostid', 'name'],
         ];
         if ($hostids !== null) {
@@ -89,7 +89,7 @@ class ProblemFinder {
             $eventsBeforePeriod = [];
         }
 
-        // 获取周期前事件的恢复时间
+        // Get the recovery times of events raised before the period
         $earlyRecoveryMap = [];
         $earlyRecoveryIds = [];
         foreach ($eventsBeforePeriod as $event) {
@@ -109,8 +109,8 @@ class ProblemFinder {
             }
         }
 
-        // 验证：对周期前未恢复的事件（r_eventid=0），通过 Problem API 确认是否真正活跃
-        // Event 表中 r_eventid=0 不一定代表仍活跃，可能是手动关闭、触发器删除等情况
+        // Validation: for events raised before the period and unresolved (r_eventid=0), confirm through the Problem API that they are really active
+        // r_eventid=0 in the event table does not necessarily mean still active; it may have been closed manually, the trigger deleted, etc.
         $unresolvedEventIds = [];
         foreach ($eventsBeforePeriod as $event) {
             if (empty($event['r_eventid']) || $event['r_eventid'] == 0) {
@@ -130,27 +130,27 @@ class ProblemFinder {
             }
         }
 
-        // 过滤：只保留在报表周期内仍活跃的事件
+        // Filter: keep only events still active within the report period
         $activeBeforePeriod = [];
         foreach ($eventsBeforePeriod as $event) {
             if (empty($event['r_eventid']) || $event['r_eventid'] == 0) {
-                // 未恢复 → 必须通过 Problem API 确认确实仍活跃
+                // Unresolved → must be confirmed as still active through the Problem API
                 if (isset($confirmedActiveProblems[$event['eventid']])) {
                     $activeBeforePeriod[] = $event;
                 }
             } elseif (isset($earlyRecoveryMap[$event['r_eventid']])) {
                 $rClock = $earlyRecoveryMap[$event['r_eventid']];
                 if ($rClock >= $from) {
-                    // 在周期开始后才恢复（恢复时间 >= 周期开始）→ 周期内有交集
+                    // Resolved only after the period start (recovery time >= period start) → overlaps the period
                     $activeBeforePeriod[] = $event;
                 }
-                // 如果 rClock < from → 在周期开始前就恢复了 → 不纳入
+                // If rClock < from → resolved before the period start → excluded
             }
-            // 如果有 r_eventid 但找不到恢复事件 → 安全起见不纳入
+            // If there is an r_eventid but the recovery event cannot be found → excluded to be safe
         }
 
         // ====================================================
-        // 第3步：合并去重（按 eventid 去重）
+        // Step 3: merge and deduplicate (by eventid)
         // ====================================================
         $allEventIds = array_column($eventsInPeriod, 'eventid');
         foreach ($activeBeforePeriod as $event) {
@@ -161,9 +161,9 @@ class ProblemFinder {
         }
 
         // ====================================================
-        // 第3.5步：检查事件对应的触发器状态（存在/启用/禁用/已删除）
-        // Event 表保留所有历史记录，包括已删除/禁用触发器的事件
-        // 通过 Trigger API 查询触发器状态，标记而非过滤
+        // Step 3.5: check the status of the trigger of each event (exists/enabled/disabled/deleted)
+        // The event table keeps all history, including events of deleted/disabled triggers
+        // Query trigger status through the Trigger API and mark rather than filter
         // ====================================================
         $triggerStatusMap = []; // objectid => 'enabled' | 'disabled' | 'deleted'
         $allObjectIds = array_values(array_unique(array_column($eventsInPeriod, 'objectid')));
@@ -184,24 +184,24 @@ class ProblemFinder {
             }
         }
 
-        // 按时间降序排序
+        // Sort by time descending
         usort($eventsInPeriod, function($a, $b) {
             return (int)$b['clock'] - (int)$a['clock'];
         });
 
-        // 截断到限制数量
+        // Truncate to the limit
         if (count($eventsInPeriod) > $limit) {
             $eventsInPeriod = array_slice($eventsInPeriod, 0, $limit);
         }
 
         // ====================================================
-        // 第4步：计算统计数据
+        // Step 4: compute statistics
         // ====================================================
-        // 问题总数 = 与周期有交集的所有问题事件数量
+        // Total problems = number of problem events overlapping the period
         $problemCount = count($eventsInPeriod);
 
-        // 恢复事件计数仍按原逻辑：统计周期内产生的恢复事件（value=TRIGGER_VALUE_FALSE）
-        // 这代表"在此周期内实际恢复了多少告警"
+        // Recovery events are still counted as before: recovery events raised within the period (value=TRIGGER_VALUE_FALSE)
+        // This represents "how many alarms actually recovered within this period"
         $resolvedOptions = [
             'countOutput' => true,
             'filter' => ['value' => TRIGGER_VALUE_FALSE],
@@ -214,7 +214,7 @@ class ProblemFinder {
         $resolvedCount = API::Event()->get($resolvedOptions);
 
         // ====================================================
-        // 第5步：批量获取恢复事件时间
+        // Step 5: get recovery event times in bulk
         // ====================================================
         $recoveryMap = [];
         $allRecoveryIds = [];
@@ -236,7 +236,7 @@ class ProblemFinder {
         }
 
         // ====================================================
-        // 第6步：解析主机名（对 selectHosts 返回空的事件，通过 Trigger API 补充）
+        // Step 6: resolve host names (for events where selectHosts returned nothing, fill in via the Trigger API)
         // ====================================================
         $unknownTriggerIds = [];
         foreach ($eventsInPeriod as $event) {
@@ -271,15 +271,15 @@ class ProblemFinder {
     }
 
     /**
-     * 简化版：获取与指定时间周期有交集的问题事件（仅基本字段）
-     * 用于 Send 类等只需要 eventid/objectid 的场景
+     * Simplified version: get problem events overlapping the given time period (basic fields only)
+     * For cases such as the Send class that only need eventid/objectid
      * 
-     * @param int $from 周期开始时间戳
-     * @param int $till 周期结束时间戳
-     * @return array 包含 events, problemCount, resolvedCount 的结果
+     * @param int $from period start timestamp
+     * @param int $till period end timestamp
+     * @return array result with events, problemCount, resolvedCount
      */
     public static function getSimpleProblemsInPeriod(int $from, int $till): array {
-        // 第1步：获取周期内产生的事件
+        // Step 1: get events raised within the period
         $eventsInPeriod = API::Event()->get([
             'output' => ['eventid', 'objectid', 'clock', 'r_eventid'],
             'source' => 0,
@@ -292,7 +292,7 @@ class ProblemFinder {
             $eventsInPeriod = [];
         }
 
-        // 第2步：获取周期前产生但在周期内仍活跃的事件
+        // Step 2: get events raised before the period but still active within it
         $eventsBeforePeriod = API::Event()->get([
             'output' => ['eventid', 'objectid', 'clock', 'r_eventid'],
             'source' => 0,
@@ -305,7 +305,7 @@ class ProblemFinder {
             $eventsBeforePeriod = [];
         }
 
-        // 获取恢复时间
+        // Get recovery times
         $earlyRecoveryMap = [];
         $earlyRecoveryIds = [];
         foreach ($eventsBeforePeriod as $event) {
@@ -325,7 +325,7 @@ class ProblemFinder {
             }
         }
 
-        // 验证：对周期前未恢复的事件，通过 Problem API 确认是否真正活跃
+        // Validation: for events raised before the period and unresolved, confirm through the Problem API that they are really active
         $unresolvedEventIds = [];
         foreach ($eventsBeforePeriod as $event) {
             if (empty($event['r_eventid']) || $event['r_eventid'] == 0) {
@@ -345,18 +345,18 @@ class ProblemFinder {
             }
         }
 
-        // 过滤活跃事件
+        // Filter active events
         $allEventIds = array_column($eventsInPeriod, 'eventid');
         foreach ($eventsBeforePeriod as $event) {
             $include = false;
             if (empty($event['r_eventid']) || $event['r_eventid'] == 0) {
-                // 必须通过 Problem API 确认确实仍活跃
+                // Must be confirmed as still active through the Problem API
                 if (isset($confirmedActiveProblems[$event['eventid']])) {
                     $include = true;
                 }
             } elseif (isset($earlyRecoveryMap[$event['r_eventid']])) {
                 if ($earlyRecoveryMap[$event['r_eventid']] >= $from) {
-                    $include = true;  // 周期内才恢复
+                    $include = true;  // Resolved only within the period
                 }
             }
             if ($include && !in_array($event['eventid'], $allEventIds)) {
@@ -365,7 +365,7 @@ class ProblemFinder {
             }
         }
 
-        // 验证：检查触发器状态（存在/启用/禁用/已删除），标记而非过滤
+        // Validation: check trigger status (exists/enabled/disabled/deleted), marking rather than filtering
         $triggerStatusMap = [];
         $allObjectIds = array_values(array_unique(array_column($eventsInPeriod, 'objectid')));
         if (!empty($allObjectIds)) {
@@ -385,7 +385,7 @@ class ProblemFinder {
             }
         }
 
-        // 统计
+        // Statistics
         $problemCount = count($eventsInPeriod);
 
         $resolvedCount = API::Event()->get([
@@ -404,13 +404,13 @@ class ProblemFinder {
     }
 
     /**
-     * 从问题事件列表构建告警信息数组
+     * Build the alarm information array from the problem event list
      * 
-     * @param array $problemEvents 问题事件列表
-     * @param array $recoveryMap 恢复事件映射 [r_eventid => clock]
-     * @param array $triggerHostMap 触发器主机映射 [triggerid => hostname]
-     * @param string $unknownHostLabel 未知主机标签文字
-     * @param array $triggerStatusMap 触发器状态映射 [triggerid => 'enabled'|'disabled'|'deleted']
+     * @param array $problemEvents problem event list
+     * @param array $recoveryMap recovery event map [r_eventid => clock]
+     * @param array $triggerHostMap trigger host map [triggerid => hostname]
+     * @param string $unknownHostLabel label text for unknown hosts
+     * @param array $triggerStatusMap trigger status map [triggerid => 'enabled'|'disabled'|'deleted']
      * @return array ['alertInfo' => [...], 'hostCounts' => [...], 'topHosts' => [...]]
      */
     public static function buildAlertInfo(array $problemEvents, array $recoveryMap, array $triggerHostMap, string $unknownHostLabel = 'Unknown Host', array $triggerStatusMap = []): array {
@@ -431,7 +431,7 @@ class ProblemFinder {
                 $recoveryTime = date('Y-m-d H:i:s', $recoveryMap[$event['r_eventid']]);
             }
 
-            // 判断触发器是否已禁用或已删除
+            // Whether the trigger is disabled or deleted
             $triggerDisabled = false;
             if (!empty($triggerStatusMap)) {
                 $status = $triggerStatusMap[$event['objectid']] ?? 'enabled';

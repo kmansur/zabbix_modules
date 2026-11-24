@@ -51,7 +51,7 @@ class GraphTreesData extends CController {
                 break;
         }
 
-        // 在输出前保存会话，避免旧版调试器在 PHP shutdown 中写会话时发出警告。
+        // Save the session before output, so older debuggers do not warn when writing the session during PHP shutdown.
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
@@ -82,7 +82,7 @@ class GraphTreesData extends CController {
             if (class_exists('CTimePeriodHelper')) {
                 $maxPeriod = \CTimePeriodHelper::getMaxPeriod();
             } else {
-                // Zabbix 6.0 尚无 CTimePeriodHelper，遵循其原生图表校验方式。
+                // Zabbix 6.0 has no CTimePeriodHelper yet; follow its native graph validation.
                 $limitParser = new \CRangeTimeParser();
                 $limitParser->parse('now-' . \CSettingsHelper::get(\CSettingsHelper::MAX_PERIOD));
                 $maxPeriod = time() - $limitParser->getDateTime(true)->getTimestamp();
@@ -103,8 +103,8 @@ class GraphTreesData extends CController {
     }
 
     /**
-     * 获取主机的分类列表（基于监控项标签）
-     * 类似旧版Zabbix的Application概念
+     * Get the host's category list (based on item tags)
+     * Similar to the Application concept of older Zabbix versions
      */
     private function getCategories(int $hostid): array {
         if ($hostid <= 0) {
@@ -112,7 +112,7 @@ class GraphTreesData extends CController {
         }
 
         try {
-            // 获取主机所有活跃监控项及其标签
+            // Get all active items of the host and their tags
             $items = API::Item()->get([
                 'output' => ['itemid', 'name', 'value_type', 'units'],
                 'hostids' => [$hostid],
@@ -121,7 +121,7 @@ class GraphTreesData extends CController {
                 'sortfield' => 'name'
             ]);
 
-            // 获取主机的预配置图表
+            // Get the host's predefined graphs
             $graphs = API::Graph()->get([
                 'output' => ['graphid', 'name'],
                 'hostids' => [$hostid],
@@ -129,7 +129,7 @@ class GraphTreesData extends CController {
                 'sortfield' => 'name'
             ]);
 
-            // 构建监控项→标签值映射 & 监控项信息索引
+            // Build the item → tag value map & the item information index
             $itemTagValues = [];
             $itemInfo = [];
             foreach ($items as $item) {
@@ -144,7 +144,7 @@ class GraphTreesData extends CController {
                 }
             }
 
-            // 构建已被预配置图表覆盖的监控项集合
+            // Build the set of items already covered by predefined graphs
             $graphItemIds = [];
             foreach ($graphs as $graph) {
                 foreach ($graph['items'] as $gItem) {
@@ -152,7 +152,7 @@ class GraphTreesData extends CController {
                 }
             }
 
-            // 按标签值分组统计
+            // Group and count by tag value
             $categories = [];
             $uncategorizedCount = 0;
             $uncategorizedNumericCount = 0;
@@ -179,7 +179,7 @@ class GraphTreesData extends CController {
                 }
             }
 
-            // 统计每个分类的预配置图表数量
+            // Count the predefined graphs of each category
             $otherGraphCount = 0;
             foreach ($graphs as $graph) {
                 $graphCategories = [];
@@ -204,7 +204,7 @@ class GraphTreesData extends CController {
                 }
             }
 
-            // 统计每个分类的 adhoc 图表卡片数（孤立数值型监控项按单位合并，每8个一张）
+            // Count the ad hoc graph cards of each category (standalone numeric items merged by unit, 8 per card)
             foreach ($categories as $catName => &$cat) {
                 $orphanUnits = [];
                 foreach ($items as $item) {
@@ -223,7 +223,7 @@ class GraphTreesData extends CController {
             }
             unset($cat);
 
-            // 统计"其他"分类的 adhoc 图表卡片数
+            // Count the ad hoc graph cards of the "Other" category
             $otherOrphanUnits = [];
             foreach ($items as $item) {
                 if (empty($itemTagValues[$item['itemid']])
@@ -240,7 +240,7 @@ class GraphTreesData extends CController {
 
             ksort($categories);
 
-            // 未分类的监控项归入"其他"
+            // Items without a category go to "Other"
             if ($uncategorizedCount > 0) {
                 $categories['__other__'] = [
                     'key' => '__other__',
@@ -251,7 +251,7 @@ class GraphTreesData extends CController {
                 ];
             }
 
-            // 计算"所有图表"的总卡片数
+            // Compute the total number of cards for "All graphs"
             $totalCards = count($graphs);
             $allOrphanUnits = [];
             foreach ($items as $item) {
@@ -279,8 +279,8 @@ class GraphTreesData extends CController {
     }
 
     /**
-     * 获取指定主机+分类的图表列表
-     * 返回预配置图表（graphid）和自动聚合的监控项图表（itemids）
+     * Get the graph list of the given host + category
+     * Returns predefined graphs (graphid) and automatically aggregated item graphs (itemids)
      */
     private function getGraphs(int $hostid, string $category): array {
         if ($hostid <= 0) {
@@ -303,7 +303,7 @@ class GraphTreesData extends CController {
                 'sortfield' => 'name'
             ]);
 
-            // 筛选属于当前分类的监控项
+            // Filter the items that belong to the current category
             $categoryItemIds = [];
             if ($category === '__all__') {
                 $categoryItemIds = array_column($items, 'itemid');
@@ -336,7 +336,7 @@ class GraphTreesData extends CController {
             }
             $categoryItemIdsMap = array_flip($categoryItemIds);
 
-            // 查找属于当前分类的预配置图表
+            // Find the predefined graphs that belong to the current category
             $categoryGraphs = [];
             $graphItemIds = [];
 
@@ -364,7 +364,7 @@ class GraphTreesData extends CController {
                 }
             }
 
-            // 查找没有预配置图表的数值型监控项（孤立项）
+            // Find numeric items without a predefined graph (standalone items)
             $orphanItems = [];
             foreach ($items as $item) {
                 if (isset($categoryItemIdsMap[$item['itemid']]) && !isset($graphItemIds[$item['itemid']])) {
@@ -374,7 +374,7 @@ class GraphTreesData extends CController {
                 }
             }
 
-            // 构建结果列表
+            // Build the result list
             $graphList = [];
             foreach ($categoryGraphs as $graph) {
                 $graphList[] = [
@@ -384,7 +384,7 @@ class GraphTreesData extends CController {
                 ];
             }
 
-            // 合并同类孤立监控项到同一张图表
+            // Merge similar standalone items into the same graph
             $mergedOrphans = $this->mergeOrphanItems($orphanItems);
             foreach ($mergedOrphans as $merged) {
                 $graphList[] = [
@@ -405,15 +405,15 @@ class GraphTreesData extends CController {
     }
 
     /**
-     * 将孤立监控项按单位分组合并
-     * 相同单位的监控项绘制在同一张图表上（最多8条线）
+     * Group standalone items by unit
+     * Items with the same unit are drawn in the same graph (at most 8 lines)
      */
     private function mergeOrphanItems(array $items): array {
         if (empty($items)) {
             return [];
         }
 
-        // 按单位分组
+        // Group by unit
         $groups = [];
         foreach ($items as $item) {
             $units = $item['units'] ?? '';
@@ -430,7 +430,7 @@ class GraphTreesData extends CController {
                         : $this->findCommonPrefix($groupItems)
                 ];
             } else {
-                // 大组拆分为每8个一组
+                // Split large groups into groups of 8
                 $chunks = array_chunk($groupItems, 8);
                 foreach ($chunks as $i => $chunk) {
                     $name = $this->findCommonPrefix($chunk);
@@ -449,7 +449,7 @@ class GraphTreesData extends CController {
     }
 
     /**
-     * 查找一组监控项名称的公共前缀
+     * Find the common prefix of a group of item names
      */
     private function findCommonPrefix(array $items): string {
         if (count($items) === 1) {
@@ -474,7 +474,7 @@ class GraphTreesData extends CController {
             return $prefix;
         }
 
-        // 无公共前缀时使用前几个名称
+        // Without a common prefix, use the first few names
         $display = array_slice($names, 0, 3);
         return implode(', ', $display) . (count($names) > 3 ? '...' : '');
     }

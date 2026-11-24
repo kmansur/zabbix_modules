@@ -1,6 +1,6 @@
 # Módulo Zabbix Rack
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -52,7 +52,7 @@ Módulo de frontend do Zabbix para visualização de racks do data center e cont
   - Por nome do rack
   - Por nome do host
   - Localização rápida de hosts
-- **Internacionalização**: interface em chinês, inglês, russo e português do Brasil
+- **Internacionalização**: interface em inglês e português do Brasil
 - **Design responsivo**: adapta-se a diferentes tamanhos de tela
 
 ## Instalação

@@ -5,7 +5,7 @@ namespace Modules\ZabbixIm\Lib;
 require_once __DIR__ . '/LanguageManager.php';
 
 /**
- * 企业微信通讯录 API
+ * WeCom contacts API
  * https://developer.work.weixin.qq.com/document/path/90208
  */
 class WeComClient implements ImProviderInterface {

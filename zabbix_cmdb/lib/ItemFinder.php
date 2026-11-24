@@ -9,7 +9,7 @@ require_once __DIR__ . '/ItemConfig.php';
 class ItemFinder {
     
     /**
-     * 查找CPU数量监控项
+     * Find the CPU count item
      */
     public static function findCpuCount($hostid) {
         $items = self::batchGetHostItems([$hostid], ['cpu_count']);
@@ -17,7 +17,7 @@ class ItemFinder {
     }
     
     /**
-     * 查找内存总量监控项
+     * Find the total memory item
      */
     public static function findMemoryTotal($hostid) {
         $items = self::batchGetHostItems([$hostid], ['memory_total']);
@@ -25,7 +25,7 @@ class ItemFinder {
     }
 
     /**
-     * 查找CPU使用率监控项
+     * Find the CPU utilization item
      */
     public static function findCpuUsage($hostid) {
         $items = self::batchGetHostItems([$hostid], ['cpu_usage']);
@@ -33,7 +33,7 @@ class ItemFinder {
     }
 
     /**
-     * 查找内存使用率监控项
+     * Find the memory utilization item
      */
     public static function findMemoryUsage($hostid) {
         $items = self::batchGetHostItems([$hostid], ['memory_usage']);
@@ -41,7 +41,7 @@ class ItemFinder {
     }
 
         /**
-     * 查找内核版本监控项
+     * Find the kernel version item
      */
     public static function findKernelVersion($hostid) {
         $items = self::batchGetHostItems([$hostid], ['kernel_version']);
@@ -49,7 +49,7 @@ class ItemFinder {
     }
     
     /**
-     * 查找系统名称监控项
+     * Find the system name item
      */
     public static function findSystemName($hostid) {
         $items = self::batchGetHostItems([$hostid], ['system_name']);
@@ -57,7 +57,7 @@ class ItemFinder {
     }
     
     /**
-     * 查找操作系统监控项
+     * Find the operating system item
      */
     public static function findOperatingSystem($hostid) {
         $items = self::batchGetHostItems([$hostid], ['operating_system']);
@@ -65,7 +65,7 @@ class ItemFinder {
     }
     
     /**
-     * 查找操作系统架构监控项
+     * Find the OS architecture item
      */
     public static function findOsArchitecture($hostid) {
         $items = self::batchGetHostItems([$hostid], ['os_architecture']);
@@ -160,7 +160,7 @@ class ItemFinder {
     }
 
     /**
-     * 格式化内存大小
+     * Format the memory size
      */
     public static function formatMemorySize($bytes) {
         if (empty($bytes) || !is_numeric($bytes)) {
@@ -176,26 +176,26 @@ class ItemFinder {
     }
 
     /**
-     * 提取内核版本信息
+     * Extract the kernel version information
      */
     public static function extractKernelInfo($fullString) {
         if (empty($fullString)) {
             return '-';
         }
 
-        // 如果字符串太长，尝试提取关键信息
+        // If the string is too long, try to extract the key information
         if (strlen($fullString) > 50) {
-            // 尝试提取Linux内核版本
+            // Try to extract the Linux kernel version
             if (preg_match('/Linux\s+\S+\s+(\S+)/', $fullString, $matches)) {
                 return $matches[1];
             }
             
-            // 尝试提取Windows版本信息
+            // Try to extract the Windows version information
             if (preg_match('/Windows\s+[^0-9]*([0-9]+[^,\s]*)/i', $fullString, $matches)) {
                 return 'Windows ' . $matches[1];
             }
             
-            // 如果是其他系统，截取前50个字符
+            // For other systems, take the first 50 characters
             return substr($fullString, 0, 47) . '...';
         }
         
@@ -203,12 +203,12 @@ class ItemFinder {
     }
 
     /**
-     * 获取主机接口可用性状态（基于Zabbix原生接口可用性）
-     * 返回状态信息数组
+     * Get the availability status of host interfaces (based on native Zabbix interface availability)
+     * Returns an array with status information
      */
     public static function getHostAvailabilityStatus($hostid, $interfaces = []) {
         try {
-            // 如果没有传入接口信息，从API获取
+            // If no interface information was passed, get it from the API
             if (empty($interfaces)) {
                 $interfaces = API::HostInterface()->get([
                     'hostids' => [$hostid],
@@ -220,7 +220,7 @@ class ItemFinder {
                 return ['status' => 'unknown', 'text' => 'Unknown', 'class' => 'status-unknown'];
             }
 
-            // 查找主接口的可用性状态
+            // Find the availability status of the main interface
             $mainInterface = null;
             foreach ($interfaces as $interface) {
                 if ($interface['main'] == 1) {
@@ -229,7 +229,7 @@ class ItemFinder {
                 }
             }
 
-            // 如果没有主接口，使用第一个接口
+            // If there is no main interface, use the first interface
             if (!$mainInterface && !empty($interfaces)) {
                 $mainInterface = $interfaces[0];
             }
@@ -238,8 +238,8 @@ class ItemFinder {
                 return ['status' => 'unknown', 'text' => 'Unknown', 'class' => 'status-unknown'];
             }
 
-            // 根据Zabbix接口可用性状态返回对应的显示
-            // available: 0=未知, 1=可用, 2=不可用
+            // Return the display matching the Zabbix interface availability status
+            // available: 0=unknown, 1=available, 2=unavailable
             switch ($mainInterface['available']) {
                 case '1':
                     return ['status' => 'available', 'text' => 'Available', 'class' => 'status-available'];

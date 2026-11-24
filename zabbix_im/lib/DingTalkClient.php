@@ -5,15 +5,15 @@ namespace Modules\ZabbixIm\Lib;
 require_once __DIR__ . '/LanguageManager.php';
 
 /**
- * 钉钉通讯录 API（企业内部应用）
- * - 获取部门详情：https://open.dingtalk.com/document/orgapp/query-department-details0-v2
- * - 获取子部门列表：https://open.dingtalk.com/document/orgapp/obtain-the-department-list
- * - 获取部门用户详情：https://open.dingtalk.com/document/orgapp/obtain-department-members-details
- * - 获取凭证：https://open.dingtalk.com/document/orgapp/obtain-orgapp-token
+ * DingTalk contacts API (internal enterprise app)
+ * - Department details: https://open.dingtalk.com/document/orgapp/query-department-details0-v2
+ * - Sub-department list: https://open.dingtalk.com/document/orgapp/obtain-the-department-list
+ * - Department user details: https://open.dingtalk.com/document/orgapp/obtain-department-members-details
+ * - Access token: https://open.dingtalk.com/document/orgapp/obtain-orgapp-token
  */
 class DingTalkClient implements ImProviderInterface {
 
-    /** 家校通讯录的特殊部门 ID，需剔除（不属于内部通讯录范畴） */
+    /** Special department ID of the school contacts, which must be excluded (not part of the internal contacts) */
     private const SCHOOL_CONTACT_DEPT_ID = '-7';
 
     private $appKey;
@@ -43,8 +43,8 @@ class DingTalkClient implements ImProviderInterface {
         $departments = [];
         $seen = [];
 
-        // 钉钉的 listsub 仅返回下一级子部门，不含根部门本身。
-        // 为与企业微信保持一致（根部门也作为一个用户组），先把根部门加入列表。
+        // DingTalk's listsub only returns the next level of sub-departments, not the root itself.
+        // For consistency with WeCom (the root department is also a user group), add the root department to the list first.
         $root = $this->fetchDepartmentDetail($this->rootDepartmentId);
         if ($root !== null) {
             $departments[] = $root;
@@ -102,7 +102,7 @@ class DingTalkClient implements ImProviderInterface {
                 }
 
                 $displayName = trim((string) ($user['name'] ?? ''));
-                // 钉钉：Zabbix 用户名优先手机号；无手机号时将姓名转拼音；仍无法生成时回退 userid。
+                // DingTalk: the Zabbix username prefers the mobile number; without it the name is converted to pinyin; if that still fails, fall back to userid.
                 if ($mobile !== '') {
                     $username = $mobile;
                 }
@@ -138,7 +138,7 @@ class DingTalkClient implements ImProviderInterface {
     }
 
     /**
-     * 获取单个部门详情（主要用于补齐根部门名称）。
+     * Get the details of a single department (mainly to fill in the root department name).
      */
     private function fetchDepartmentDetail(int $deptId): ?array {
         $url = 'https://oapi.dingtalk.com/topapi/v2/department/get?access_token=' . urlencode($this->accessToken);
@@ -150,7 +150,7 @@ class DingTalkClient implements ImProviderInterface {
             'dept_id' => $deptId,
         ]);
 
-        // 根部门或权限受限时可能失败，此处不抛异常，返回 null 由调用方决定。
+        // May fail for the root department or with limited permissions; no exception here, null is returned and the caller decides.
         if (!$result['ok'] || (int) ($result['data']['errcode'] ?? -1) !== 0) {
             return null;
         }
@@ -160,11 +160,11 @@ class DingTalkClient implements ImProviderInterface {
             return null;
         }
 
-        // 强制使用配置的根部门 ID，确保子部门的 parent_id 能正确链接到根。
+        // Force the configured root department ID so the parent_id of sub-departments links correctly to the root.
         $id = (string) $deptId;
         $name = trim((string) ($dept['name'] ?? ''));
         if ($name === '') {
-            // 根部门有时不返回名称，给出兜底名，避免漏建用户组。
+            // The root department sometimes has no name; use a fallback name so no user group is missed.
             $name = $deptId === 1
                 ? LanguageManager::t('DingTalk root department')
                 : LanguageManager::tf('Department %s', $id);
@@ -173,14 +173,14 @@ class DingTalkClient implements ImProviderInterface {
         return [
             'id'        => $id,
             'name'      => $name,
-            // 根部门统一指向 0，避免父子自引用导致路径构建异常。
+            // The root department always points to 0, so parent/child self-references do not break path building.
             'parent_id' => '0',
             'raw'       => $dept,
         ];
     }
 
     /**
-     * 递归获取子部门（listsub 每次仅返回下一级）。
+     * Fetch sub-departments recursively (listsub returns only one level at a time).
      *
      * @param array<int, array<string, mixed>> $departments
      * @param array<string, bool>              $seen
@@ -207,7 +207,7 @@ class DingTalkClient implements ImProviderInterface {
                 continue;
             }
 
-            // 剔除家校通讯录，并避免重复与环路。
+            // Exclude the school contacts and avoid duplicates and cycles.
             if ($id === self::SCHOOL_CONTACT_DEPT_ID || isset($seen[$id])) {
                 continue;
             }

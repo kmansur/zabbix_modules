@@ -3,20 +3,20 @@
 namespace Modules\ZabbixCmdb\Lib;
 
 /**
- * 视图渲染层 for Zabbix 7.0
- * 提供统一的页面渲染接口
+ * View rendering layer for Zabbix 7.0
+ * Provides a unified page rendering interface
  */
 class ViewRenderer {
     
     /**
-     * 创建并显示页面（Zabbix 7.0使用CHtmlPage）
+     * Create and display the page (Zabbix 7.0 uses CHtmlPage)
      * 
-     * @param string $title 页面标题
-     * @param CTag $styleTag 样式标签（可选）
-     * @param CDiv $content 内容
+     * @param string $title page title
+     * @param CTag $styleTag style tag (optional)
+     * @param CDiv $content content
      */
     public static function render($title, $styleTag, $content) {
-        // Zabbix 7.0 使用 CHtmlPage
+        // Zabbix 7.0 uses CHtmlPage
         if (class_exists('CHtmlPage')) {
             $page = new \CHtmlPage();
             if ($title) {
@@ -30,7 +30,7 @@ class ViewRenderer {
             return;
         }
         
-        // Fallback: 直接输出HTML
+        // Fallback: output HTML directly
         echo '<html><head><title>' . htmlspecialchars($title) . '</title></head><body>';
         if ($styleTag) {
             echo $styleTag->toString();

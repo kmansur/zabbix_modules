@@ -3,18 +3,18 @@ require_once dirname(__DIR__).'/lib/ModuleNotice.php';
 echo \ZabbixModuleNotice::reminder(dirname(__DIR__));
 
 /**
- * 机柜管理页面 - 重构版
- * 功能：机房和机柜的增删改查管理
+ * Rack management page - refactored version
+ * Features: create, read, update and delete rooms and racks
  */
 
-// 引入依赖
+// Load dependencies
 require_once dirname(__DIR__) . '/lib/LanguageManager.php';
 require_once dirname(__DIR__) . '/lib/ViewRenderer.php';
 
 use Modules\ZabbixRack\Lib\LanguageManager;
 use Modules\ZabbixRack\Lib\ViewRenderer;
 
-// 获取数据
+// Get data
 $lang = $data['lang'];
 $rooms = $data['rooms'] ?? [];
 $racks = $data['racks'] ?? [];
@@ -23,7 +23,7 @@ $userOptions = $data['users'] ?? [];
 
 $pageTitle = LanguageManager::t('rack_manage');
 
-// 计算统计数据
+// Compute statistics
 $totalRooms = count($rooms);
 $totalRacks = count($racks);
 $totalU = 0;
@@ -32,10 +32,10 @@ foreach ($racks as $rack) {
     $totalU += (int)($rack['height'] ?? 42);
     $usedU += (int)($rack['used_u'] ?? 0);
 }
-// 计算使用率百分比
+// Compute usage percentages
 $usagePercent = $totalU > 0 ? round(($usedU / $totalU) * 100, 1) : 0;
 
-// 构建机房->机柜数量映射
+// Build the room -> rack count map
 $roomRackCount = [];
 foreach ($racks as $rack) {
     $roomId = $rack['room_id'] ?? '';
@@ -45,7 +45,7 @@ foreach ($racks as $rack) {
     $roomRackCount[$roomId]++;
 }
 
-// 为 JavaScript 准备数据（构建以 ID 为键的映射，便于快速查找）
+// Prepare data for JavaScript (maps keyed by ID for fast lookup)
 $roomsMap = [];
 foreach ($rooms as $room) {
     $roomsMap[$room['id']] = [
@@ -77,18 +77,18 @@ foreach ($racks as $rack) {
 }
 $racksJson = json_encode($racksMap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
-// CSS 样式
+// CSS styles
 $styleTag = new CTag('style', true,
     file_get_contents(dirname(__DIR__) . '/assets/css/rack.manage.css')
     . file_get_contents(dirname(__DIR__) . '/assets/css/element.css')
 );
 
-// ==================== 构建页面内容（CTag 模式，与 CMDB 保持一致） ====================
+// ==================== Build the page content (CTag mode, consistent with CMDB) ====================
 
 $content = (new CDiv())->addClass('manage-wrapper rack-ui');
 $container = (new CDiv())->addClass('manage-container');
 
-// ── 统计卡片 ──
+// ── Statistics cards ──
 $statsRow = (new CDiv())->addClass('stats-row');
 
 $statsRow->addItem(
@@ -147,7 +147,7 @@ $statsRow->addItem(
 
 $container->addItem($statsRow);
 
-// ── 机房管理区域 ──
+// ── Room management area ──
 $roomSection = (new CDiv())->addClass('manage-section');
 
 $roomHeader = (new CDiv())->addClass('section-header');
@@ -221,7 +221,7 @@ if (empty($rooms)) {
 $roomSection->addItem($roomBody);
 $container->addItem($roomSection);
 
-// ── 机柜管理区域（不再生成隐藏 select，改用 JS 直接设置 value） ──
+// ── Rack management area (no hidden select is generated anymore; JS sets the value directly) ──
 $rackSection = (new CDiv())->addClass('manage-section');
 
 $rackHeader = (new CDiv())->addClass('section-header');
@@ -307,14 +307,14 @@ $container->addItem($rackSection);
 
 $content->addItem($container);
 
-// ==================== 机房编辑弹窗 ====================
+// ==================== Room edit dialog ====================
 $roomModal = (new CDiv())
     ->setAttribute('id', 'room-modal')
     ->addClass('modal-overlay');
 
 $roomModalContent = (new CDiv())->addClass('modal-content');
 
-// 弹窗头部
+// Dialog header
 $roomModalContent->addItem(
     (new CDiv())
         ->addClass('modal-header')
@@ -330,7 +330,7 @@ $roomModalContent->addItem(
         )
 );
 
-// 弹窗主体
+// Dialog body
 $roomForm = (new CTag('form', true))
     ->setAttribute('id', 'room-form')
     ->setAttribute('onsubmit', 'return false;');
@@ -339,7 +339,7 @@ $roomForm->addItem(
     (new CInput('hidden', 'id', ''))->setAttribute('id', 'room-id')
 );
 
-// 名称字段
+// Name field
 $nameGroup = (new CDiv())
     ->addClass('form-group')
     ->setAttribute('id', 'room-name-group');
@@ -362,7 +362,7 @@ $nameGroup->addItem(
 );
 $roomForm->addItem($nameGroup);
 
-// 描述字段
+// Description field
 $descGroup = (new CDiv())->addClass('form-group');
 $descGroup->addItem(
     (new CTag('label', true, LanguageManager::t('description')))->addClass('form-label')
@@ -426,7 +426,7 @@ $roomModalBody = (new CDiv())->addClass('modal-body');
 $roomModalBody->addItem($roomForm);
 $roomModalContent->addItem($roomModalBody);
 
-// 弹窗底部
+// Dialog footer
 $roomModalContent->addItem(
     (new CDiv())
         ->addClass('modal-footer')
@@ -448,14 +448,14 @@ $roomModalContent->addItem(
 $roomModal->addItem($roomModalContent);
 $content->addItem($roomModal);
 
-// ==================== 机柜编辑弹窗 ====================
+// ==================== Rack edit dialog ====================
 $rackModal = (new CDiv())
     ->setAttribute('id', 'rack-modal')
     ->addClass('modal-overlay');
 
 $rackModalContent = (new CDiv())->addClass('modal-content');
 
-// 弹窗头部
+// Dialog header
 $rackModalContent->addItem(
     (new CDiv())
         ->addClass('modal-header')
@@ -471,7 +471,7 @@ $rackModalContent->addItem(
         )
 );
 
-// 弹窗主体
+// Dialog body
 $rackForm = (new CTag('form', true))
     ->setAttribute('id', 'rack-form')
     ->setAttribute('onsubmit', 'return false;');
@@ -480,7 +480,7 @@ $rackForm->addItem(
     (new CInput('hidden', 'id', ''))->setAttribute('id', 'rack-id')
 );
 
-// 名称字段
+// Name field
 $rackNameGroup = (new CDiv())
     ->addClass('form-group')
     ->setAttribute('id', 'rack-name-group');
@@ -503,7 +503,7 @@ $rackNameGroup->addItem(
 );
 $rackForm->addItem($rackNameGroup);
 
-// 与机柜视图使用相同的原生 select。
+// Uses the same native select as the rack view.
 $roomSelectGroup = (new CDiv())
     ->addClass('form-group')
     ->setAttribute('id', 'rack-room-group');
@@ -528,7 +528,7 @@ $roomSelectGroup->addItem(
 );
 $rackForm->addItem($roomSelectGroup);
 
-// 高度字段
+// Height field
 $heightGroup = (new CDiv())->addClass('form-group');
 $heightGroup->addItem(
     (new CTag('label', true, LanguageManager::t('height')))->addClass('form-label')
@@ -553,7 +553,7 @@ $heightGroup->addItem(
 );
 $rackForm->addItem($heightGroup);
 
-// 描述字段
+// Description field
 $rackDescGroup = (new CDiv())->addClass('form-group');
 $rackDescGroup->addItem(
     (new CTag('label', true, LanguageManager::t('description')))->addClass('form-label')
@@ -572,7 +572,7 @@ $rackModalBody = (new CDiv())->addClass('modal-body');
 $rackModalBody->addItem($rackForm);
 $rackModalContent->addItem($rackModalBody);
 
-// 弹窗底部
+// Dialog footer
 $rackModalContent->addItem(
     (new CDiv())
         ->addClass('modal-footer')
@@ -594,7 +594,7 @@ $rackModalContent->addItem(
 $rackModal->addItem($rackModalContent);
 $content->addItem($rackModal);
 
-// ==================== 删除确认弹窗 ====================
+// ==================== Delete confirmation dialog ====================
 $confirmModal = (new CDiv())
     ->setAttribute('id', 'confirm-modal')
     ->addClass('modal-overlay confirm-modal');
@@ -658,7 +658,7 @@ $content->addItem(new CJsScript('<script>
 (function() {
     "use strict";
     
-    // 国际化文本
+    // Translated texts
     var i18n = ' . $i18nJson . ';
 
     function saveError(message) {
@@ -667,22 +667,22 @@ $content->addItem(new CJsScript('<script>
     }
 
     
-    // 机房数据（以 ID 为键的映射）
+    // Room data (map keyed by ID)
     var roomsData = ' . $roomsJson . ';
     
-    // 机柜数据（以 ID 为键的映射）
+    // Rack data (map keyed by ID)
     var racksData = ' . $racksJson . ';
 
-    // 权限多选默认值：全部用户组与用户（表示全员可见）
+    // Default of the permission multi-selects: all user groups and users (meaning visible to everyone)
     var defaultPermissionSelection = ' . $defaultPermissionsJson . ';
     
-    // 管理器对象
+    // Manager object
     var RackManager = {
-        // 当前操作的数据
+        // Data of the current operation
         currentDeleteType: null,
         currentDeleteId: null,
         
-        // ==================== 机房相关 ====================
+        // ==================== Rooms ====================
         setMultiSelectValues: function(selectId, values) {
             var select = document.getElementById(selectId);
             if (!select) {
@@ -815,7 +815,7 @@ $content->addItem(new CJsScript('<script>
             this.showModal("confirm-modal");
         },
         
-        // ==================== 机柜相关 ====================
+        // ==================== Racks ====================
         openRackModal: function() {
             document.getElementById("rack-modal-title").innerHTML = "🗄️ " + i18n.add_rack;
             document.getElementById("rack-id").value = "";
@@ -823,7 +823,7 @@ $content->addItem(new CJsScript('<script>
             document.getElementById("rack-height").value = "42";
             document.getElementById("rack-description").value = "";
             
-            // 重置机房下拉框为默认选项（原生 select 通过 value 设置）
+            // Reset the room dropdown to the default option (native select is set via value)
             var targetSelect = document.getElementById("rack-room-id");
             targetSelect.value = "";
             
@@ -852,7 +852,7 @@ $content->addItem(new CJsScript('<script>
             document.getElementById("rack-height").value = rack.height || 42;
             document.getElementById("rack-description").value = rack.description || "";
             
-            // 【关键】直接通过 value 设置选中的机房（原生 select 支持 .value 属性）
+            // [Key] Set the selected room directly through value (native select supports the .value property)
             var targetSelect = document.getElementById("rack-room-id");
             targetSelect.value = rack.room_id || "";
             
@@ -925,7 +925,7 @@ $content->addItem(new CJsScript('<script>
             this.showModal("confirm-modal");
         },
         
-        // ==================== 删除操作 ====================
+        // ==================== Delete operations ====================
         executeDelete: function() {
             var self = this;
             var action = this.currentDeleteType === "room" ? "room.delete" : "rack.delete";
@@ -960,7 +960,7 @@ $content->addItem(new CJsScript('<script>
             this.currentDeleteId = null;
         },
         
-        // ==================== 通用方法 ====================
+        // ==================== Common methods ====================
         showModal: function(modalId) {
             var modal = document.getElementById(modalId);
             modal.classList.add("visible");
@@ -995,10 +995,10 @@ $content->addItem(new CJsScript('<script>
         }
     };
     
-    // 暴露到全局
+    // Expose globally
     window.RackManager = RackManager;
     
-    // 绑定键盘事件
+    // Bind keyboard events
     document.addEventListener("keydown", function(e) {
         if (e.key === "Escape") {
             var modals = document.querySelectorAll(".modal-overlay.visible");
@@ -1025,7 +1025,7 @@ $content->addItem(new CJsScript('<script>
         }
     });
     
-    // 机柜表单不允许点击外部关闭，避免误触导致已填写内容丢失。
+    // The rack form cannot be closed by clicking outside, so an accidental click does not lose the entered content.
     document.querySelectorAll(".modal-overlay:not(#rack-modal)").forEach(function(modal) {
         modal.addEventListener("click", function(e) {
             if (e.target === this) {
@@ -1035,7 +1035,7 @@ $content->addItem(new CJsScript('<script>
         });
     });
     
-    // 输入框实时清除错误状态
+    // Clear the input error state in real time
     document.querySelectorAll(".form-control").forEach(function(control) {
         control.addEventListener("input", function() {
             this.classList.remove("error");
@@ -1047,6 +1047,6 @@ $content->addItem(new CJsScript('<script>
 })();
 </script>'));
 
-// 使用兼容渲染器显示页面
+// Display the page with the compatible renderer
 $content->addItem((new CTag('script', true))->setAttribute('src', 'modules/zabbix_rack/assets/js/element.js?v=20260910'));
 ViewRenderer::render($pageTitle, $styleTag, $content);

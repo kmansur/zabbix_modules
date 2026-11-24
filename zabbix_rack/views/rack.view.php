@@ -3,10 +3,10 @@ require_once dirname(__DIR__).'/lib/ModuleNotice.php';
 echo \ZabbixModuleNotice::reminder(dirname(__DIR__));
 
 /**
- * 机柜视图页面
+ * Rack view page
  */
 
-// 引入语言管理器和兼容层
+// Load the language manager and the compatibility layer
 require_once dirname(__DIR__) . '/lib/LanguageManager.php';
 require_once dirname(__DIR__) . '/lib/ViewRenderer.php';
 
@@ -30,7 +30,7 @@ $hostGroups = $data['host_groups'];
 $showOverview = $data['show_overview'] ?? false;
 $allRacksData = $data['all_racks_data'] ?? [];
 
-// 与 IPAM 一致，使用原生 select，避免依赖自定义组件的内部结构。
+// Like IPAM, uses native selects to avoid depending on the internal structure of custom components.
 $buildSelect = static function (string $name, string $id, array $options, $selected = '') {
     $select = (new CTag('select', true))
         ->setAttribute('name', $name)
@@ -47,7 +47,7 @@ $buildSelect = static function (string $name, string $id, array $options, $selec
 };
 
 /**
- * 构建单面机柜可视化
+ * Build the single-side rack visualization
  *
  * @param array<string, mixed> $rack
  * @param array<int, array<string, mixed>> $sideHosts
@@ -201,19 +201,19 @@ $buildRackVisualSide = static function (array $rack, array $sideHosts, string $s
 
 $pageTitle = LanguageManager::t('rack_view');
 
-// 添加CSS样式 - 参考 CMDB 模块风格
+// Add CSS styles - modeled on the CMDB module style
 $styleTag = new CTag('style', true,
     file_get_contents(dirname(__DIR__) . '/assets/css/rack.view.css')
     . file_get_contents(dirname(__DIR__) . '/assets/css/element.css')
 );
 
 
-// ==================== 构建页面内容（CTag 模式，与 rack.manage.php 保持一致） ====================
+// ==================== Build the page content (CTag mode, consistent with rack.manage.php) ====================
 
 $content = (new CDiv())->addClass('rack-page-wrapper rack-ui');
 $container = (new CDiv())->addClass('rack-page-container');
 
-// ── 顶部筛选栏 ──
+// ── Top filter bar ──
 $filterBar = (new CDiv())->addClass('rack-top-filter');
 $filterForm = (new CTag('form', true))
     ->setAttribute('id', 'filter-form')
@@ -223,7 +223,7 @@ $filterForm->addItem(
     (new CInput('hidden', 'action', 'rack.view'))
 );
 
-// 搜索框
+// Search box
 $searchItem = (new CDiv())->addClass('filter-item');
 $searchItem->addItem(
     (new CTag('label', true, '🔍 ' . LanguageManager::t('search')))->setAttribute('for', 'search-input')
@@ -238,7 +238,7 @@ $searchItem->addItem(
 );
 $filterForm->addItem($searchItem);
 
-// 机房选择 - 使用原生 select
+// Room selection - native select
 $roomFilterItem = (new CDiv())->addClass('filter-item');
 $roomFilterItem->addItem(
     (new CTag('label', true, '🏢 ' . LanguageManager::t('room')))->setAttribute('for', 'room-select')
@@ -251,7 +251,7 @@ $roomFilterSelect = $buildSelect('room_id', 'room-select', $roomOptions, $curren
 $roomFilterItem->addItem($roomFilterSelect);
 $filterForm->addItem($roomFilterItem);
 
-// 机柜选择 - 使用原生 select
+// Rack selection - native select
 $rackFilterItem = (new CDiv())->addClass('filter-item');
 $rackFilterItem->addItem(
     (new CTag('label', true, '🗄️ ' . LanguageManager::t('rack')))->setAttribute('for', 'rack-select')
@@ -264,7 +264,7 @@ $rackFilterSelect = $buildSelect('rack_id', 'rack-select', $rackOptions, $curren
 $rackFilterItem->addItem($rackFilterSelect);
 $filterForm->addItem($rackFilterItem);
 
-// 筛选按钮
+// Filter button
 $filterBtnItem = (new CDiv())->addClass('filter-item');
 $filterBtnItem->addItem(
     (new CTag('button', true, '🔎 ' . LanguageManager::t('filter')))
@@ -286,7 +286,7 @@ if (empty($rooms)) {
     );
 } else {
 
-// ── 统计卡片 ──
+// ── Statistics cards ──
 $totalHosts = count($hosts);
 $rackHeight = $currentRack ? ($currentRack['height'] ?? 42) : 42;
 $usedFront = 0;
@@ -324,13 +324,13 @@ $usagePercentFront = $rackHeight > 0 ? round(($usedFront / $rackHeight) * 100, 1
 $usagePercentBack = $rackHeight > 0 ? round(($usedBack / $rackHeight) * 100, 1) : 0;
 
 $formatSpaceStat = static function (int $used, int $capacity, float $percent): string {
-    return $used . 'U/' . $capacity . '（' . $percent . '%）';
+    return $used . 'U/' . $capacity . ' (' . $percent . '%)';
 };
 
 $statsRow = (new CDiv())->addClass('stats-row');
 
 if ($showOverview) {
-    // 概览模式下显示整个机房统计
+    // In overview mode show the statistics of the whole room
     $totalRackCount = count($racks);
     $totalHostsInRoom = 0;
     $totalProblemsInRoom = 0;
@@ -372,7 +372,7 @@ if ($showOverview) {
             )
     );
 } else {
-    // 单机柜模式下显示机柜统计
+    // In single-rack mode show the rack statistics
     $statsRow->addItem(
         (new CDiv())
             ->addClass('stat-card')
@@ -409,11 +409,11 @@ if ($showOverview) {
 }
 $container->addItem($statsRow);
 
-// ── 主容器 ──
+// ── Main container ──
 $rackContainer = (new CDiv())->addClass('rack-container');
 
 if ($showOverview) {
-    // ===== 概览模式：显示多个机柜 =====
+    // ===== Overview mode: show several racks =====
     $rackMain = (new CDiv())
         ->addClass('rack-main')
         ->setAttribute('style', 'width:100%;margin:0;');
@@ -442,7 +442,7 @@ if ($showOverview) {
                 ->setAttribute('data-rack-id', htmlspecialchars($rackData['id']))
                 ->setAttribute('onclick', "openRackDetail('" . htmlspecialchars($rackData['id']) . "')");
 
-            // 卡片头部
+            // Card header
             $cardHeader = (new CDiv())->addClass('rack-card-header');
             $cardHeader->addItem(
                 (new CDiv('🗄️ ' . htmlspecialchars($rackData['name'])))->addClass('rack-card-title')
@@ -456,7 +456,7 @@ if ($showOverview) {
             }
             $rackCard->addItem($cardHeader);
 
-            // 卡片内容
+            // Card content
             $cardBody = (new CDiv())->addClass('rack-card-body');
 
             $hostStat = (new CDiv())->addClass('rack-card-stat');
@@ -478,7 +478,7 @@ if ($showOverview) {
             );
             $cardBody->addItem($usageStat);
 
-            // 迷你机柜可视化
+            // Mini rack visualization
             $miniVisual = (new CDiv())->addClass('rack-mini-visual');
             for ($i = 0; $i < $rackData['height']; $i++) {
                 $unitClass = 'rack-mini-unit';
@@ -508,7 +508,7 @@ if ($showOverview) {
             $cardBody->addItem($miniVisual);
             $rackCard->addItem($cardBody);
 
-            // 卡片页脚
+            // Card footer
             $cardFooter = (new CDiv())->addClass('rack-card-footer');
             $cardFooter->addItem(
                 (new CTag('button', true, LanguageManager::t('view_details') . ' →'))
@@ -525,7 +525,7 @@ if ($showOverview) {
 
     $rackContainer->addItem($rackMain);
 
-    // 概览模式下的搜索结果
+    // Search results in overview mode
     if (!empty($searchResults)) {
         $searchSection = (new CDiv())->addClass('sidebar-card');
         $searchSection->setAttribute('style', 'margin-top: 20px;');
@@ -554,12 +554,12 @@ if ($showOverview) {
         $rackContainer->addItem($searchSection);
     }
 } else {
-    // ===== 单机柜详情模式 =====
+    // ===== Single-rack details mode =====
 
-    // 左侧边栏
+    // Left sidebar
     $sidebar = (new CDiv())->addClass('rack-sidebar');
 
-    // 搜索结果
+    // Search results
     if (!empty($searchResults)) {
         $searchCard = (new CDiv())->addClass('sidebar-card');
         $searchCard->addItem(
@@ -587,7 +587,7 @@ if ($showOverview) {
         $sidebar->addItem($searchCard);
     }
 
-    // 当前机柜主机列表
+    // Host list of the current rack
     if (!empty($hosts)) {
         $hostCard = (new CDiv())->addClass('sidebar-card');
         $hostCard->addItem(
@@ -627,7 +627,7 @@ if ($showOverview) {
 
     $rackContainer->addItem($sidebar);
 
-    // 主区域 - 机柜可视化（正/背面并排）
+    // Main area - rack visualization (front/rear side by side)
     $rackMainDiv = (new CDiv())->addClass('rack-main');
 
     if ($currentRack) {
@@ -662,14 +662,14 @@ $container->addItem($rackContainer);
 
 $content->addItem($container);
 
-// ==================== 主机信息提示框 ====================
+// ==================== Host information tooltip ====================
 $content->addItem(
     (new CDiv())
         ->setAttribute('id', 'host-tooltip')
         ->addClass('host-tooltip')
 );
 
-// ==================== 大型机柜弹窗（概览模式下点击卡片时显示） ====================
+// ==================== Large rack dialog (shown when clicking a card in overview mode) ====================
 $rackDetailModal = (new CDiv())
     ->setAttribute('id', 'rack-detail-modal')
     ->addClass('rack-detail-modal');
@@ -701,14 +701,14 @@ $rackDetailContent->addItem($rackDetailBody);
 $rackDetailModal->addItem($rackDetailContent);
 $content->addItem($rackDetailModal);
 
-// ==================== 分配/编辑主机弹窗 ====================
+// ==================== Assign/edit host dialog ====================
 $assignModal = (new CDiv())
     ->setAttribute('id', 'assign-modal')
     ->addClass('modal-overlay');
 
 $assignModalContent = (new CDiv())->addClass('modal-content');
 
-// 弹窗头部
+// Dialog header
 $assignModalContent->addItem(
     (new CDiv())
         ->addClass('modal-header')
@@ -724,10 +724,10 @@ $assignModalContent->addItem(
         )
 );
 
-// 弹窗主体
+// Dialog body
 $assignModalBody = (new CDiv())->addClass('modal-body');
 
-// 编辑模式下显示当前主机信息
+// In edit mode show the current host information
 $editHostInfo = (new CDiv())
     ->setAttribute('id', 'edit-host-info')
     ->addClass('form-group')
@@ -747,7 +747,7 @@ $editHostInfo->addItem(
 );
 $assignModalBody->addItem($editHostInfo);
 
-// 添加主机时可在 Zabbix 主机和自定义主机之间切换。
+// When adding a host, switch between Zabbix hosts and custom hosts.
 $hostTypeTabs = (new CDiv())
     ->setAttribute('id', 'host-type-tabs')
     ->addClass('modal-tabs')
@@ -772,12 +772,12 @@ $hostTypeTabs->addItem(
 );
 $assignModalBody->addItem($hostTypeTabs);
 
-// 主机选择区域
+// Host selection area
 $hostSelectSection = (new CDiv())
     ->setAttribute('id', 'host-select-section')
     ->addClass('modal-tab-panel is-active');
 
-// 主机组选择 - 使用原生 select
+// Host group selection - native select
 $groupSelectGroup = (new CDiv())->addClass('form-group');
 $groupSelectGroup->addItem(
     (new CTag('label', true, '📂 ' . LanguageManager::t('host_group')))->setAttribute('for', 'modal-group-select')
@@ -790,7 +790,7 @@ $groupSelect = $buildSelect('group', 'modal-group-select', $groupOptions);
 $groupSelectGroup->addItem($groupSelect);
 $hostSelectSection->addItem($groupSelectGroup);
 
-// 搜索主机
+// Search hosts
 $hostSearchGroup = (new CDiv())->addClass('form-group');
 $hostSearchGroup->addItem(
     (new CTag('label', true, '🔍 ' . LanguageManager::t('search_host')))->setAttribute('for', 'modal-host-search')
@@ -804,7 +804,7 @@ $hostSearchGroup->addItem(
 );
 $hostSelectSection->addItem($hostSearchGroup);
 
-// 主机列表
+// Host list
 $hostListGroup = (new CDiv())->addClass('form-group');
 $hostListGroup->addItem(
     (new CTag('label', true, LanguageManager::t('select_host')))
@@ -848,7 +848,7 @@ $customIpGroup->addItem(
 $customHostSection->addItem($customIpGroup);
 $assignModalBody->addItem($customHostSection);
 
-// U位范围
+// U range
 $maxU = $currentRack['height'] ?? 42;
 $formRow = (new CDiv())->addClass('form-row');
 
@@ -892,7 +892,7 @@ $assignModalBody->addItem($sideGroup);
 
 $assignModalContent->addItem($assignModalBody);
 
-// 弹窗底部
+// Dialog footer
 $assignModalFooter = (new CDiv())->addClass('modal-footer');
 $assignModalFooter->addItem(
     (new CTag('button', true, '🗑️ ' . LanguageManager::t('remove')))
@@ -919,14 +919,14 @@ $assignModalContent->addItem($assignModalFooter);
 $assignModal->addItem($assignModalContent);
 $content->addItem($assignModal);
 
-// ==================== 告警弹窗 ====================
+// ==================== Alarm dialog ====================
 $problemModal = (new CDiv())
     ->setAttribute('id', 'problem-modal')
     ->addClass('problem-modal');
 
 $problemModalContent = (new CDiv())->addClass('problem-modal-content');
 
-// 告警弹窗头部
+// Alarm dialog header
 $problemHeader = (new CDiv())->addClass('problem-modal-header');
 $problemH3 = (new CTag('h3', true));
 $problemH3->addItem('🚨 ');
@@ -940,7 +940,7 @@ $problemHeader->addItem(
 );
 $problemModalContent->addItem($problemHeader);
 
-// 告警弹窗主体
+// Alarm dialog body
 $problemBody = (new CDiv())->addClass('problem-modal-body');
 $problemBody->addItem(
     (new CTag('ul', true))
@@ -1003,7 +1003,7 @@ $content->addItem(new CJsScript('<script>
     var editingHostType = "zabbix";
     var detailRackData = null;
 
-    // HTML 转义
+    // HTML escaping
     function escapeHtml(text) {
         if (!text) return "";
         var div = document.createElement("div");
@@ -1056,7 +1056,7 @@ $content->addItem(new CJsScript('<script>
         customPanel.classList.toggle("is-active", customActive);
     };
 
-    // ============ 筛选栏联动（select 事件监听） ============
+    // ============ Filter bar linkage (select event listeners) ============
     var roomSelect = document.getElementById("room-select");
     if (roomSelect) {
         roomSelect.addEventListener("change", function() {
@@ -1080,7 +1080,7 @@ $content->addItem(new CJsScript('<script>
         });
     }
 
-    // 主机组下拉框（select）change 事件 → 替代原来的 onchange="loadHosts()"
+    // Host group dropdown (select) change event → replaces the former onchange="loadHosts()"
     var groupSelect = document.getElementById("modal-group-select");
     if (groupSelect) {
         groupSelect.addEventListener("change", function() {
@@ -1088,7 +1088,7 @@ $content->addItem(new CJsScript('<script>
         });
     }
 
-    // ============ 主机悬停提示 ============
+    // ============ Host hover tooltip ============
     var tooltip = document.getElementById("host-tooltip");
     var occupiedSlots = document.querySelectorAll(".rack-unit-slot.occupied");
 
@@ -1116,7 +1116,7 @@ $content->addItem(new CJsScript('<script>
         });
     });
 
-    // ============ 概览模式 - 多机柜展示 ============
+    // ============ Overview mode - multi-rack display ============
     window.openRackDetail = function(rackId) {
         viewRackDetail(rackId);
     };
@@ -1527,7 +1527,7 @@ $content->addItem(new CJsScript('<script>
         clearURangeSelectionHighlight();
     });
 
-    // ============ 单机柜管理函数 ============
+    // ============ Single-rack management functions ============
     window.openAssignModal = function(uStart, uEndOrSide, maybeSide) {
         var uEnd = uStart;
         var side = "front";
@@ -1803,7 +1803,7 @@ $content->addItem(new CJsScript('<script>
         });
     };
 
-    // ============ 告警相关函数 ============
+    // ============ Alarm functions ============
     window.showProblems = function(hostId, hostName) {
         document.getElementById("problem-host-name").textContent = hostName;
         document.getElementById("problem-list").innerHTML = "<li class=\\"problem-item\\" style=\\"justify-content:center;\\"><span>" + i18n.loading + "</span></li>";
@@ -1844,7 +1844,7 @@ $content->addItem(new CJsScript('<script>
         document.getElementById("problem-modal").classList.remove("visible");
     };
 
-    // ============ 键盘事件与弹窗外部关闭 ============
+    // ============ Keyboard events and closing dialogs by clicking outside ============
     document.addEventListener("keydown", function(e) {
         if (e.key === "Escape") {
             document.querySelectorAll(".modal-overlay.visible, .problem-modal.visible, .rack-detail-modal.visible").forEach(function(modal) {
@@ -1867,16 +1867,16 @@ $content->addItem(new CJsScript('<script>
         }
     });
 
-    // ============ 告警状态自动刷新 ============
-    var REFRESH_INTERVAL = 30000; // 30秒刷新一次
+    // ============ Automatic alarm status refresh ============
+    var REFRESH_INTERVAL = 30000; // Refresh every 30 seconds
 
     /**
-     * 收集当前页面上所有需要监控的主机ID
+     * Collect the IDs of all hosts on the current page that need monitoring
      */
     function collectAllHostIds() {
         var hostIds = [];
         var hostKeys = ["hosts", "hosts_front", "hosts_back"];
-        // 从概览模式的 allRacksData 中收集
+        // Collect from allRacksData in overview mode
         if (allRacksData && allRacksData.length > 0) {
             for (var i = 0; i < allRacksData.length; i++) {
                 for (var k = 0; k < hostKeys.length; k++) {
@@ -1889,7 +1889,7 @@ $content->addItem(new CJsScript('<script>
                 }
             }
         }
-        // 从单机柜模式的 DOM 中收集
+        // Collect from the DOM in single-rack mode
         document.querySelectorAll(".rack-unit-slot.occupied[data-host]").forEach(function(slot) {
             try {
                 var hostData = JSON.parse(slot.getAttribute("data-host"));
@@ -1902,7 +1902,7 @@ $content->addItem(new CJsScript('<script>
     }
 
     /**
-     * 根据严重级别获取 CSS 类名
+     * Get the CSS class name for a severity
      */
     function getSeverityClass(severity) {
         switch (parseInt(severity)) {
@@ -1917,11 +1917,11 @@ $content->addItem(new CJsScript('<script>
     }
 
     /**
-     * 移除元素上的所有告警相关 CSS 类
+     * Remove all alarm-related CSS classes from an element
      */
     function removeSeverityClasses(elem) {
-        // 使用正则匹配移除所有 severity- 开头的类以及告警相关类
-        // 这比固定列表更稳健，能覆盖所有可能的 severity 类名变体
+        // Use a regular expression to remove all classes starting with severity- and the alarm-related classes
+        // This is more robust than a fixed list and covers every possible severity class variant
         var toRemove = [];
         for (var i = 0; i < elem.classList.length; i++) {
             var cls = elem.classList[i];
@@ -1960,7 +1960,7 @@ $content->addItem(new CJsScript('<script>
     }
 
     /**
-     * 更新概览模式中的机柜卡片和 allRacksData 中的告警数据
+     * Update the rack cards in overview mode and the alarm data in allRacksData
      */
     function updateOverviewMode(problemData) {
         if (!allRacksData || allRacksData.length === 0) return;
@@ -1976,17 +1976,17 @@ $content->addItem(new CJsScript('<script>
             var totalProblems = summary.totalProblems;
             var maxSeverity = summary.maxSeverity;
 
-            // 更新 allRacksData
+            // Update allRacksData
             rackData.problem_count = totalProblems;
             rackData.max_severity = maxSeverity;
 
-            // 更新 DOM - 机柜卡片（通过 data-rack-id 精确匹配）
+            // Update the DOM - rack cards (matched exactly by data-rack-id)
             var rackCards = document.querySelectorAll(".rack-card[data-rack-id]");
             rackCards.forEach(function(card) {
                 if (card.getAttribute("data-rack-id") !== rackData.id) return;
 
                 removeSeverityClasses(card);
-                // 更新告警徽章
+                // Update the alarm badge
                 var badge = card.querySelector(".rack-alert-badge");
                 if (totalProblems > 0) {
                     card.classList.add("has-alert");
@@ -1995,7 +1995,7 @@ $content->addItem(new CJsScript('<script>
                         badge.textContent = totalProblems;
                         badge.setAttribute("title", totalProblems + " problems");
                     } else {
-                        // 创建新的告警徽章
+                        // Create a new alarm badge
                         var header = card.querySelector(".rack-card-header");
                         if (header) {
                             var newBadge = document.createElement("div");
@@ -2011,12 +2011,12 @@ $content->addItem(new CJsScript('<script>
                     }
                 }
 
-                // 更新迷你可视化中的告警颜色
+                // Update the alarm colors in the mini visualization
                 var miniUnits = card.querySelectorAll(".rack-mini-unit");
                 miniUnits.forEach(function(unit) {
                     removeSeverityClasses(unit);
                 });
-                // 重新计算迷你可视化的颜色
+                // Recompute the colors of the mini visualization
                 var rackHeight = parseInt(rackData.height) || 42;
                 for (var k = 0; k < rackHeight; k++) {
                     var uPos = rackHeight - k;
@@ -2034,14 +2034,14 @@ $content->addItem(new CJsScript('<script>
             });
         }
 
-        // 更新统计卡片中的告警数量
+        // Update the alarm count in the statistics cards
         var statNumbers = document.querySelectorAll(".stat-card .stat-number");
         if (statNumbers.length >= 3) {
             var totalProblemsInRoom = 0;
             for (var r = 0; r < allRacksData.length; r++) {
                 totalProblemsInRoom += allRacksData[r].problem_count;
             }
-            // 第三个统计卡片是告警数量（概览模式下）
+            // The third statistics card is the alarm count (in overview mode)
             var statLabels = document.querySelectorAll(".stat-card .stat-label");
             for (var s = 0; s < statLabels.length; s++) {
                 var labelParent = statLabels[s].closest(".stat-card");
@@ -2055,7 +2055,7 @@ $content->addItem(new CJsScript('<script>
     }
 
     /**
-     * 更新单机柜模式中的机架 U 位告警状态
+     * Update the alarm status of rack U positions in single-rack mode
      */
     function updateSingleRackMode(problemData) {
         document.querySelectorAll(".rack-unit-slot.occupied[data-host]").forEach(function(slot) {
@@ -2067,30 +2067,30 @@ $content->addItem(new CJsScript('<script>
                 var newCount = problemData[hostId].problem_count;
                 var newSeverity = problemData[hostId].max_severity;
 
-                // 更新 data-host 属性中的数据
+                // Update the data in the data-host attribute
                 hostData.problem_count = newCount;
                 slot.setAttribute("data-host", JSON.stringify(hostData));
 
-                // 更新 CSS 类
+                // Update the CSS classes
                 removeSeverityClasses(slot);
                 var hostStatus = parseInt(hostData.status === "disabled" ? 1 : 0) || 0;
-                // 检查是否是通过 status 文字判断
+                // Check whether it is determined by the status text
                 if (slot.classList.contains("status-disabled")) {
-                    // 保持禁用状态不变
+                    // Keep the disabled state unchanged
                 } else if (newCount > 0 && newSeverity >= 0) {
                     slot.classList.add(getSeverityClass(newSeverity));
                 } else {
                     slot.classList.add("no-problem");
                 }
 
-                // 更新告警数量徽章
+                // Update the alarm count badge
                 var badge = slot.querySelector(".problem-badge");
                 if (newCount > 0) {
                     if (badge) {
                         badge.textContent = newCount;
                         badge.setAttribute("title", newCount + " problems");
                     } else {
-                        // 需要在 host-slot-content 中添加徽章
+                        // The badge must be added to host-slot-content
                         var content = slot.querySelector(".host-slot-content");
                         if (content) {
                             var hostName = hostData.name || hostData.host || "";
@@ -2115,7 +2115,7 @@ $content->addItem(new CJsScript('<script>
     }
 
     /**
-     * 刷新告警数据的主函数
+     * Main function that refreshes alarm data
      */
     function refreshProblems() {
         var hostIds = collectAllHostIds();
@@ -2128,13 +2128,13 @@ $content->addItem(new CJsScript('<script>
 
                 var problemData = result.data;
 
-                // 更新概览模式
+                // Update the overview mode
                 updateOverviewMode(problemData);
 
-                // 更新单机柜模式
+                // Update the single-rack mode
                 updateSingleRackMode(problemData);
 
-                // 如果详情弹窗打开着，也更新详情弹窗
+                // If the details dialog is open, update it too
                 var detailModal = document.getElementById("rack-detail-modal");
                 if (detailModal && detailModal.classList.contains("visible") && detailRackData) {
                     var hostKeys = ["hosts", "hosts_front", "hosts_back"];
@@ -2162,12 +2162,12 @@ $content->addItem(new CJsScript('<script>
             });
     }
 
-    // 启动定时刷新
+    // Start the periodic refresh
     setInterval(refreshProblems, REFRESH_INTERVAL);
 
 })();
 </script>'));
 
-// 使用兼容渲染器显示页面
+// Display the page with the compatible renderer
 $content->addItem((new CTag('script', true))->setAttribute('src', 'modules/zabbix_rack/assets/js/element.js?v=20260910'));
 ViewRenderer::render($pageTitle, $styleTag, $content);

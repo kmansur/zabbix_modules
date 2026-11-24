@@ -3,8 +3,8 @@
 namespace Modules\ZabbixIm\Lib;
 
 /**
- * 通过 Zabbix 前端 API 包装器调用写操作（保证事务正确提交），
- * 并在返回 false 时取出真实的错误消息。
+ * Write operations go through the Zabbix frontend API wrapper (so transactions are committed correctly),
+ * and the real error message is retrieved when it returns false.
  */
 class ZabbixApiHelper {
 
@@ -16,7 +16,7 @@ class ZabbixApiHelper {
     }
 
     /**
-     * 通过前端包装器创建用户（事务由包装器统一管理）。
+     * Create users through the frontend wrapper (transactions are managed by the wrapper).
      *
      * @return array{ok:bool,data:mixed,error:string}
      */
@@ -40,8 +40,8 @@ class ZabbixApiHelper {
                 return ['ok' => false, 'data' => null, 'error' => 'API service not available: ' . $service];
             }
 
-            // 注意：CFrontendApiWrapper 的 create/update/delete 等都是通过魔术方法 __call 实现的，
-            // 因此不能用 method_exists() 判断，否则会误判为方法不存在。
+            // Note: create/update/delete etc. of CFrontendApiWrapper are implemented through the magic method __call,
+            // so method_exists() cannot be used; it would wrongly report the method as missing.
             $result = $api->$method($params);
         } catch (\Throwable $e) {
             $detail = self::collectFrontendMessages();
@@ -105,7 +105,7 @@ class ZabbixApiHelper {
     }
 
     /**
-     * 取出并清空 Zabbix 前端错误消息（API 返回 false 时由 error() 写入）。
+     * Retrieve and clear the Zabbix frontend error messages (written by error() when the API returns false).
      */
     private static function collectFrontendMessages(): string {
         $messages = [];

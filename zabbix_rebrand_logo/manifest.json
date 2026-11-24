@@ -7,7 +7,7 @@
   "namespace": "ZabbixRebrandLogo",
   "version": "1.1.0",
   "type": "module",
-  "description": "Replace the login and sidebar logos and browser favicon, and customize the server name, footer, and help link. / 更换登录页和侧边栏标志及浏览器图标，并自定义服务器名称、页脚和帮助链接。",
+  "description": "Replace the login and sidebar logos and browser favicon, and customize the server name, footer, and help link.",
   "actions": {
     "rebrand.config": {
       "class": "RebrandConfig",

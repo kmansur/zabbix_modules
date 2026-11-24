@@ -5,52 +5,52 @@ namespace Modules\Topomap\Services;
 use Modules\Topomap\Lib\LanguageManager;
 
 /**
- * 通过 SNMP 读取交换机的 LLDP / CDP / EDP 邻居表，供「自动发现」使用。
+ * Reads the LLDP / CDP / EDP neighbor tables of switches over SNMP, for auto discovery.
  *
- * 为什么用 SNMP 而不是 Zabbix API：Zabbix 本身不存邻居关系，LLDP 邻居只在设备上。
- * 服务器的 PHP 已带 snmp 扩展（`php -m | grep snmp`），实测 20ms 级别返回，
- * 不需要额外装 net-snmp 命令行工具。
+ * Why SNMP and not the Zabbix API: Zabbix itself does not store neighbor relations; LLDP neighbors only exist on the devices.
+ * The server's PHP already has the snmp extension (`php -m | grep snmp`), with responses measured in the 20 ms range,
+ * so the net-snmp command-line tools are not needed.
  *
- * 所有方法都不抛异常：单台设备失败只记在 error 里，不能因为一台交换机不通就让整轮发现挂掉。
+ * No method throws: a single device failure is only recorded in error, so one unreachable switch cannot break the whole discovery round.
  */
 class LldpDiscovery {
 
 	/**
-	 * lldpRemTable 根。
+	 * lldpRemTable root.
 	 *
-	 * 注意：**永远不要 walk 它的祖先 `1.0.8802.1.1.2.1`（整棵 lldpMIB）**。
-	 * 该子树里的 lldpExtensions（…2.1.5，即 LLDP-MED）在 H3C Comware 上会让 net-snmp 的
-	 * GETBULK 永久挂死 —— 实测 `snmp2_real_walk('1.0.8802.1.1.2.1')` 连 `timeout -s KILL 30`
-	 * 都杀不出结果，整个发现请求就被这一台设备拖死（表现：日志停在「扫描 xxx …」再也不动）。
-	 * 而下面这几张窄表单独 walk 全是几十毫秒稳定返回（remTable 144 行 / 0.53s）。
+	 * Note: **never walk its ancestor `1.0.8802.1.1.2.1` (the whole lldpMIB)**.
+	 * lldpExtensions (…2.1.5, i.e. LLDP-MED) in that subtree makes net-snmp's GETBULK hang forever on H3C Comware
+	 * — in tests `snmp2_real_walk('1.0.8802.1.1.2.1')` could not even be killed with `timeout -s KILL 30`,
+	 * and the whole discovery request was held up by that one device (symptom: the log stops at "Scanning xxx …" and never moves).
+	 * The narrow tables below, walked separately, all return reliably in tens of milliseconds (remTable 144 rows / 0.53 s).
 	 */
 	private const OID_LLDP_REM = '1.0.8802.1.1.2.1.4.1.1';
 
-	/** lldpLocPortTable 的 lldpLocPortId（本地端口名，如 GigabitEthernet1/0/1） */
+	/** lldpLocPortId of lldpLocPortTable (local port name, e.g. GigabitEthernet1/0/1) */
 	private const OID_LLDP_LOC_PORT_ID = '1.0.8802.1.1.2.1.3.7.1.3';
 
-	/** lldpLocSysName（标量，本机名） */
+	/** lldpLocSysName (scalar, local system name) */
 	private const OID_LLDP_LOC_SYSNAME = '1.0.8802.1.1.2.1.3.3.0';
 
-	/** lldpRemManAddrTable（邻居管理地址藏在索引里，值只是接口子类型） */
+	/** lldpRemManAddrTable (the neighbor management address is hidden in the index; the value is only the interface subtype) */
 	private const OID_LLDP_REM_MAN_ADDR = '1.0.8802.1.1.2.1.4.2.1.3';
 
-	/** CISCO-CDP-MIB cdpCacheTable 根 */
+	/** CISCO-CDP-MIB cdpCacheTable root */
 	private const OID_CDP_CACHE = '1.3.6.1.4.1.9.9.23.1.2.1.1';
 
-	/** EXTREME-EDP-MIB extremeEdpNeighborTable：邻居名 / 邻居端口 */
+	/** EXTREME-EDP-MIB extremeEdpNeighborTable: neighbor name / neighbor port */
 	private const OID_EDP_NEIGHBOR_NAME = '1.3.6.1.4.1.1916.1.13.2.1.3';
 	private const OID_EDP_NEIGHBOR_PORT = '1.3.6.1.4.1.1916.1.13.2.1.6';
 
-	/** IF-MIB ifName：EDP 只给本地端口 ifIndex，得拿它换可读接口名 */
+	/** IF-MIB ifName: EDP only gives the local port ifIndex, which must be mapped to a readable interface name */
 	private const OID_IF_NAME = '1.3.6.1.2.1.31.1.1.1.1';
 
 	/**
-	 * lldpRemTable 的列号 → 字段名（按 RFC 1213 之后的标准 lldpRemEntry 定义）。
+	 * lldpRemTable column number → field name (per the standard lldpRemEntry definition).
 	 *
-	 * 邻居端口优先用 lldpRemPortId（column 7）：交换机 / 路由器上报的是
-	 * 「GigabitEthernet1/0/1」这类接口名，比 lldpRemPortDesc 有用；
-	 * 只有当 PortId 是 MAC（终端网卡）时才回落到 PortDesc。
+	 * The neighbor port prefers lldpRemPortId (column 7): switches / routers report interface names such as
+	 * "GigabitEthernet1/0/1", which are more useful than lldpRemPortDesc;
+	 * only when PortId is a MAC (endpoint NIC) does it fall back to PortDesc.
 	 */
 	private const LLDP_COLUMNS = [
 		5 => 'chassis',
@@ -60,7 +60,7 @@ class LldpDiscovery {
 		10 => 'sysdesc'
 	];
 
-	/** cdpCacheTable 的列号 → 字段名 */
+	/** cdpCacheTable column number → field name */
 	private const CDP_COLUMNS = [
 		3 => 'address',
 		6 => 'device_id',
@@ -68,25 +68,25 @@ class LldpDiscovery {
 		8 => 'platform'
 	];
 
-	/** 单次 SNMP 超时（微秒）。设备不通时以 1.2s 收场，避免把整轮发现拖住。 */
+	/** Single SNMP timeout (microseconds). An unreachable device gives up after 1.2 s so the whole discovery round is not held up. */
 	/** @var int */ private $timeout_us;
 
-	/** 重试次数：0，交换机不回就是真不回，多试只是浪费时间 */
+	/** Retries: 0; a switch that does not answer really does not answer, and retrying only wastes time */
 	/** @var int */ private $retries = 0;
 
 	/**
-	 * 同一台设备两次 SNMP 请求之间的最小间隔（微秒）。
-	 * 华为 / H3C 的 agent 有请求限流：连着发 5、6 个 walk 就直接
-	 * 「No response from x.x.x.x」，表现是「有时能发现、有时一个邻居都没有」。
+	 * Minimum interval between two SNMP requests to the same device (microseconds).
+	 * Huawei / H3C agents rate-limit requests: 5 or 6 consecutive walks lead straight to
+	 * "No response from x.x.x.x", showing up as "sometimes discovered, sometimes no neighbors at all".
 	 */
 	private const WALK_GAP_US = 70000;
 
 	/** @var float */ private $last_request_at = 0.0;
 
 	/**
-	 * 本轮 scanHost 里 SNMP 成功应答过几次。
-	 * 用来区分「设备回了空表（没开 LLDP）」和「设备根本没响应（超时/限流）」——
-	 * 前者是设备配置问题，后者该提示用户稍后重试，不能混为一谈。
+	 * How many SNMP responses succeeded in this scanHost round.
+	 * Used to tell "the device returned an empty table (LLDP not enabled)" from "the device did not respond at all (timeout/rate limit)" —
+	 * the former is a device configuration issue, the latter should tell the user to retry later; they must not be confused.
 	 */
 	/** @var int */ private $walk_answered = 0;
 
@@ -95,9 +95,9 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * 扫描一台 snmp 设备，返回邻居列表。
+	 * Scan one SNMP device and return its neighbor list.
 	 *
-	 * @param array $host  Zabbix 主机（含 interfaces 与解析后的社区串）
+	 * @param array $host  Zabbix host (with interfaces and the resolved community string)
 	 *
 	 * @return array{ok: bool, error: string, sysname: string, ifnames: array, neighbors: array}
 	 */
@@ -105,11 +105,11 @@ class LldpDiscovery {
 		$empty = ['ok' => false, 'error' => '', 'sysname' => '', 'neighbors' => []];
 
 		if (empty($host['snmp_ip'])) {
-			return array_merge($empty, ['error' => LanguageManager::t('没有 SNMP 接口')]);
+			return array_merge($empty, ['error' => LanguageManager::t('No SNMP interface')]);
 		}
 
 		if (!extension_loaded('snmp') && !function_exists('snmp2_real_walk')) {
-			return array_merge($empty, ['error' => LanguageManager::t('PHP 缺少 snmp 扩展')]);
+			return array_merge($empty, ['error' => LanguageManager::t('PHP snmp extension is missing')]);
 		}
 
 		$protocols = isset($host['protocols']) && is_array($host['protocols']) ? $host['protocols'] : ['LLDP'];
@@ -119,30 +119,30 @@ class LldpDiscovery {
 		$this->walk_answered = 0;
 		$this->useNumericOids();
 
-		// 每台设备只按一个协议的优先级往下试：LLDP → CDP → EDP，命中就停。
-		// 这不是省事，是必须的：agent 对连续请求限流，多打几次整台设备就没响应了，
-		// 而且三种协议同时开会得到重复邻居。
+		// Each device tries one protocol at a time in priority order: LLDP → CDP → EDP, stopping at the first hit.
+		// This is not laziness but necessity: agents rate-limit consecutive requests, and a few extra calls make the whole device stop responding,
+		// and enabling all three protocols would also yield duplicate neighbors.
 		if (in_array('LLDP', $protocols, true)) {
 			$lldp = $this->scanLldp($host);
 			$neighbors = $lldp['neighbors'];
 			$sysname = $lldp['sysname'];
 		}
 
-		// LLDP 没结果时才看 CDP：老思科设备往往只开 CDP。
+		// CDP is checked only when LLDP has no result: old Cisco devices often only run CDP.
 		if (!$neighbors && in_array('CDP', $protocols, true)) {
 			$neighbors = $this->scanCdp($host);
 		}
 
-		// 最后才是 EDP：只有 Extreme 系设备用（走 1916 私有 MIB，别的设备秒回空表）。
+		// EDP comes last: only Extreme devices use it (private MIB 1916; other devices return an empty table immediately).
 		if (!$neighbors && in_array('EDP', $protocols, true)) {
 			$neighbors = $this->scanEdp($host);
 		}
 
-		// 一次都没应答 = 设备不通 / 被限流，不是「没开 LLDP」，提示要能给对方向
+		// No response at all = device unreachable / rate-limited, not "LLDP not enabled"; the hint must point the right way
 		if (!$neighbors && $this->walk_answered === 0) {
 			return [
 				'ok' => false,
-				'error' => LanguageManager::t('SNMP 没有响应（超时或设备限流），请稍后重试'),
+				'error' => LanguageManager::t('SNMP did not respond (timeout or rate limiting); please retry later'),
 				'sysname' => $sysname,
 				'neighbors' => []
 			];
@@ -161,40 +161,40 @@ class LldpDiscovery {
 	// ------------------------------------------------------------------
 
 	/**
-	 * 分表 walk 拿邻居关系：lldpRemTable（邻居）+ lldpLocPortTable（本地端口名）
-	 * + lldpRemManAddrTable（邻居管理地址）+ lldpLocSysName（本机名）。
+	 * Walk separate tables to get neighbor relations: lldpRemTable (neighbors) + lldpLocPortTable (local port names)
+	 * + lldpRemManAddrTable (neighbor management addresses) + lldpLocSysName (local system name).
 	 *
-	 * **绝不 walk `1.0.8802.1.1.2.1` 整棵子树**，原因见 OID_LLDP_REM 的注释：
-	 * 子树里的 LLDP-MED 会把 GETBULK 拖死。分表后每台设备 4 次请求，
-	 * 有邻居时约 1s（含请求间隔），比一次走死强。
+	 * **Never walk the whole `1.0.8802.1.1.2.1` subtree**; see the comment on OID_LLDP_REM:
+	 * LLDP-MED in that subtree hangs GETBULK. With separate tables each device takes 4 requests,
+	 * about 1 s with neighbors (including request intervals), far better than hanging in one go.
 	 *
 	 * @return array{neighbors: array, sysname: string}
 	 */
 	private function scanLldp(array $host): array {
-		// 空表要复测一次：限流时设备会回空表（见 walk() 里的注释）
+		// An empty table is checked again: devices return empty tables when rate-limited (see the comment in walk())
 		$tree = $this->walkMap(self::OID_LLDP_REM, $host, true);
 
 		if (!$tree) {
 			return ['neighbors' => [], 'sysname' => $this->readSysname($host)];
 		}
 
-		// 空表要复测：设备限流时 lldpLocPortId 会「正常回空表」（见 walk() 注释）。
-		// 实测最忙的核心交换机（29 个邻居，前面几次 walk 把 agent 打到限流）这一步
-		// 全部查不到本地端口名，于是整机本地端口退化成 65542 这种 Comware 原始数字。
+		// An empty table is checked again: when a device is rate-limited, lldpLocPortId "normally" returns an empty table (see the comment in walk()).
+		// On the busiest core switch tested (29 neighbors, earlier walks pushed the agent into rate limiting), this step
+		// found no local port names at all, so every local port degraded to raw Comware numbers such as 65542.
 		$locports = $this->walkMap(self::OID_LLDP_LOC_PORT_ID, $host, true);
 		$sysname = $this->readSysname($host);
 		$manaddrs = [];
 		$manaddrs_by_port = [];
-		// IF-MIB ifName 只在 lldpLocPortId 缺失时才按需 walk 一次（多一次 SNMP 请求）
+		// IF-MIB ifName is walked on demand only when lldpLocPortId is missing (one more SNMP request)
 		$ifnames = null;
 
-		// lldpRemManAddrTable 的索引里藏着地址：
-		// <timeMark>.<本地端口>.<remIndex>.<subtype>.<len>.<addr...>
-		// 值只是「接口子类型」，地址只能从索引里解析。
+		// The address is hidden in the index of lldpRemManAddrTable:
+		// <timeMark>.<local port>.<remIndex>.<subtype>.<len>.<addr...>
+		// The value is only the "interface subtype"; the address can only be parsed from the index.
 		//
-		// 优先按「rem 条目的完整索引」关联（这才是 RFC 里该有的对应关系）；
-		// 华为等设备两张表的 lldpRemIndex 对不上，再回退到「按本地端口」。
-		// 之前只按端口建键，同一端口下有多个 rem 条目时会互相覆盖，地址张冠李戴。
+		// Prefer associating by the full index of the rem entry (the correspondence intended by the RFC);
+		// on devices such as Huawei the lldpRemIndex of the two tables does not match, so fall back to "by local port".
+		// Keys used to be built by port only; several rem entries under one port overwrote each other and addresses got mixed up.
 		foreach ($this->walkMap(self::OID_LLDP_REM_MAN_ADDR, $host) as $suffix => $value) {
 			$parsed = $this->parseManAddr((string) $suffix);
 
@@ -214,7 +214,7 @@ class LldpDiscovery {
 		$rows = [];
 
 		foreach ($tree as $suffix => $value) {
-			// lldpRemTable：<列>.<timeMark>.<本地端口>.<remIndex>
+			// lldpRemTable: <column>.<timeMark>.<local port>.<remIndex>
 			$parts = explode('.', (string) $suffix);
 
 			if (count($parts) < 4) {
@@ -247,16 +247,16 @@ class LldpDiscovery {
 			$parts = explode('.', $key);
 			$port_num = count($parts) >= 2 ? (int) $parts[count($parts) - 2] : 0;
 
-			// 本地端口名：lldpLocPortId 最准；查不到时回退 IF-MIB ifName / Comware 解码，
-			// 详见 resolveLocalPortName()。
+			// Local port name: lldpLocPortId is the most accurate; otherwise fall back to IF-MIB ifName / Comware decoding,
+			// see resolveLocalPortName().
 			$local_port = $this->resolveLocalPortName($port_num, $locports, $host, $ifnames);
 
-			// 同一台交换机可能上报两套 localPortNum（堆叠 / 双主控：65542 与 131078 都是 ge1_0_6），
-			// 端口名相同就视为同一条邻居，否则拓扑里会出现两条重复连线。
+			// One switch may report two sets of localPortNum (stacking / dual supervisors: 65542 and 131078 are both ge1_0_6);
+			// identical port names are treated as the same neighbor, otherwise the topology shows two duplicate links.
 			//
-			// 去重键里必须有「邻居自己的标识」：终端 / AP 常常只上报 chassisId（MAC），
-			// sysName 为空，一个口下挂多台终端（1/0/12 三台、1/0/22 五台）时
-			// 只用「空名字 + 端口」会把它们合并成一条，导致「包含未纳管设备」少一大半。
+			// The dedup key must include the neighbor's own identifier: endpoints / APs often only report a chassisId (MAC)
+			// with an empty sysName; with several endpoints on one port (three on 1/0/12, five on 1/0/22),
+			// using only "empty name + port" would merge them into one, losing most of the "include unmanaged devices" results.
 			$ident = $sysname_of_neighbor;
 
 			if ($ident === '') {
@@ -275,22 +275,22 @@ class LldpDiscovery {
 
 			$seen[$uniq] = true;
 
-			// 邻居端口名优先用 lldpRemPortId；它是 MAC（终端网卡）时才回落到 PortDesc，
-			// 否则连线上会显示一串 MAC。
+			// The neighbor port name prefers lldpRemPortId; only when it is a MAC (endpoint NIC) does it fall back to PortDesc,
+			// otherwise a MAC address would be shown on the link.
 			$raw_port_id = isset($row['port_id']) ? trim((string) $row['port_id']) : '';
 			$port_id = $raw_port_id;
 			$port_desc = isset($row['port_desc']) ? trim((string) $row['port_desc']) : '';
 
-			// 对端端口是 MAC ⇒ 对面是终端网卡（PC / 打印机 / AP），不是交换机端口。
-			// aiops 的 is_distribution 判断的就是这件事，后面据此选 Workstation 图标。
+			// A MAC as the remote port ⇒ the other side is an endpoint NIC (PC / printer / AP), not a switch port.
+			// This is exactly what aiops' is_distribution checks, and it is used later to choose the Workstation icon.
 			$port_mac = self::normalizeMac($raw_port_id) !== '';
 
 			if ($port_id === '' || $port_mac) {
 				$port_id = $port_desc;
 			}
 
-			// 邻居管理地址：先按 rem 条目的完整索引取，取不到再按本地端口回退
-			// （见上面的注释：有些设备两张表的 lldpRemIndex 对不上）。
+			// Neighbor management address: by the full index of the rem entry first, falling back to the local port
+			// (see the comment above: on some devices the lldpRemIndex of the two tables does not match).
 			$neighbor_ip = isset($manaddrs[$key])
 				? $manaddrs[$key]
 				: (isset($manaddrs_by_port[(string) $port_num]) ? $manaddrs_by_port[(string) $port_num] : '');
@@ -313,17 +313,17 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * 解析本地端口名，取值优先级：
-	 *   1) lldpLocPortId（最准，华为 / H3C 给的是 ge0_0_21 这类名字）
-	 *   2) IF-MIB ifName：把 Comware 编码端口号直接当 ifIndex 去查（按需 walk，结果跨邻居复用）
-	 *   3) Comware 解码：lldpRemLocalPortNum 是「槽位<<16 | 端口号」，还原成 GigabitEthernet{槽}/0/{端口}
-	 *   4) 都不行才回退原始数字（旧行为）
+	 * Resolve the local port name, in order of priority:
+	 *   1) lldpLocPortId (most accurate; Huawei / H3C give names such as ge0_0_21)
+	 *   2) IF-MIB ifName: use the Comware-encoded port number directly as ifIndex (walked on demand, result reused across neighbors)
+	 *   3) Comware decoding: lldpRemLocalPortNum is "slot<<16 | port", restored as GigabitEthernet{slot}/0/{port}
+	 *   4) only if all fail, fall back to the raw number (old behavior)
 	 *
-	 * 为什么非要还原成可读名：本地端口名既画在连线上，又是「双向发现去重」和
-	 * 「按端口匹配触发器」的键。原始数字（65547）跟对端报的 Gi1/0/11 对不上，
-	 * 会导致双向重复线合不掉、源端触发器匹配不到（表现就是两端都绑上触发器、只看到一条线）。
+	 * Why a readable name is essential: the local port name is drawn on the link and is also the key for "bidirectional discovery dedup" and
+	 * "trigger matching by port". A raw number (65547) does not match Gi1/0/11 reported by the other end,
+	 * so bidirectional duplicates would not merge and source-end triggers would not match (symptom: triggers bound at both ends while only one link is visible).
 	 *
-	 * @param array|null $ifnames 引用传入，同一台设备只 walk 一次 ifName
+	 * @param array|null $ifnames passed by reference; ifName is walked only once per device
 	 */
 	private function resolveLocalPortName(int $port_num, array $locports, array $host, ?array &$ifnames): string {
 		if ($port_num <= 0) {
@@ -333,9 +333,9 @@ class LldpDiscovery {
 		$key = (string) $port_num;
 		$name = isset($locports[$key]) ? trim((string) $locports[$key]) : '';
 
-		// H3C 部分端口在 lldpLocPortId 里报的是**端口 MAC**（70:81:85:2C:05:E1），不是接口名。
-		// 这种必须当作「没查到」继续回退 IF-MIB ifName，否则连线上显示一串 MAC，
-		// 而且按端口匹配触发器永远命中不了（与 aiops 的 readableName 判断一致）。
+		// Some H3C ports report the **port MAC** (70:81:85:2C:05:E1) in lldpLocPortId instead of the interface name.
+		// These must be treated as "not found" and fall back to IF-MIB ifName, otherwise a MAC is shown on the link
+		// and trigger matching by port never succeeds (consistent with aiops' readableName check).
 		if ($name !== '' && self::normalizeMac($name) === '') {
 			return $name;
 		}
@@ -356,8 +356,8 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * Comware 的 lldpRemLocalPortNum = 槽位<<16 | 端口号（65547 = 1 槽 11 口、131083 = 2 槽 11 口）。
-	 * 还原成 GigabitEthernet{槽}/0/{端口}；不是该编码（小于 65536）返回空串。
+	 * Comware lldpRemLocalPortNum = slot<<16 | port (65547 = slot 1 port 11, 131083 = slot 2 port 11).
+	 * Restored as GigabitEthernet{slot}/0/{port}; values not in this encoding (below 65536) return an empty string.
 	 */
 	private static function decodeComwarePortName(int $port_num): string {
 		if ($port_num < 65536) {
@@ -374,7 +374,7 @@ class LldpDiscovery {
 		return 'GigabitEthernet'.$slot.'/0/'.$port;
 	}
 
-	/** lldpLocSysName 是标量，walk 一次只回一行，取第一个非空值即可。 */
+	/** lldpLocSysName is a scalar; a walk returns only one row, so take the first non-empty value. */
 	private function readSysname(array $host): string {
 		foreach ($this->walkMap(self::OID_LLDP_LOC_SYSNAME, $host) as $value) {
 			$value = trim((string) $value);
@@ -388,10 +388,10 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * lldpRemManAddrTable 索引：timeMark.localPortNum.remIndex.addrSubtype.len.addr...
+	 * lldpRemManAddrTable index: timeMark.localPortNum.remIndex.addrSubtype.len.addr...
 	 *
-	 * 地址是变长 octet string：华为等设备直接把 "192.168.1.1" 按 ASCII 塞进来（len=11），
-	 * 也有设备给的是 4 字节二进制（len=4）。两种都要认。
+	 * The address is a variable-length octet string: devices such as Huawei put "192.168.1.1" in as ASCII (len=11),
+	 * while others give 4 binary bytes (len=4). Both must be recognized.
 	 */
 	private function parseManAddr(string $suffix): array {
 		$parts = explode('.', $suffix);
@@ -412,12 +412,12 @@ class LldpDiscovery {
 		$port = (string) $parts[1];
 
 		if ($subtype === 1) {
-			// 4 字节二进制
+			// 4 binary bytes
 			if ($len === 4) {
 				return ['key' => $key, 'port' => $port, 'ip' => implode('.', array_map('intval', $bytes))];
 			}
 
-			// ASCII 点分十进制
+			// ASCII dotted decimal
 			$text = '';
 
 			foreach ($bytes as $byte) {
@@ -437,7 +437,7 @@ class LldpDiscovery {
 	// ------------------------------------------------------------------
 
 	private function scanCdp(array $host): array {
-		// 同样一次 walk 整张 cdpCacheTable，不要按列发请求（见 scanLldp 的注释）
+		// Likewise walk the whole cdpCacheTable once instead of requesting column by column (see the comment in scanLldp)
 		$cache = $this->walkMap(self::OID_CDP_CACHE, $host);
 
 		if (!$cache) {
@@ -492,8 +492,8 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * cdpCacheAddress 是 4 字节的 IPv4 octet string，SNMP 扩展通常给成
-	 * 「Hex-STRING: 0A 00 00 01」或「0.0.0.0」两种形态。
+	 * cdpCacheAddress is a 4-byte IPv4 octet string, which the SNMP extension usually returns as
+	 * "Hex-STRING: 0A 00 00 01" or "0.0.0.0".
 	 */
 	private function ipFromCdpAddress(string $raw): string {
 		$raw = trim($raw);
@@ -514,17 +514,17 @@ class LldpDiscovery {
 	}
 
 	// ------------------------------------------------------------------
-	// EDP（Extreme Discovery Protocol）
+	// EDP (Extreme Discovery Protocol)
 	// ------------------------------------------------------------------
 
 	/**
-	 * EXTREME-EDP-MIB `extremeEdpNeighborTable`（1.3.6.1.4.1.1916.1.13.2.1）：
-	 *   .1 extremeEdpPortIfIndex（本地端口 ifIndex，也是索引的第一段）
-	 *   .3 extremeEdpNeighborName  ← 邻居名
-	 *   .6 extremeEdpNeighborPort  ← 邻居端口
+	 * EXTREME-EDP-MIB `extremeEdpNeighborTable` (1.3.6.1.4.1.1916.1.13.2.1):
+	 *   .1 extremeEdpPortIfIndex (local port ifIndex, also the first part of the index)
+	 *   .3 extremeEdpNeighborName  ← neighbor name
+	 *   .6 extremeEdpNeighborPort  ← neighbor port
 	 *
-	 * 索引是 `<本地端口 ifIndex>.<邻居 id>`，两张表用同一个索引；表里没有邻居 IP
-	 * （EDP 不上报地址），本地端口只能拿 ifIndex 去 IF-MIB 的 ifName 换接口名。
+	 * The index is `<local port ifIndex>.<neighbor id>`, shared by both tables; the table has no neighbor IP
+	 * (EDP does not report addresses), and the local port can only be mapped to an interface name via IF-MIB ifName using the ifIndex.
 	 */
 	private function scanEdp(array $host): array {
 		$names = $this->walkMap(self::OID_EDP_NEIGHBOR_NAME, $host);
@@ -562,15 +562,15 @@ class LldpDiscovery {
 	}
 
 	// ------------------------------------------------------------------
-	// SNMP 基础
+	// SNMP basics
 	// ------------------------------------------------------------------
 
 	/**
-	 * real_walk 一次，返回「索引后缀 => 清洗后的值」。
-	 * 失败（超时、设备不认这个 OID）统一返回空数组。
+	 * One real_walk, returning "index suffix => cleaned value".
+	 * Failures (timeout, OID not supported by the device) always return an empty array.
 	 *
-	 * 注意 key 的形态因设备而已：`1.0.8802...8.0.65542.1`、`iso.0.8802...`、
-	 * `IF-MIB::ifName.4` 都见过，不能假定一定以纯数字 OID 开头。
+	 * Note that the key format depends on the device: `1.0.8802...8.0.65542.1`, `iso.0.8802...`,
+	 * `IF-MIB::ifName.4` have all been seen, so it cannot be assumed to start with a numeric OID.
 	 */
 	private function walkMap(string $oid, array $host, bool $retry_empty = false): array {
 		$raw = $this->walk($oid, $host, $retry_empty);
@@ -590,15 +590,15 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * 从 real_walk 的 key 里取出属于 $oid 的那段索引。
-	 * 先按数字 OID 定位；名字形态（IF-MIB::ifName.4）退化成「取最后一段」，
-	 * 因为这类表（ifName / ifDescr）的索引本来就只有一个数字。
+	 * Extract the index part belonging to $oid from a real_walk key.
+	 * Locate it by numeric OID first; the named form (IF-MIB::ifName.4) degrades to "take the last part",
+	 * because tables of this kind (ifName / ifDescr) have a single numeric index anyway.
 	 */
 	private function suffixOf(string $key, string $oid): string {
 		$candidates = [$key];
 
 		if (strpos($key, 'iso.') === 0) {
-			// iso.0.8802... 与 1.0.8802... 是同一个 OID
+			// iso.0.8802... and 1.0.8802... are the same OID
 			$candidates[] = '1.'.substr($key, 4);
 		}
 
@@ -618,19 +618,19 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * @param bool $retry_empty 空表是否也复测（限流时设备会「正常回空表」，只有 LLDP 子树需要）
+	 * @param bool $retry_empty whether an empty table is also retried (rate-limited devices "normally" return an empty table; only the LLDP subtree needs this)
 	 */
 	private function walk(string $oid, array $host, bool $retry_empty = false): array {
 		$this->throttle();
 
 		$result = $this->walkOnce($oid, $host);
 
-		// 两种失败都要退避重试：
-		//   1) null —— 超时/丢包。实测 php-fpm 刚重启时，新 worker 里的第一次 SNMP 请求
-		//      经常收不到回应，紧接着再发就正常。
-		//   2) 空表 —— 限流时华为 snmpd 会「正常回一个空表」而不是报错，
-		//      表现就是同一台交换机「有时 24 个邻居、有时 0 个」。
-		// 只重试 1 次不够，冷进程 + 限流叠在一起时仍然会空手而归，所以退避两档。
+		// Both kinds of failure are retried with backoff:
+		//   1) null — timeout/packet loss. In tests, right after php-fpm restarts, the first SNMP request in a new worker
+		//      often gets no answer, while the next one works.
+		//   2) empty table — when rate-limited, Huawei snmpd "normally" returns an empty table instead of an error,
+		//      showing up as the same switch having "sometimes 24 neighbors, sometimes 0".
+		// A single retry is not enough; a cold process combined with rate limiting still comes back empty-handed, so there are two backoff steps.
 		foreach ([350000, 900000] as $gap) {
 			if (is_array($result) && ($result || !$retry_empty)) {
 				break;
@@ -645,9 +645,9 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * 同一台设备两次请求之间拉开 70ms。
-	 * 华为 / H3C 的 snmpd 对连续请求很敏感，连发 5、6 个 walk 就开始不响应，
-	 * 结果是「同一台交换机，有时能发现 24 个邻居，有时 0 个」。
+	 * Keep 70 ms between two requests to the same device.
+	 * Huawei / H3C snmpd are sensitive to consecutive requests and stop responding after 5 or 6 walks in a row,
+	 * with the result that "the same switch sometimes shows 24 neighbors and sometimes 0".
 	 */
 	private function throttle(): void {
 		$gap = self::WALK_GAP_US - (int) ((microtime(true) - $this->last_request_at) * 1000000);
@@ -660,12 +660,12 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * 让 SNMP 扩展把 key 输出成纯数字 OID（`.1.3.6.1.2.1.31.1.1.1.1.7`）。
+	 * Make the SNMP extension output keys as pure numeric OIDs (`.1.3.6.1.2.1.31.1.1.1.1.7`).
 	 *
-	 * 默认输出是 `IF-MIB::ifName.7` / `iso.0.8802...` 这种「MIB 名 + 索引」混排，
-	 * 索引超过一段时（EDP 的 `<ifIndex>.<邻居id>`、lldpRem 的
-	 * `<列>.<timeMark>.<端口>.<索引>`）只能靠猜，解析必错。
-	 * 数字形态下 suffixOf() 能精确切出 OID 后面那一段。
+	 * The default output mixes "MIB name + index" such as `IF-MIB::ifName.7` / `iso.0.8802...`,
+	 * and when the index has more than one part (EDP's `<ifIndex>.<neighbor id>`, lldpRem's
+	 * `<column>.<timeMark>.<port>.<index>`) it could only be guessed, and parsing would be wrong.
+	 * In numeric form suffixOf() can cut out the part after the OID precisely.
 	 */
 	private function useNumericOids(): void {
 		if (function_exists('snmp_set_oid_output_format') && defined('SNMP_OID_OUTPUT_NUMERIC')) {
@@ -674,7 +674,7 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * @return array|null 成功返回数组，失败返回 null（交给 walk() 决定是否重试）
+	 * @return array|null an array on success, null on failure (walk() decides whether to retry)
 	 */
 	private function walkOnce(string $oid, array $host): ?array {
 		$version = (int) ($host['snmp_version'] ?? 2);
@@ -702,14 +702,14 @@ class LldpDiscovery {
 					$this->timeout_us, $this->retries);
 			}
 			else {
-				// 用 @ 抑制 PHP Warning：设备不通时扩展会刷「No response from x.x.x.x」，
-				// 这类告警每秒几十条会把 nginx error.log 冲爆。失败由返回值 false 判断。
+				// @ suppresses PHP warnings: when a device is unreachable the extension spams "No response from x.x.x.x",
+				// dozens of such warnings per second would flood nginx's error.log. Failures are detected by the false return value.
 				$result = @snmp2_real_walk($ip, (string) ($host['community'] ?? 'public'), $oid,
 					$this->timeout_us, $this->retries);
 			}
 		}
 		catch (\Throwable $e) {
-			// 设备不通时扩展会抛异常，按「没有数据」处理
+			// When a device is unreachable the extension throws; treat it as "no data"
 			return null;
 		}
 
@@ -723,8 +723,8 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * 去掉 snmp 扩展给值加的类型前缀，并把 Hex-STRING 还原成可读文本。
-	 * 中文设备名（华为 / H3C 常见）返回的就是 Hex-STRING，不转码会是乱码。
+	 * Strip the type prefix the snmp extension adds to values and turn Hex-STRING back into readable text.
+	 * Non-ASCII device names (common on Huawei / H3C) are returned as Hex-STRING and would be garbled without decoding.
 	 */
 	private function clean($raw): string {
 		$raw = is_string($raw) ? $raw : (string) $raw;
@@ -742,7 +742,7 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * Hex-STRING → 文本：能按 UTF-8 解就直接解（中文名），否则按 MAC 风格显示。
+	 * Hex-STRING → text: decode as UTF-8 when possible (non-ASCII names), otherwise show it MAC-style.
 	 */
 	private function hexToString(string $hex): string {
 		$hex = preg_replace('/[^0-9a-fA-F]/', '', $hex);
@@ -757,7 +757,7 @@ class LldpDiscovery {
 			return '';
 		}
 
-		// 可打印的 ASCII / UTF-8 才当文本
+		// Only printable ASCII / UTF-8 counts as text
 		if (preg_match('//u', $bytes)) {
 			$text = trim($bytes, "\x00");
 
@@ -772,7 +772,7 @@ class LldpDiscovery {
 	}
 
 	/**
-	 * 解析 LLDP/CDP 里出现的 MAC，用来做兜底匹配（设备名和 IP 都没有时）。
+	 * Parse MACs appearing in LLDP/CDP, used as a fallback match (when there is neither device name nor IP).
 	 */
 	public static function normalizeMac(string $value): string {
 		$hex = preg_replace('/[^0-9a-fA-F]/', '', $value);

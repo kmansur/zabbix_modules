@@ -3,7 +3,7 @@ require_once dirname(__DIR__).'/lib/ModuleNotice.php';
 echo \ZabbixModuleNotice::reminder(dirname(__DIR__));
 
 
-// 引入语言管理器和兼容层
+// Load the language manager and the compatibility layer
 require_once dirname(__DIR__) . '/lib/LanguageManager.php';
 require_once dirname(__DIR__) . '/lib/ItemFinder.php';
 require_once dirname(__DIR__) . '/lib/ViewRenderer.php';
@@ -12,7 +12,7 @@ use Modules\ZabbixCmdb\Lib\ItemFinder;
 use Modules\ZabbixCmdb\Lib\ViewRenderer;
 
 /**
- * 获取主机分组状态显示元素
+ * Get the host group status display element
  */
 function getGroupStatusDisplay($group) {
     $hostCount = $group['host_count'];
@@ -39,7 +39,7 @@ function getGroupStatusDisplay($group) {
 }
 
 /**
- * 创建排序链接
+ * Create a sort link
  */
 function createSortLink($title, $field, $data) {
     $currentSort = isset($data['sort']) ? $data['sort'] : '';
@@ -52,7 +52,7 @@ function createSortLink($title, $field, $data) {
         $icon = $currentOrder === 'ASC' ? ' ↑' : ' ↓';
     }
 
-    // 构建URL，包含搜索参数
+    // Build the URL, including the search parameters
     $url = 'zabbix.php?action=cmdb.groups&sort=' . $field . '&sortorder=' . $newOrder;
     if (!empty($data['search'])) {
         $url .= '&search=' . urlencode($data['search']);
@@ -64,10 +64,10 @@ function createSortLink($title, $field, $data) {
     return $link;
 }
 
-// 从控制器获取标题
+// Get the title from the controller
 $pageTitle = $data['title'] ?? 'Host Groups';
 
-// 添加与Zabbix主题一致的CSS
+// Add CSS consistent with the Zabbix theme
 $styleTag = new CTag('style', true, '
 .cmdb-container {
     padding: 20px;
@@ -286,11 +286,11 @@ main{min-width:0!important;width:auto!important}
 @media(max-width:768px){.cmdb-container{padding:6px;overflow-x:auto}.search-form{padding:14px}.groups-table{min-width:720px}}
 ');
 
-// 创建主体内容
+// Create the main content
 $content = (new CDiv())
     ->addClass('cmdb-container');
 
-// 添加搜索表单
+// Add the search form
 $content->addItem(
     (new CForm())
         ->setAttribute('method', 'get')
@@ -316,11 +316,11 @@ $content->addItem(
         ->addItem((new CInput('hidden', 'action', 'cmdb.groups')))
 );
 
-// 创建表格
+// Create the table
 $table = new CTable();
 $table->addClass('groups-table');
 
-// 添加表头
+// Add the table header
 $header = [
     LanguageManager::t('Group Name'),
     createSortLink(LanguageManager::t('Host Count'), 'host_count', $data),
@@ -330,7 +330,7 @@ $header = [
 ];
 $table->setHeader($header);
 
-// 如果没有分组数据
+// If there is no group data
 if (empty($data['groups'])) {
     $table->addRow([
         (new CCol(LanguageManager::t('No groups found')))
@@ -338,16 +338,16 @@ if (empty($data['groups'])) {
             ->setAttribute('colspan', 5)
     ]);
 } else {
-    // 添加分组数据行
+    // Add group data rows
     foreach ($data['groups'] as $group) {
-        // 分组名称
+        // Group name
         $groupNameCol = new CCol();
         $groupNameCol->addItem(
             (new CLink(htmlspecialchars($group['name']), 'zabbix.php?action=hostgroup.edit&groupid=' . $group['groupid']))
                 ->addClass('group-link')
         );
 
-        // 主机数量
+        // Host count
         $hostCountCol = new CCol();
         $hostCountCol->addItem(
             (new CSpan($group['host_count']))
@@ -358,7 +358,7 @@ if (empty($data['groups'])) {
                 ->addClass('stat-unit')
         );
 
-        // CPU总量
+        // Total CPU
         $cpuCol = new CCol();
         if ($group['total_cpu'] > 0) {
             $cpuCol->addItem(
@@ -374,7 +374,7 @@ if (empty($data['groups'])) {
             $cpuCol->addItem((new CSpan('-'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // 内存总量
+        // Total memory
         $memoryCol = new CCol();
         if ($group['total_memory'] > 0) {
             $memoryCol->addItem(
@@ -386,7 +386,7 @@ if (empty($data['groups'])) {
             $memoryCol->addItem((new CSpan('-'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // 状态
+        // Status
         $statusCol = new CCol();
         $statusCol->addItem(getGroupStatusDisplay($group));
 
@@ -402,10 +402,10 @@ if (empty($data['groups'])) {
 
 $content->addItem($table);
 
-// 添加JavaScript
+// Add JavaScript
 $content->addItem(new CJsScript('<script>
-// 添加自动搜索功能
-// 全局变量用于防抖
+// Add automatic search
+// Global variable used for debouncing
 var searchTimeout;
 
 function handleSearchInput(input) {
@@ -420,10 +420,10 @@ function handleSearchInput(input) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    // 可以在这里添加额外的初始化逻辑
+    // Additional initialization logic can be added here
     var searchInput = document.querySelector("input[name=\"search\"]");
 });
 </script>'));
 
-// 使用兼容渲染器显示页面（模块视图需要直接输出，不能返回）
+// Display the page with the compatible renderer (module views must output directly, not return)
 ViewRenderer::render($pageTitle, $styleTag, $content);

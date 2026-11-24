@@ -3,8 +3,8 @@
     'use strict';
     const root = document.querySelector('.rack-ui');
     if (!root) return;
-    const zh = document.documentElement.lang.toLowerCase().startsWith('zh');
-    const labels = {confirm: zh ? '确认' : 'Confirm', cancel: zh ? '取消' : 'Cancel', close: zh ? '关闭' : 'Close'};
+    const pt = document.documentElement.lang.toLowerCase().startsWith('pt');
+    const labels = {confirm: pt ? 'Confirmar' : 'Confirm', cancel: pt ? 'Cancelar' : 'Cancel', close: pt ? 'Fechar' : 'Close'};
     let messageTimer;
     window.RackUI = {
         message(text) {

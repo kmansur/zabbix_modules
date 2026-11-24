@@ -13,13 +13,13 @@ use Modules\ZabbixCmdb\Lib\ItemFinder;
 
 class Cmdb extends CController {
 
-    /** 分页常量 */
+    /** Pagination constants */
     const PAGE_SIZE_DEFAULT = 50;
     const PAGE_SIZE_MIN     = 10;
     const PAGE_SIZE_MAX     = 100;
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -60,39 +60,39 @@ class Cmdb extends CController {
         $sort           = $this->getInput('sort', 'name');
         $sortorder      = $this->getInput('sortorder', 'ASC');
 
-        // ── 1) 获取主机分组列表（下拉菜单） ──
+        // ── 1) Get the host group list (dropdown) ──
         $hostGroups = $this->getHostGroups();
 
-        // ── 2) 轻量查询：获取所有匹配的主机 ID ──
-        //    仅返回 hostid + 必要的接口类型信息，不包含监控项数据
+        // ── 2) Lightweight query: get all matching host IDs ──
+        //    Returns only hostid + the needed interface type information, no item data
         $allHostIds = $this->getFilteredHostIds($search, $groupid, $interface_type);
 
-        // ── 2.5) 计算全局统计（CPU/内存总量 + 活跃主机数，跨所有过滤后主机） ──
+        // ── 2.5) Compute global statistics (CPU/memory totals + active hosts, across all filtered hosts) ──
         $globalStats = $this->computeGlobalStats($allHostIds);
 
-        // ── 3) 计算分页参数 ──
+        // ── 3) Compute pagination parameters ──
         $totalCount = count($allHostIds);
         $totalPages = max(1, (int)ceil($totalCount / $pageSize));
         $page       = min($page, $totalPages);
         $offset     = ($page - 1) * $pageSize;
 
-        // ── 4) 取当前页的主机 ID 切片 ──
+        // ── 4) Take the slice of host IDs for the current page ──
         $pageHostIds = array_slice($allHostIds, $offset, $pageSize);
 
-        // ── 5) 获取当前页主机的完整信息（单次 API 调用） ──
+        // ── 5) Get full information for the hosts on the current page (one API call) ──
         $hosts = [];
         if (!empty($pageHostIds)) {
             $hosts = $this->getHostDetails($pageHostIds);
         }
 
-        // ── 6) 批量获取当前页主机的所有监控项 ──
-        //    替代原来的 N×8 次逐主机查询
+        // ── 6) Fetch all items of the hosts on the current page in bulk ──
+        //    Replaces the former N×8 per-host queries
         $itemsData = [];
         if (!empty($pageHostIds)) {
             $itemsData = ItemFinder::batchGetHostItems($pageHostIds);
         }
 
-        // ── 7) 组装主机数据 ──
+        // ── 7) Assemble host data ──
         $hostData = [];
 
         foreach ($hosts as $host) {
@@ -117,56 +117,56 @@ class Cmdb extends CController {
                 'os_architecture'    => '-',
             ];
 
-            // 可用性状态（基于已获取的接口信息，无需额外 API 调用）
+            // Availability status (based on the interface information already fetched, no extra API call)
             $hostInfo['availability'] = ItemFinder::getHostAvailabilityStatus(
                 $hostid,
                 $host['interfaces'] ?? []
             );
 
-            // 从批量数据中提取监控项值
+            // Extract item values from the bulk data
             if (isset($itemsData[$hostid])) {
                 $items = $itemsData[$hostid];
 
-                // CPU 数量
+                // CPU count
                 if ($items['cpu_count'] !== null && $items['cpu_count']['value'] !== '') {
                     $hostInfo['cpu_total'] = $items['cpu_count']['value'];
                 }
 
-                // CPU 使用率
+                // CPU utilization
                 if ($items['cpu_usage'] !== null && $items['cpu_usage']['value'] !== '') {
                     $val = floatval($items['cpu_usage']['value']);
 
                     $hostInfo['cpu_usage'] = round($val, 2) . '%';
                 }
 
-                // 内存总量
+                // Total memory
                 if ($items['memory_total'] !== null && $items['memory_total']['value'] !== '') {
                     $hostInfo['memory_total'] = ItemFinder::formatMemorySize($items['memory_total']['value']);
                 }
 
-                // 内存使用率
+                // Memory utilization
                 if ($items['memory_usage'] !== null && $items['memory_usage']['value'] !== '') {
                     $val = floatval($items['memory_usage']['value']);
 
                     $hostInfo['memory_usage'] = round($val, 2) . '%';
                 }
 
-                // 内核版本
+                // Kernel version
                 if ($items['kernel_version'] !== null && $items['kernel_version']['value'] !== '') {
                     $hostInfo['kernel_version'] = ItemFinder::extractKernelInfo($items['kernel_version']['value']);
                 }
 
-                // 系统名称
+                // System name
                 if ($items['system_name'] !== null && $items['system_name']['value'] !== '') {
                     $hostInfo['system_name'] = $items['system_name']['value'];
                 }
 
-                // 操作系统
+                // Operating system
                 if ($items['operating_system'] !== null && $items['operating_system']['value'] !== '') {
                     $hostInfo['operating_system'] = $items['operating_system']['value'];
                 }
 
-                // 架构
+                // Architecture
                 if ($items['os_architecture'] !== null && $items['os_architecture']['value'] !== '') {
                     $hostInfo['os_architecture'] = $items['os_architecture']['value'];
                 }
@@ -175,9 +175,9 @@ class Cmdb extends CController {
             $hostData[] = $hostInfo;
         }
 
-        // ── 8) 页内排序 ──
-        //    主机名排序由 API sortfield 保证全局一致性，
-        //    监控项字段仅在当前页内排序（API 不支持按监控项值排序）
+        // ── 8) In-page sorting ──
+        //    Sorting by host name is kept globally consistent by the API sortfield,
+        //    item fields are sorted only within the current page (the API cannot sort by item value)
         if (!empty($hostData)) {
             $itemSortFields = [
                 'cpu_total', 'cpu_usage', 'memory_total', 'memory_usage',
@@ -185,8 +185,8 @@ class Cmdb extends CController {
                 'os_architecture', 'ip',
             ];
 
-            // 仅当排序字段为监控项字段时才在 PHP 端排序
-            // 主机名等字段已由 API 保证排序
+            // Sort in PHP only when the sort field is an item field
+            // Fields such as host name are already sorted by the API
             if (in_array($sort, $itemSortFields)) {
                 usort($hostData, function ($a, $b) use ($sort, $sortorder, $itemsData) {
                     $valueA = $a[$sort] ?? '';
@@ -197,7 +197,7 @@ class Cmdb extends CController {
                             $valueA = $valueA !== '-' ? floatval(str_replace('%', '', $valueA)) : -1;
                             $valueB = $valueB !== '-' ? floatval(str_replace('%', '', $valueB)) : -1;
                         } elseif ($sort === 'memory_total') {
-                            // 使用原始字节值排序，而非格式化后的字符串
+                            // Sort by raw byte values, not by the formatted strings
                             $valueA = isset($itemsData[$a['hostid']]['memory_total'])
                                 ? floatval($itemsData[$a['hostid']]['memory_total']['value'])
                                 : -1;
@@ -220,7 +220,7 @@ class Cmdb extends CController {
             }
         }
 
-        // ── 9) 构建响应 ──
+        // ── 9) Build the response ──
         $response = new CControllerResponseData([
             'title'            => LanguageManager::t('Host List'),
             'host_groups'      => $hostGroups,
@@ -233,7 +233,7 @@ class Cmdb extends CController {
             'total_cpu'        => $globalStats['total_cpu'],
             'total_memory'     => $globalStats['total_memory'],
             'active_hosts'     => $globalStats['active_hosts'],
-            // 分页信息
+            // Pagination information
             'page'             => $page,
             'page_size'        => $pageSize,
             'total_count'      => $totalCount,
@@ -245,17 +245,17 @@ class Cmdb extends CController {
     }
 
     // ─────────────────────────────────────────────
-    //  辅助方法
+    //  Helper methods
     // ─────────────────────────────────────────────
 
     /**
-     * 获取主机分组列表（用于搜索表单下拉菜单）
+     * Get the host group list (for the search form dropdown)
      */
     private function getHostGroups(): array {
         $hostGroups = [];
 
         $strategies = [
-            // 策略 1：仅获取包含主机的分组（推荐，性能最优）
+            // Strategy 1: only groups that contain hosts (recommended, best performance)
             function () {
                 return API::HostGroup()->get([
                     'output'     => ['groupid', 'name'],
@@ -264,7 +264,7 @@ class Cmdb extends CController {
                     'sortorder'  => 'ASC',
                 ]);
             },
-            // 策略 2：获取全部分组
+            // Strategy 2: all groups
             function () {
                 return API::HostGroup()->get([
                     'output'    => ['groupid', 'name'],
@@ -272,7 +272,7 @@ class Cmdb extends CController {
                     'sortorder' => 'ASC',
                 ]);
             },
-            // 策略 3：extend 输出（某些版本兼容)
+            // Strategy 3: extend output (compatibility with some versions)
             function () {
                 $groups = API::HostGroup()->get([
                     'output'    => 'extend',
@@ -283,7 +283,7 @@ class Cmdb extends CController {
                     return ['groupid' => $g['groupid'], 'name' => $g['name']];
                 }, $groups);
             },
-            // 策略 4：通过主机反向获取分组（最后的兼容性选项）
+            // Strategy 4: get groups through hosts (last compatibility option)
             function () {
                 $hosts = API::Host()->get([
                     'output'           => ['hostid'],
@@ -328,16 +328,16 @@ class Cmdb extends CController {
     }
 
     /**
-     * 获取经过筛选的主机 ID 列表（轻量查询）
+     * Get the filtered list of host IDs (lightweight query)
      *
-     * 只返回 hostid 数组，按主机名排序。
-     * 搜索支持：主机名、显示名称、IP 地址。
-     * 支持按分组 / 接口类型过滤。
+     * Returns only an array of hostids, sorted by host name.
+     * Search covers: host name, visible name, IP address.
+     * Filtering by group / interface type is supported.
      */
     private function getFilteredHostIds(string $search, int $groupid, int $interface_type): array {
         $allHostIds = []; // hostid => host_lite_data
 
-        // 基础查询参数：仅返回 hostid，按名称排序
+        // Base query parameters: return only hostid, sorted by name
         $baseParams = [
             'output'    => ['hostid'],
             'sortfield' => 'name',
@@ -348,13 +348,13 @@ class Cmdb extends CController {
             $baseParams['groupids'] = [$groupid];
         }
 
-        // 如果需要按接口类型过滤，附带接口类型字段
+        // When filtering by interface type, include the interface type field
         if ($interface_type > 0) {
             $baseParams['selectInterfaces'] = ['type'];
         }
 
         if (!empty($search)) {
-            // ── 搜索主机名 / 显示名称 ──
+            // ── Search host name / visible name ──
             try {
                 $nameParams = array_merge($baseParams, [
                     'search'                 => [
@@ -372,7 +372,7 @@ class Cmdb extends CController {
                 error_log('CMDB: Name search failed: ' . $e->getMessage());
             }
 
-            // ── 如果搜索词包含数字，同时搜 IP 地址 ──
+            // ── If the search term contains digits, also search IP addresses ──
             if (preg_match('/\d/', $search)) {
                 try {
                     $interfaces = API::HostInterface()->get([
@@ -387,7 +387,7 @@ class Cmdb extends CController {
 
                     if (!empty($interfaces)) {
                         $ipHostIds = array_unique(array_column($interfaces, 'hostid'));
-                        // 排除已通过名称搜索到的主机
+                        // Exclude hosts already found by the name search
                         $ipHostIds = array_diff($ipHostIds, array_keys($allHostIds));
 
                         if (!empty($ipHostIds)) {
@@ -405,7 +405,7 @@ class Cmdb extends CController {
                 }
             }
         } else {
-            // ── 无搜索条件：获取所有主机 ──
+            // ── No search criteria: get all hosts ──
             try {
                 $hosts = API::Host()->get($baseParams);
                 foreach ($hosts as $host) {
@@ -416,7 +416,7 @@ class Cmdb extends CController {
             }
         }
 
-        // ── 按接口类型过滤 ──
+        // ── Filter by interface type ──
         if ($interface_type > 0) {
             $filtered = [];
             foreach ($allHostIds as $hostid => $host) {
@@ -436,12 +436,12 @@ class Cmdb extends CController {
     }
 
     /**
-     * 计算全局统计数据（跨所有过滤后主机）
+     * Compute global statistics (across all filtered hosts)
      *
-     * 使用配置规则批量获取 CPU 数量和内存总量：
-     * - 1 次 host.get 获取 status/maintenance/interfaces 判断活跃主机
+     * Fetch CPU count and total memory in bulk using the configured rules:
+     * - 1 host.get call for status/maintenance/interfaces to determine active hosts
      *
-     * @param array $allHostIds 所有过滤后的主机 ID
+     * @param array $allHostIds all filtered host IDs
      * @return array ['total_cpu' => int, 'total_memory' => int, 'active_hosts' => int]
      */
     private function computeGlobalStats(array $allHostIds): array {
@@ -455,7 +455,7 @@ class Cmdb extends CController {
             return $stats;
         }
 
-        // CPU 和内存汇总：与主机列表共用匹配规则
+        // CPU and memory totals: same matching rules as the host list
         try {
             $items = ItemFinder::batchGetHostItems($allHostIds, ['cpu_count', 'memory_total']);
             foreach ($items as $hostItems) {
@@ -466,8 +466,8 @@ class Cmdb extends CController {
             error_log('CMDB: Global CPU/Memory stats failed: ' . $e->getMessage());
         }
 
-        // ── 活跃主机统计：单次 host.get ──
-        // 活跃 = 启用（status=0）+ 非维护 + 主接口 available=1
+        // ── Active host statistics: a single host.get ──
+        // Active = enabled (status=0) + not in maintenance + main interface available=1
         try {
             $hosts = API::Host()->get([
                 'output'           => ['hostid', 'status', 'maintenance_status'],
@@ -476,17 +476,17 @@ class Cmdb extends CController {
             ]);
 
             foreach ($hosts as $host) {
-                // 排除禁用主机
+                // Exclude disabled hosts
                 if ($host['status'] == 1) {
                     continue;
                 }
-                // 排除维护中的主机
+                // Exclude hosts in maintenance
                 if (isset($host['maintenance_status']) && $host['maintenance_status'] == 1) {
                     continue;
                 }
-                // 检查接口可用性（与 getHostAvailabilityStatus 逻辑一致）
+                // Check interface availability (same logic as getHostAvailabilityStatus)
                 if (!empty($host['interfaces'])) {
-                    // 优先查找主接口
+                    // Look for the main interface first
                     $mainIface = null;
                     foreach ($host['interfaces'] as $iface) {
                         if ($iface['main'] == 1) {
@@ -510,9 +510,9 @@ class Cmdb extends CController {
     }
 
     /**
-     * 获取指定主机 ID 的完整详细信息
+     * Get full details for the given host IDs
      *
-     * 只为当前分页的主机调用，通常 10~100 台。
+     * Called only for the hosts on the current page, usually 10–100.
      */
     private function getHostDetails(array $hostIds): array {
         if (empty($hostIds)) {

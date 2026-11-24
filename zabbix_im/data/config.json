@@ -12,7 +12,7 @@
     "settings": [
         {
             "id": "set_default_wecom",
-            "name": "企业微信",
+            "name": "WeCom",
             "provider": "wecom",
             "enabled": true,
             "root_department_id": "1",

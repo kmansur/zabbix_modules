@@ -1,7 +1,7 @@
 <?php
 /**
- * 机柜视图控制器
- * 显示机柜可视化界面
+ * Rack view controller
+ * Displays the rack visualization
  */
 
 namespace Modules\ZabbixRack\Actions;
@@ -24,7 +24,7 @@ use Modules\ZabbixRack\Lib\ViewRenderer;
 class RackView extends CController {
     
     protected function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -54,7 +54,7 @@ class RackView extends CController {
         $rackId = $this->getInput('rack_id', '');
         $search = $this->getInput('search', '');
         
-        // 按当前用户权限过滤机房
+        // Filter rooms by the current user's permissions
         $rooms = RackPermission::filterRoomsForCurrentUser(RackConfig::getRooms());
         $allowedRoomNames = [];
         foreach ($rooms as $room) {
@@ -69,28 +69,28 @@ class RackView extends CController {
             $rackId = '';
         }
         
-        // 获取机柜列表
+        // Get the rack list
         $racks = [];
         if ($roomId) {
             $racks = RackPermission::filterRacksForCurrentUser(RackConfig::getRacks($roomId), $rooms);
         } elseif (!empty($rooms)) {
-            // 默认选择第一个可访问机房
+            // Select the first accessible room by default
             $roomId = $rooms[0]['id'];
             $racks = RackPermission::filterRacksForCurrentUser(RackConfig::getRacks($roomId), $rooms);
         }
         
-        // 获取当前选中的机柜
+        // Get the currently selected rack
         $currentRack = null;
         $hosts = [];
         $hostsFront = [];
         $hostsBack = [];
         
-        // 新增：所有机柜的数据（用于多机柜展示）
+        // Added: data of all racks (for the multi-rack display)
         $allRacksData = [];
-        $showOverview = false; // 是否展示机柜概览模式
+        $showOverview = false; // Whether to show the rack overview mode
         
         if ($rackId) {
-            // 用户选择了特定机柜，展示单机柜详情
+            // The user selected a specific rack: show the single-rack details
             $currentRack = RackConfig::getRack($rackId);
             if ($currentRack !== null && !RackPermission::userCanAccessRackId($rackId)) {
                 $currentRack = null;
@@ -98,11 +98,11 @@ class RackView extends CController {
             }
             $showOverview = ($currentRack === null);
         } else {
-            // 没有选择机柜，展示当前机房所有机柜概览
+            // No rack selected: show an overview of all racks in the current room
             $showOverview = true;
         }
         
-        // 获取机柜中的主机 - 单机柜模式
+        // Get the hosts in the rack - single-rack mode
         if ($currentRack) {
             $roomInfo = RackConfig::getRoom($currentRack['room_id']);
             $roomName = $roomInfo ? $roomInfo['name'] : '';
@@ -121,7 +121,7 @@ class RackView extends CController {
             $hosts = array_merge($hostsFront, $hostsBack);
         }
         
-        // 获取所有机柜的数据 - 概览模式
+        // Get the data of all racks - overview mode
         if ($showOverview && !empty($racks)) {
             $roomInfo = RackConfig::getRoom($roomId);
             $roomName = $roomInfo ? $roomInfo['name'] : '';
@@ -182,7 +182,7 @@ class RackView extends CController {
             }
         }
         
-        // 如果有搜索关键字，搜索主机
+        // If there is a search keyword, search hosts
         $searchResults = [];
         if ($search) {
             $searchResults = HostRackManager::searchAssignedHosts($search);
@@ -191,20 +191,20 @@ class RackView extends CController {
                 return $roomName !== '' && isset($allowedRoomNames[$roomName]);
             }));
 
-            // 在概览模式下，按搜索关键字过滤机柜显示
+            // In overview mode, filter the displayed racks by the search keyword
             if ($showOverview && !empty($allRacksData)) {
-                // 收集搜索到的主机所在的机柜名
+                // Collect the names of the racks containing the hosts found
                 $matchedRackNames = [];
                 foreach ($searchResults as $sr) {
                     $matchedRackNames[$sr['rack_name']] = true;
                 }
 
-                // 同时支持按机柜名搜索
+                // Also support searching by rack name
                 $searchLower = mb_strtolower($search);
                 $filteredRacks = [];
                 foreach ($allRacksData as $rackData) {
                     $rackNameLower = mb_strtolower($rackData['name']);
-                    // 机柜名匹配 或 包含搜索到的主机
+                    // Rack name matches or contains a host found
                     if (mb_strpos($rackNameLower, $searchLower) !== false
                         || isset($matchedRackNames[$rackData['name']])) {
                         $filteredRacks[] = $rackData;
@@ -214,7 +214,7 @@ class RackView extends CController {
             }
         }
         
-        // 获取主机组列表（用于添加主机弹窗）
+        // Get the host group list (for the add host dialog)
         $hostGroups = HostRackManager::getHostGroups();
         
         $data = [

@@ -6,7 +6,7 @@
   "records": [
     {
       "host": "example-linux-01",
-      "name": "示例主机, \"😀\"",
+      "name": "Host de exemplo, \"😀\"",
       "description": "=SUM(1,2)",
       "status": 1,
       "host_groups": [
@@ -37,7 +37,7 @@
       "item_references": [
         {
           "host": "example-linux-01",
-          "name": "主监控项, \"😀\"",
+          "name": "Item mestre, \"😀\"",
           "key_": "example.master",
           "type": 2,
           "value_type": 4,
@@ -53,7 +53,7 @@
         },
         {
           "host": "example-linux-01",
-          "name": "依赖监控项\nsecond line",
+          "name": "Item dependente\nsecond line",
           "key_": "example.dependent",
           "type": 18,
           "value_type": 4,

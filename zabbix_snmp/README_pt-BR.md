@@ -1,6 +1,6 @@
 # Módulo Zabbix SNMP
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -41,7 +41,7 @@ Módulo de frontend do Zabbix que oferece um assistente SNMP. Ele adiciona o men
 
 ### Geral
 
-- **Internacionalização**: interface em chinês, inglês, russo e português do Brasil
+- **Internacionalização**: interface em inglês e português do Brasil
 - **Interface moderna**: tabelas e interações limpas
 - **Controle de permissões**: criar itens / templates exige privilégios de administrador no Zabbix
 

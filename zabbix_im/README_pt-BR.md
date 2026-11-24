@@ -1,6 +1,6 @@
 # Assistente de sincronização de IM
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -26,11 +26,11 @@ O módulo adiciona o submenu **Assistente de sincronização de IM** ao menu **U
 - **Várias configurações de sincronização**: gerencie as credenciais de IM pela interface (**Usuários → Configurações de sincronização**); apenas uma configuração ativa por vez
 - **Sincronização de departamentos**: cria/atualiza grupos de usuários do Zabbix a partir dos departamentos do IM
 - **Sincronização de usuários**: associa ou cria usuários do Zabbix a partir dos membros do IM e os atribui aos grupos
-- **Política de nomes de usuário no DingTalk**: prioriza o celular; sem celular, converte o `name` para pinyin (ex.: 张三 → `zhangsan`); por último usa o `userid`
+- **Política de nomes de usuário no DingTalk**: prioriza o celular; sem celular, converte o `name` para pinyin (ex.: o nome chinês Zhang San → `zhangsan`); por último usa o `userid`
 - **Correspondência flexível**: por nome de usuário, e-mail ou alias (atualmente fixa em nome de usuário)
 - **Modo de pré-visualização**: pré-visualize a correspondência de departamentos e usuários antes de sincronizar
 - **Modo caminho**: opcionalmente usa o caminho completo do departamento como nome do grupo
-- **Internacionalização**: interface em chinês, inglês, russo e português do Brasil
+- **Internacionalização**: interface em inglês e português do Brasil
 
 ## Instalação
 
@@ -106,7 +106,7 @@ O módulo usa o framework de módulos do Zabbix:
 
 ### Internacionalização
 
-Todos os textos da interface ficam em `lib/LanguageManager.php`, em **chinês (zh_CN)**, **inglês (en_US)**, **russo (ru_RU)** e **português do Brasil (pt_BR)**. A detecção de idioma segue o Zabbix: idioma do usuário → padrão do sistema → `en_US`. Menus, páginas, diálogos, mensagens de erro da API e exceções dos clientes de IM são traduzidos; códigos e mensagens de erro brutos das APIs de terceiros ainda podem aparecer em inglês.
+Todos os textos da interface ficam em `lib/LanguageManager.php`, em **inglês (en_US)** e **português do Brasil (pt_BR)**. A detecção de idioma segue o Zabbix: idioma do usuário → padrão do sistema → `en_US`. Menus, páginas, diálogos, mensagens de erro da API e exceções dos clientes de IM são traduzidos; códigos e mensagens de erro brutos das APIs de terceiros ainda podem aparecer em inglês.
 
 ## Configuração do módulo
 
@@ -322,7 +322,7 @@ Este módulo chama as APIs de contatos do Feishu por meio de um **aplicativo pr�
    | `"0"` (raiz da empresa) | Precisa ser **Todos os membros** (escopo da empresa inteira). As APIs do departamento raiz verificam a permissão sobre a empresa inteira |
    | Departamento específico (ex.: `od-xxx`) | O escopo precisa **incluir esse departamento e todos os subdepartamentos** |
 
-   > **Configuração típica**: a disponibilidade do aplicativo pode ser só para TI, mas o escopo de contatos deve ser **Todos os membros** para sincronizar a organização inteira. Veja o [caso de exemplo oficial](https://open.feishu.cn/document/server-docs/contact-v3/scope/scope_authority#典型案例).
+   > **Configuração típica**: a disponibilidade do aplicativo pode ser só para TI, mas o escopo de contatos deve ser **Todos os membros** para sincronizar a organização inteira. Veja o [caso de exemplo oficial](https://open.feishu.cn/document/server-docs/contact-v3/scope/scope_authority).
 
 5. **Permissões de campos (conforme necessário)**  
    Campos sensíveis são omitidos, a menos que o escopo correspondente seja concedido:
@@ -337,7 +337,7 @@ Este módulo chama as APIs de contatos do Feishu por meio de um **aplicativo pr�
    Sem `contact:user.employee_id:readonly`, o módulo recorre ao `open_id` (que muda de aplicativo para aplicativo; recomenda-se habilitar o `user_id`).
 
 6. **Publique uma versão do aplicativo**  
-   Após alterar permissões ou escopo, crie e publique uma nova versão; é necessária a aprovação do administrador da empresa. Veja [Publicar aplicativo próprio](https://open.feishu.cn/document/home/introduction-to-custom-app-development/self-built-application-development-process#发布应用).
+   Após alterar permissões ou escopo, crie e publique uma nova versão; é necessária a aprovação do administrador da empresa. Veja [Publicar aplicativo próprio](https://open.feishu.cn/document/home/introduction-to-custom-app-development/self-built-application-development-process).
 
 7. **Ative no Zabbix**  
    **Usuários → Configurações de sincronização** → adicione uma configuração Feishu → App ID, App Secret, `root_department_id` → salve e ative → pré-visualize/sincronize em **Sincronização de IM**.
@@ -423,7 +423,7 @@ Este módulo chama as APIs de contatos do DingTalk por meio de um **aplicativo i
    - Exclui automaticamente o departamento de contatos escolares **`-7`**.
 
 7. **Mapeamento de campos para o Zabbix**
-   - **Nome de usuário**: prioriza o **`mobile` (número de celular)**; sem ele, converte o **`name` para pinyin** (ex.: 张三 → `zhangsan`); se a conversão falhar, usa o **`userid`**. Usa a tabela GB2312 embutida; exige `iconv` ou `mbstring`.
+   - **Nome de usuário**: prioriza o **`mobile` (número de celular)**; sem ele, converte o **`name` para pinyin** (ex.: o nome chinês Zhang San → `zhangsan`); se a conversão falhar, usa o **`userid`**. Usa a tabela GB2312 embutida; exige `iconv` ou `mbstring`.
    - **Nome**: `name`.
    - **E-mail**: `email`, com reserva em `org_email`.
    - **Celular**: `mobile` (exige permissão de leitura; usado como nome de usuário quando presente; caso contrário, usa-se o pinyin do nome).

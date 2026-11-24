@@ -19,7 +19,7 @@ use Modules\ZabbixReports\Lib\ProblemFinder;
 class WeeklyReportExport extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -71,8 +71,8 @@ class WeeklyReportExport extends CController {
         $from = mktime(0, 0, 0, date('m', $weekStart), date('d', $weekStart), date('Y', $weekStart));
         $till = mktime(23, 59, 59, date('m', $weekEnd), date('d', $weekEnd), date('Y', $weekEnd));
 
-        // 使用 ProblemFinder 获取与报表周期有交集的所有告警
-        // 先获取主机（支持分组过滤），用于告警筛选
+        // Use ProblemFinder to get all alarms that overlap the report period
+        // First get the hosts (with group filter support), used to filter alarms
         $hostOptions = [
             'output' => ['hostid', 'name'],
             'filter' => ['status' => HOST_STATUS_MONITORED]
@@ -91,7 +91,7 @@ class WeeklyReportExport extends CController {
         $triggerHostMap = $problemResult['triggerHostMap'];
         $triggerStatusMap = $problemResult['triggerStatusMap'] ?? [];
 
-        // 构建告警信息
+        // Build the alarm information
         $alertInfo = [];
         $hostCounts = [];
         foreach ($events as $event) {
@@ -120,10 +120,10 @@ class WeeklyReportExport extends CController {
         arsort($hostCounts);
         $topHosts = array_slice($hostCounts, 0, 10, true);
 
-        // 获取所有主机（使用已过滤的主机列表）
+        // Get all hosts (using the filtered host list)
         $hosts = $filteredHosts;
 
-        // 获取主机组映射
+        // Get the host group map
         $hostGroups = [];
         if (!empty($hosts)) {
             $hostids = array_column($hosts, 'hostid');
@@ -132,7 +132,7 @@ class WeeklyReportExport extends CController {
                 'hostids' => $hostids
             ]);
             
-            // 建立主机到组的映射
+            // Build the host-to-group map
             foreach ($hostGroupMap as $group) {
                 $groupHosts = API::Host()->get([
                     'output' => ['hostid'],
@@ -149,18 +149,18 @@ class WeeklyReportExport extends CController {
             }
         }
 
-        // 初始化CPU和内存使用率数组
+        // Initialize the CPU and memory utilization arrays
         $cpuUsage = [];
         $memUsage = [];
 
         foreach ($hosts as $host) {
-            // 使用ItemFinder获取CPU使用率
+            // Use ItemFinder to get CPU utilization
             $cpuUtilResult = ItemFinder::findCpuUtilization($host['hostid'], $from, $till);
             if ($cpuUtilResult && $cpuUtilResult['value'] !== null) {
                 $cpuUsage[$host['name']] = $cpuUtilResult['value'];
             }
 
-            // 使用ItemFinder获取内存使用率
+            // Use ItemFinder to get memory utilization
             $memUtilResult = ItemFinder::findMemoryUtilization($host['hostid'], $from, $till);
             if ($memUtilResult && $memUtilResult['value'] !== null) {
                 $memUsage[$host['name']] = $memUtilResult['value'];
@@ -171,20 +171,20 @@ class WeeklyReportExport extends CController {
         $topCpuHosts = array_slice($cpuUsage, 0, 10, true);
         $topMemHosts = array_slice($memUsage, 0, 10, true);
 
-        // 第二部分：按主机群组分组的主机信息
+        // Part 2: host information grouped by host group
         $hostsByGroup = [];
         $cpuTotal = [];
         $memTotal = [];
         
         foreach ($hosts as $host) {
-            // 分组主机
+            // Group hosts
             $groups = isset($hostGroups[$host['hostid']]) ? $hostGroups[$host['hostid']] : [];
             $hostGroupName = !empty($groups) ? $groups[0]['name'] : 'No Group';
             if (!isset($hostsByGroup[$hostGroupName])) {
                 $hostsByGroup[$hostGroupName] = [];
             }
             
-            // 初始化主机信息
+            // Initialize host information
             $hostInfo = [
                 'name' => $host['name'],
                 'cpu_usage' => 'N/A',
@@ -193,37 +193,37 @@ class WeeklyReportExport extends CController {
                 'mem_total' => 'N/A'
             ];
             
-            // 使用ItemFinder获取CPU使用率
+            // Use ItemFinder to get CPU utilization
             $cpuUtilResult = ItemFinder::findCpuUtilization($host['hostid'], $from, $till);
             if ($cpuUtilResult && $cpuUtilResult['value'] !== null) {
                 $hostInfo['cpu_usage'] = number_format($cpuUtilResult['value'], 2) . '%';
             }
             
-            // 使用ItemFinder获取CPU数量
+            // Use ItemFinder to get the CPU count
             $cpuCountResult = ItemFinder::findCpuCount($host['hostid'], $from, $till);
             if ($cpuCountResult && $cpuCountResult['value'] !== null) {
                 $cpuTotal[$host['name']] = $cpuCountResult['value'];
                 $hostInfo['cpu_total'] = $cpuCountResult['value'];
             }
             
-            // 使用ItemFinder获取内存使用率
+            // Use ItemFinder to get memory utilization
             $memUtilResult = ItemFinder::findMemoryUtilization($host['hostid'], $from, $till);
             if ($memUtilResult && $memUtilResult['value'] !== null) {
                 $hostInfo['mem_usage'] = number_format($memUtilResult['value'], 2) . '%';
             }
             
-            // 使用ItemFinder获取内存总量
+            // Use ItemFinder to get total memory
             $memTotalResult = ItemFinder::findMemorySize($host['hostid'], $from, $till);
             if ($memTotalResult && $memTotalResult['value'] !== null) {
                 $memTotal[$host['name']] = $memTotalResult['value'];
                 $hostInfo['mem_total'] = number_format($memTotalResult['value'] / (1024*1024*1024), 2);
             }
             
-            // 添加主机到对应群组
+            // Add the host to its group
             $hostsByGroup[$hostGroupName][] = $hostInfo;
         }
 
-        // 准备PDF数据（新格式）
+        // Prepare the PDF data (new format)
         $reportData = [
             'date' => date('Y-m-d', $weekStart) . ' to ' . date('Y-m-d', $weekEnd),
             'report_date' => date('Y-m-d', $weekStart) . ' to ' . date('Y-m-d', $weekEnd),
@@ -231,7 +231,7 @@ class WeeklyReportExport extends CController {
             'resolvedCount' => $resolvedCount,
             'alertInfo' => $alertInfo,
             'hostsByGroup' => $hostsByGroup,
-            // 保留兼容性
+            // Keep compatibility
             'topHosts' => $topHosts,
             'topCpuHosts' => $topCpuHosts,
             'topMemHosts' => $topMemHosts,
@@ -239,7 +239,7 @@ class WeeklyReportExport extends CController {
             'memTotal' => $memTotal
         ];
 
-        // 生成PDF
+        // Generate the PDF
         $pdfTitle = LanguageManager::t('Zabbix Weekly Report') . ' - ' . LanguageManager::formatPeriod('weekly', $weekStart);
         if ($groupName !== '') {
             $pdfTitle .= ' [' . $groupName . ']';
@@ -248,13 +248,13 @@ class WeeklyReportExport extends CController {
         $pdfGenerator->setData($reportData);
         $pdfContent = $pdfGenerator->generate();
 
-        // 检查是否是HTML格式（当没有PDF库时的fallback）
+        // Check whether it is HTML (fallback when no PDF library is available)
         if (strpos($pdfContent, '<!DOCTYPE html>') === 0) {
-            // 返回HTML文件，用户可以打印为PDF
+            // Return an HTML file that the user can print to PDF
             header('Content-Type: text/html; charset=UTF-8');
             header('Content-Disposition: attachment; filename="weekly_report_' . date('Y-m-d', $weekStart) . '.html"');
         } else {
-            // 返回实际的PDF文件
+            // Return the actual PDF file
             header('Content-Type: application/pdf');
             header('Content-Disposition: attachment; filename="weekly_report_' . date('Y-m-d', $weekStart) . '.pdf"');
         }

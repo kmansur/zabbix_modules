@@ -3,7 +3,7 @@
 namespace Modules\ZabbixIm\Lib;
 
 /**
- * 通用 HTTP 客户端
+ * Generic HTTP client
  */
 class HttpClient {
 

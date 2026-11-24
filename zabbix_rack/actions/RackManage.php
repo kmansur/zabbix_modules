@@ -1,7 +1,7 @@
 <?php
 /**
- * 机柜管理控制器
- * 管理机房和机柜的配置
+ * Rack management controller
+ * Manages the configuration of rooms and racks
  */
 
 namespace Modules\ZabbixRack\Actions;
@@ -22,7 +22,7 @@ use Modules\ZabbixRack\Lib\HostRackManager;
 class RackManage extends CController {
     
     protected function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -50,7 +50,7 @@ class RackManage extends CController {
             $userMap[$user['userid']] = $user;
         }
 
-        // 获取所有机房
+        // Get all rooms
         $rooms = RackConfig::getRooms();
         foreach ($rooms as &$room) {
             $room['user_groups'] = RackPermission::normalizeIdList($room['user_groups'] ?? []);
@@ -63,20 +63,20 @@ class RackManage extends CController {
         }
         unset($room);
         
-        // 获取所有机柜
+        // Get all racks
         $racks = RackConfig::getRacks();
         
-        // 为机柜添加机房名称
+        // Add the room name to each rack
         $roomNames = [];
         foreach ($rooms as $room) {
             $roomNames[$room['id']] = $room['name'];
         }
         
-        // 计算每个机柜的已使用 U 位
+        // Compute the used U positions of each rack
         foreach ($racks as &$rack) {
             $rack['room_name'] = $roomNames[$rack['room_id']] ?? '';
             
-            // 获取机柜中的主机来计算已使用 U 位
+            // Get the hosts in the rack to compute the used U positions
             $usedU = 0;
             if (!empty($rack['room_name']) && !empty($rack['name'])) {
                 try {
@@ -87,7 +87,7 @@ class RackManage extends CController {
                         }
                     }
                 } catch (\Exception $e) {
-                    // 忽略错误，使用默认值
+                    // Ignore errors and use the default value
                 }
             }
             $rack['used_u'] = $usedU;

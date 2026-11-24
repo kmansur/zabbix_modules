@@ -14,7 +14,7 @@ use Modules\ZabbixBackupRestore\Lib\{Api as BackupApi, BackupService, Bundle, Bu
 use Symfony\Component\Yaml\Yaml;
 
 final class CWebUser {
-	/** @var array */ public static $data = ['lang' => 'zh_CN', 'timezone' => 'Asia/Shanghai', 'roleid' => '1', 'userid' => '1'];
+	/** @var array */ public static $data = ['lang' => 'pt_BR', 'timezone' => 'Asia/Shanghai', 'roleid' => '1', 'userid' => '1'];
 }
 
 final class CSettingsHelper {
@@ -22,7 +22,7 @@ final class CSettingsHelper {
 	public const DEFAULT_TIMEZONE = 'default_timezone';
 
 	public static function getPublic(string $field): string {
-		return $field === self::DEFAULT_LANG ? 'zh_CN' : 'America/New_York';
+		return $field === self::DEFAULT_LANG ? 'pt_BR' : 'America/New_York';
 	}
 }
 
@@ -114,7 +114,7 @@ $family = substr($version, 0, 3);
 $service = new BackupService(new BackupApi());
 $secret_macro = '{$PASS}';
 $host = [
-	'host' => 'Host 北京',
+	'host' => 'Host São Paulo',
 	'tls_connect' => '2',
 	'tls_accept' => '2',
 	'tls_psk_identity' => 'zabbix-local-key',
@@ -164,7 +164,8 @@ API::$tables = [
 same(Bundle::filename(1735689600), 'zabbix_backup_2025-01-01_08-00-00.yaml', 'User timezone');
 CWebUser::$data['timezone'] = 'default';
 same(Bundle::filename(1735689600), 'zabbix_backup_2024-12-31_19-00-00.yaml', 'Frontend default timezone');
-same(LanguageManager::t('Backup and restore'), '备份与还原', 'Chinese locale');
+CWebUser::$data['lang'] = 'pt_BR';
+same(LanguageManager::t('Backup and restore'), 'Backup e restauração', 'Brazilian Portuguese locale');
 CWebUser::$data['lang'] = 'en_US';
 same(LanguageManager::t('Backup and restore'), 'Backup and restore', 'English locale');
 

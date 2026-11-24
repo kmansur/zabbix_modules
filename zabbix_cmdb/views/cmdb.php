@@ -3,7 +3,7 @@ require_once dirname(__DIR__).'/lib/ModuleNotice.php';
 echo \ZabbixModuleNotice::reminder(dirname(__DIR__));
 
 
-// 引入语言管理器和兼容层
+// Load the language manager and the compatibility layer
 require_once dirname(__DIR__) . '/lib/LanguageManager.php';
 require_once dirname(__DIR__) . '/lib/ItemFinder.php';
 require_once dirname(__DIR__) . '/lib/ViewRenderer.php';
@@ -12,14 +12,14 @@ use Modules\ZabbixCmdb\Lib\ItemFinder;
 use Modules\ZabbixCmdb\Lib\ViewRenderer;
 
 /**
- * 构建保留所有筛选和分页参数的 URL
+ * Build a URL that keeps all filter and pagination parameters
  */
 function buildCmdbUrl($params, $data) {
     $url = 'zabbix.php?action=cmdb';
     foreach ($params as $key => $value) {
         $url .= '&' . $key . '=' . urlencode($value);
     }
-    // 保留搜索条件
+    // Keep the search criteria
     if (!isset($params['search']) && !empty($data['search'])) {
         $url .= '&search=' . urlencode($data['search']);
     }
@@ -36,7 +36,7 @@ function buildCmdbUrl($params, $data) {
 }
 
 /**
- * 创建排序链接（切换排序后重置到第1页）
+ * Create a sort link (changing the sort resets to page 1)
  */
 function createSortLink($title, $field, $data) {
     $currentSort = isset($data['sort']) ? $data['sort'] : '';
@@ -59,7 +59,7 @@ function createSortLink($title, $field, $data) {
 }
 
 /**
- * 创建分页链接
+ * Create pagination links
  */
 function createPaginationLink($pageNum, $data, $text = null, $disabled = false) {
     $label = $text ?? (string)$pageNum;
@@ -85,23 +85,23 @@ function createPaginationLink($pageNum, $data, $text = null, $disabled = false) 
 }
 
 /**
- * 获取主机状态显示元素
+ * Get the host status display element
  */
 function getHostStatusDisplay($host) {
-    // 获取主机状态信息
+    // Get the host status information
     $statusInfo = isset($host['availability']) ? $host['availability'] : ['status' => 'unknown', 'text' => 'Unknown', 'class' => 'status-unknown'];
     
-    // 如果主机被禁用，显示Disabled
+    // If the host is disabled, show Disabled
     if ($host['status'] == 1) {
         $statusText = '🚫 ' . LanguageManager::t('Disabled');
         $statusClass = 'status-disabled';
     } 
-    // 如果主机在维护中，显示Maintenance
+    // If the host is in maintenance, show Maintenance
     elseif (isset($host['maintenance_status']) && $host['maintenance_status'] == 1) {
         $statusText = '🔧 ' . LanguageManager::t('Maintenance');
         $statusClass = 'status-maintenance';
     }
-    // 否则显示接口可用性状态
+    // Otherwise show the interface availability status
     else {
         $icon = '';
         switch ($statusInfo['status']) {
@@ -126,23 +126,23 @@ function getHostStatusDisplay($host) {
 }
 
 /**
- * 计算活跃主机数量（基于实际可用性状态）
+ * Count active hosts (based on the actual availability status)
  */
 function countActiveHosts($hosts) {
     $activeCount = 0;
     
     foreach ($hosts as $host) {
-        // 如果主机被禁用，跳过
+        // Skip disabled hosts
         if ($host['status'] == 1) {
             continue;
         }
         
-        // 如果主机在维护中，跳过
+        // Skip hosts in maintenance
         if (isset($host['maintenance_status']) && $host['maintenance_status'] == 1) {
             continue;
         }
         
-        // 检查可用性状态
+        // Check the availability status
         $availability = isset($host['availability']) ? $host['availability'] : ['status' => 'unknown'];
         if ($availability['status'] === 'available') {
             $activeCount++;
@@ -152,10 +152,10 @@ function countActiveHosts($hosts) {
     return $activeCount;
 }
 
-// 从控制器获取标题
+// Get the title from the controller
 $pageTitle = $data['title'] ?? 'CMDB';
 
-// 添加与Zabbix主题一致的CSS
+// Add CSS consistent with the Zabbix theme
 $styleTag = new CTag('style', true, '
 .cmdb-container {
     padding: 20px;
@@ -456,7 +456,7 @@ $styleTag = new CTag('style', true, '
     border: 1px solid #ffeaa7;
 }
 
-/* ── 分页组件样式 ── */
+/* ── Pagination component styles ── */
 .pagination-container {
     display: flex;
     align-items: center;
@@ -560,7 +560,7 @@ main{min-width:0!important;width:auto!important}
 @media(max-width:1100px){.stats-container{grid-template-columns:repeat(3,minmax(150px,1fr))}}@media(max-width:768px){.cmdb-container{padding:6px}.stats-container{grid-template-columns:repeat(2,minmax(135px,1fr))}.cmdb-search-form{padding:14px}.hosts-table{min-width:1100px}.cmdb-container{overflow-x:auto}}
 ');
 
-// 创建主体内容
+// Create the main content
 $content = (new CDiv())
     ->addClass('cmdb-container')
     ->addItem(
@@ -593,12 +593,12 @@ $content = (new CDiv())
                                         $select->setAttribute('id', 'groupid-select');
                                         $select->setAttribute('onchange', 'handleGroupChange(this)');
 
-                                        // 添加"所有分组"选项
+                                        // Add the "all groups" option
                                         $optAll = new CTag('option', true, LanguageManager::t('All Groups'));
                                         $optAll->setAttribute('value', '0');
                                         $select->addItem($optAll);
 
-                                        // 添加实际的主机组
+                                        // Add the actual host groups
                                         if (!empty($data['host_groups'])) {
                                             foreach ($data['host_groups'] as $group) {
                                                 $opt = new CTag('option', true, $group['name']);
@@ -648,7 +648,7 @@ $content = (new CDiv())
             )
     );
 
-// 如果有主机数据，添加统计卡片
+// If there is host data, add the statistics cards
 $totalCount = $data['total_count'] ?? count($data['hosts']);
 if (!empty($data['hosts']) || $totalCount > 0) {
     $content->addItem(
@@ -712,11 +712,11 @@ if (!empty($data['hosts']) || $totalCount > 0) {
     );
 }
 
-// 创建表格
+// Create the table
 $table = new CTable();
 $table->addClass('hosts-table');
 
-// 添加表头（带排序链接）
+// Add the table header (with sort links)
 $header = [
     LanguageManager::t('#'),
     createSortLink(LanguageManager::t('Host Name'), 'name', $data),
@@ -733,7 +733,7 @@ $header = [
 ];
 $table->setHeader($header);
 
-// 如果没有主机数据
+// If there is no host data
 if (empty($data['hosts'])) {
     $table->addRow([
         (new CCol(LanguageManager::t('No hosts found')))
@@ -741,13 +741,13 @@ if (empty($data['hosts'])) {
             ->setAttribute('colspan', 12)
     ]);
 } else {
-    // 序号起始值：基于分页偏移量
+    // Starting row number: based on the pagination offset
     $rowNum = (($data['page'] ?? 1) - 1) * ($data['page_size'] ?? 50);
 
-    // 添加主机数据行
+    // Add host data rows
     foreach ($data['hosts'] as $host) {
         $rowNum++;
-        // 获取主要IP地址
+        // Get the main IP address
         $mainIp = '';
         $interfaceTypes = [];
         foreach ($host['interfaces'] as $interface) {
@@ -755,7 +755,7 @@ if (empty($data['hosts'])) {
                 $mainIp = !empty($interface['ip']) ? $interface['ip'] : $interface['dns'];
             }
 
-            // 收集接口类型
+            // Collect interface types
             $typeClass = '';
             $typeText = '';
             $typeIcon = '';
@@ -785,13 +785,13 @@ if (empty($data['hosts'])) {
             if (!empty($typeText)) {
                 $interfaceTypes[] = (new CSpan($typeText))->addClass('interface-type ' . $typeClass);
             }
-        }        // 获取主机分组
+        }        // Get the host groups
         $groupNames = [];
         if (isset($host['groups']) && is_array($host['groups'])) {
             $groupNames = array_column($host['groups'], 'name');
         }
 
-        // 主机名和状态
+        // Host name and status
         $hostNameCol = new CCol();
         $hostNameCol->addItem(
             (new CLink(htmlspecialchars($host['name']), 'zabbix.php?action=host.view&hostid=' . $host['hostid']))
@@ -804,7 +804,7 @@ if (empty($data['hosts'])) {
                 )
         );
 
-        // 系统名称
+        // System name
         $systemNameCol = new CCol();
         if (isset($host['system_name']) && $host['system_name'] !== null) {
             $systemNameCol->addItem(
@@ -814,12 +814,12 @@ if (empty($data['hosts'])) {
             $systemNameCol->addItem((new CSpan('-'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // IP地址
+        // IP address
         $ipCol = new CCol(
             (new CSpan(htmlspecialchars($mainIp)))->addClass('code-display')->setAttribute('style', 'display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 3.8em;')
         );
 
-        // 架构
+        // Architecture
         $archCol = new CCol();
         if (isset($host['os_architecture']) && $host['os_architecture'] !== null) {
             $archCol->addItem(
@@ -829,7 +829,7 @@ if (empty($data['hosts'])) {
             $archCol->addItem((new CSpan('-'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // 接口类型
+        // Interface type
         $interfaceCol = new CCol();
         if (!empty($interfaceTypes)) {
             $interfaceContainer = (new CDiv())->setAttribute('style', 'display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 3.8em;');
@@ -841,7 +841,7 @@ if (empty($data['hosts'])) {
             $interfaceCol->addItem((new CSpan('-'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // CPU总量
+        // Total CPU
         $cpuCol = new CCol();
         if ($host['cpu_total'] !== '-') {
             $cpuCol->addItem([
@@ -853,18 +853,18 @@ if (empty($data['hosts'])) {
             $cpuCol->addItem((new CSpan('-'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // CPU使用率
+        // CPU utilization
         $cpuUsageCol = new CCol();
         if ($host['cpu_usage'] !== '-') {
             $usageValue = floatval(str_replace('%', '', $host['cpu_usage']));
-            $usageColor = '#28a745'; // 绿色
-            $usageIcon = '🟢'; // 正常
+            $usageColor = '#28a745'; // Green
+            $usageIcon = '🟢'; // Normal
             if ($usageValue > 80) {
-                $usageColor = '#dc3545'; // 红色
-                $usageIcon = '🔴'; // 高负载
+                $usageColor = '#dc3545'; // Red
+                $usageIcon = '🔴'; // High load
             } elseif ($usageValue > 60) {
-                $usageColor = '#ffc107'; // 黄色
-                $usageIcon = '🟡'; // 中等负载
+                $usageColor = '#ffc107'; // Yellow
+                $usageIcon = '🟡'; // Medium load
             }
             $cpuUsageCol->addItem(
                 (new CSpan($usageIcon . ' ' . htmlspecialchars($host['cpu_usage'])))->setAttribute('style', 'font-weight: 600; color: ' . $usageColor . ';')
@@ -873,7 +873,7 @@ if (empty($data['hosts'])) {
             $cpuUsageCol->addItem((new CSpan('⚪ -'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // 内存总量
+        // Total memory
         $memoryCol = new CCol();
         if ($host['memory_total'] !== '-') {
             $memoryCol->addItem(
@@ -883,18 +883,18 @@ if (empty($data['hosts'])) {
             $memoryCol->addItem((new CSpan('-'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // 内存使用率
+        // Memory utilization
         $memoryUsageCol = new CCol();
         if ($host['memory_usage'] !== '-') {
             $usageValue = floatval(str_replace('%', '', $host['memory_usage']));
-            $usageColor = '#28a745'; // 绿色
-            $usageIcon = '🟢'; // 正常
+            $usageColor = '#28a745'; // Green
+            $usageIcon = '🟢'; // Normal
             if ($usageValue > 80) {
-                $usageColor = '#dc3545'; // 红色
-                $usageIcon = '🔴'; // 高负载
+                $usageColor = '#dc3545'; // Red
+                $usageIcon = '🔴'; // High load
             } elseif ($usageValue > 60) {
-                $usageColor = '#ffc107'; // 黄色
-                $usageIcon = '🟡'; // 中等负载
+                $usageColor = '#ffc107'; // Yellow
+                $usageIcon = '🟡'; // Medium load
             }
             $memoryUsageCol->addItem(
                 (new CSpan($usageIcon . ' ' . htmlspecialchars($host['memory_usage'])))->setAttribute('style', 'font-weight: 600; color: ' . $usageColor . ';')
@@ -903,13 +903,13 @@ if (empty($data['hosts'])) {
             $memoryUsageCol->addItem((new CSpan('⚪ -'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // 操作系统
+        // Operating system
         $osCol = new CCol();
         if (isset($host['operating_system']) && $host['operating_system'] !== null) {
             $osName = $host['operating_system'];
-            $osIcon = '💻'; // 默认图标
+            $osIcon = '💻'; // Default icon
             
-            // 根据操作系统类型设置图标
+            // Set the icon according to the operating system type
             if (stripos($osName, 'windows') !== false) {
                 $osIcon = '🪟';
             } elseif (stripos($osName, 'linux') !== false) {
@@ -937,7 +937,7 @@ if (empty($data['hosts'])) {
             $osCol->addItem((new CSpan('❓ -'))->setAttribute('style', 'color: #6c757d;'));
         }
 
-        // 主机分组
+        // Host groups
         $groupCol = new CCol();
         $groupContainer = (new CDiv())->setAttribute('style', 'display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 3.8em;');
         foreach ($groupNames as $groupName) {
@@ -965,14 +965,14 @@ if (empty($data['hosts'])) {
     }
 }
 
-// ── 分页组件（表格上方 + 下方各一份） ──
+// ── Pagination component (one above and one below the table) ──
 $page       = $data['page'] ?? 1;
 $pageSize   = $data['page_size'] ?? 50;
 $totalCount = $data['total_count'] ?? count($data['hosts']);
 $totalPages = $data['total_pages'] ?? 1;
 
 /**
- * 构建分页容器（可多次调用以在不同位置插入）
+ * Build the pagination container (can be called several times to insert it in different places)
  */
 function buildPaginationContainer($page, $pageSize, $totalCount, $totalPages, $data, $idSuffix = '') {
     $startRow = ($page - 1) * $pageSize + 1;
@@ -980,23 +980,23 @@ function buildPaginationContainer($page, $pageSize, $totalCount, $totalPages, $d
 
     $paginationContainer = (new CDiv())->addClass('pagination-container');
 
-    // 左侧：分页信息
+    // Left: pagination information
     $paginationContainer->addItem(
         (new CDiv(
             LanguageManager::tf('Showing %d to %d of %d hosts', $startRow, $endRow, $totalCount)
         ))->addClass('pagination-info')
     );
 
-    // 中间：页码导航
+    // Middle: page navigation
     if ($totalPages > 1) {
         $nav = (new CDiv())->addClass('pagination-nav');
 
-        // « 首页
+        // « First
         $nav->addItem(createPaginationLink(1, $data, '« ' . LanguageManager::t('First'), $page <= 1));
-        // ‹ 上一页
+        // ‹ Previous
         $nav->addItem(createPaginationLink(max(1, $page - 1), $data, '‹ ' . LanguageManager::t('Prev'), $page <= 1));
 
-        // 页码按钮（最多显示 7 个）
+        // Page number buttons (at most 7 shown)
         $maxVisible = 7;
         if ($totalPages <= $maxVisible) {
             $startPage = 1;
@@ -1029,15 +1029,15 @@ function buildPaginationContainer($page, $pageSize, $totalCount, $totalPages, $d
             $nav->addItem(createPaginationLink($totalPages, $data));
         }
 
-        // › 下一页
+        // › Next
         $nav->addItem(createPaginationLink(min($totalPages, $page + 1), $data, LanguageManager::t('Next') . ' ›', $page >= $totalPages));
-        // » 末页
+        // » Last
         $nav->addItem(createPaginationLink($totalPages, $data, LanguageManager::t('Last') . ' »', $page >= $totalPages));
 
         $paginationContainer->addItem($nav);
     }
 
-    // 右侧：每页条数选择
+    // Right: rows per page selector
     $sizeSelector = (new CDiv())->addClass('pagination-size');
     $sizeSelector->addItem(new CSpan(LanguageManager::t('Per page')));
 
@@ -1059,21 +1059,21 @@ function buildPaginationContainer($page, $pageSize, $totalCount, $totalPages, $d
     return $paginationContainer;
 }
 
-// 表格上方分页
+// Pagination above the table
 if ($totalCount > 0) {
     $content->addItem(buildPaginationContainer($page, $pageSize, $totalCount, $totalPages, $data, '-top'));
 }
 
 $content->addItem($table);
 
-// 表格下方分页
+// Pagination below the table
 if ($totalCount > 0) {
     $content->addItem(buildPaginationContainer($page, $pageSize, $totalCount, $totalPages, $data, '-bottom'));
 }
 
-// 添加JavaScript
+// Add JavaScript
 $content->addItem(new CJsScript('<script>
-// 全局变量用于防抖
+// Global variable used for debouncing
 var searchTimeout;
 
 function handleSearchInput(input) {
@@ -1102,24 +1102,24 @@ function handleInterfaceTypeChange(select) {
 }
 
 /**
- * 每页条数切换 — 保留当前搜索条件，重置到第 1 页
+ * Changing rows per page keeps the current search and resets to page 1
  */
 function handlePageSizeChange(select) {
     var newSize = select.value;
     var params = new URLSearchParams(window.location.search);
     params.set("page_size", newSize);
-    params.set("page", "1");            // 切换条数后回到第 1 页
+    params.set("page", "1");            // Go back to page 1 after changing the row count
     params.set("action", "cmdb");
     window.location.href = "zabbix.php?" + params.toString();
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    // 初始化
+    // Initialization
     var searchInput = document.querySelector("input[name=\\"search\\"]");
     var groupSelect = document.getElementById("groupid-select");
     var interfaceTypeSelect = document.getElementById("interface-type-select");
 });
 </script>'));
 
-// 使用兼容渲染器显示页面（模块视图需要直接输出，不能返回）
+// Display the page with the compatible renderer (module views must output directly, not return)
 ViewRenderer::render($pageTitle, $styleTag, $content);

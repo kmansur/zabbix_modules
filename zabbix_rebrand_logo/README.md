@@ -1,42 +1,43 @@
-# Zabbix 品牌 logo 设置
+# Zabbix Rebrand Logo
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-这是一个 Zabbix 前端模块。超级管理员可以在「管理 → 品牌 logo 设置」中更换登录页标志、侧边栏标志、折叠侧边栏图标和浏览器图标，也可以调整服务器名称、页脚文本和帮助链接。模块使用 Zabbix 的品牌配置机制，无需修改核心文件。
+This Zabbix frontend module lets Super Admins change the login logo, sidebar logo, compact sidebar icon, and browser favicon under **Administration → Zabbix Rebrand Logo**. It also lets them set the server name, footer text, and Help URL. The module uses Zabbix's branding configuration without patching core files.
 
-![自定义标志的登录页](images/1.png)
+![Login page with a custom logo](docs/images/02-login-page.png)
+![Sidebar with a custom logo](docs/images/03-sidebar.png)
 
-## 功能特性
+## Features
 
-- **图片预览与裁剪**：选图后原位预览，通过滑块调整缩放和位置。裁剪导出为静态 PNG。
-- **登录页标志尺寸**：宽高锁定为 4:1，默认 120 × 30 像素，最高 512 × 128 像素，实际范围受服务器上传限制影响。原图细节和文件大小允许时，裁剪可保留最多 2 倍显示分辨率。
-- **服务器名称**：可以保留 Zabbix 默认名称、使用自定义名称或隐藏名称。登录页使用 Zabbix 默认名称。
-- **页脚和帮助链接**：可自定义页脚文字和用户菜单中的帮助链接，链接支持 HTTP 和 HTTPS。
-- **中文、英文和俄语界面**：跟随 Zabbix 用户语言，支持浅色和深色主题。
-- **持久化存储**：设置和图片副本保存在 `local/conf/rebrand/`，方便升级时保留。
+- **Image preview and cropping**: Preview the selected image in place and use sliders to zoom and reposition it. Crops export as static PNG files.
+- **Login logo size**: The width and height stay at a 4:1 ratio. The default is 120 × 30 pixels, and the maximum is 512 × 128 pixels, subject to server upload limits. Cropping can retain up to twice the display resolution when the source and file size allow it.
+- **Server name**: Keep the Zabbix default, enter a custom name, or hide the name. The login page uses the Zabbix default.
+- **Footer and Help link**: Customize the footer text and the Help link in the user menu. The link accepts HTTP and HTTPS URLs.
+- **English and Brazilian Portuguese UI**: Follows the Zabbix user's language and supports light and dark themes.
+- **Persistent storage**: Settings and image copies are stored in `local/conf/rebrand/` so they can be kept across upgrades.
 
-| 图片 | 建议尺寸 | 支持格式 |
+| Image | Recommended size | Supported formats |
 | --- | --- | --- |
-| 折叠侧边栏图标 | 24 × 24 像素 | PNG、JPG、GIF、ICO |
-| 浏览器图标 | 32 × 32 像素 | PNG、JPG、GIF、ICO |
-| 侧边栏标志 | 91 × 24 像素 | PNG、JPG、GIF |
-| 登录页标志 | 120 × 30 像素 | PNG、JPG、GIF |
+| Compact sidebar icon | 24 × 24 pixels | PNG, JPG, GIF, ICO |
+| Browser favicon | 32 × 32 pixels | PNG, JPG, GIF, ICO |
+| Sidebar logo | 91 × 24 pixels | PNG, JPG, GIF |
+| Login logo | 120 × 30 pixels | PNG, JPG, GIF |
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
-从本仓库根目录执行。将 `ZABBIX_ROOT` 设置为实际提供 Zabbix Web 的目录，例如 `/usr/share/zabbix` 或 `/usr/share/zabbix/ui`。将 `WEB_USER` 和 `WEB_GROUP` 改为 PHP-FPM 池使用的用户和组，例如 `apache` 或 `www-data`。
+Run the following commands from the repository root. Set `ZABBIX_ROOT` to the directory serving the Zabbix frontend, such as `/usr/share/zabbix` or `/usr/share/zabbix/ui`. Set `WEB_USER` and `WEB_GROUP` to the PHP-FPM pool's user and group, such as `apache` or `www-data`.
 
 ```bash
 ZABBIX_ROOT=/usr/share/zabbix
@@ -53,55 +54,23 @@ sudo chgrp "$WEB_GROUP" "$CONF_DIR"
 sudo chmod g+w "$CONF_DIR"
 ```
 
-PHP-FPM 需要写入图片目录、`local/conf/rebrand/` 和 `local/conf/`，以便保存图片和原子更新 `brand.conf.php`。模块代码应由部署账户维护。启用 SELinux 时，需为这些可写目录配置 `httpd_sys_rw_content_t`，并用 `restorecon` 应用标签。
+PHP-FPM needs write access to the image directory, `local/conf/rebrand/`, and `local/conf/` to save images and atomically replace `brand.conf.php`. Keep the module code under the deployment account's ownership. On SELinux systems, configure the writable directories with `httpd_sys_rw_content_t` and apply the labels with `restorecon`.
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
 
-Zabbix 6.0 将模块清单版本改为 1.0；7.0/8.0 保持 2.0。
+For Zabbix 6.0, change the module manifest version to 1.0. Keep 2.0 on 7.0/8.0.
 
 ```bash
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' /usr/share/zabbix/modules/zabbix_rebrand_logo/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 以超级管理员登录，打开「管理 → 常规 → 模块」。
-2. 点击「扫描目录」，启用 **Zabbix Rebrand Logo**。
-3. 打开「管理 → 品牌 logo 设置」，选择图片、预览或裁剪，然后点击「更新」。
+1. Sign in as a Super Admin and go to **Administration → General → Modules**.
+2. Click **Scan directory** and enable **Zabbix Rebrand Logo**.
+3. Open **Administration → Zabbix Rebrand Logo**, select and preview or crop your images, then click **Update**.
 
-## 注意事项
-
-- 单个文件最多 2 MB，实际还受 PHP 上传限制。保存时，待裁剪或超限的登录页图片会自动导出为符合限制的 PNG。
-- 需要保留 GIF 动画时，请上传符合大小限制的原图，并跳过裁剪。浏览器图标建议使用 ICO。
-- 更换图片后，如仍显示旧图，尝试强制刷新页面。浏览器图标也可以在隐私窗口中核对。
-
-### 目录归属与保存提示
-
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
-
-## 开发
-
-- `manifest.json` 和 `Module.php`：模块声明及菜单注册。
-- `actions/`：读取、校验和保存设置及图片。
-- `views/` 和 `assets/css/`：设置界面、图片预览与裁剪。
-- `install/login-view.php`：可选的登录页尺寸适配。
-- `lib/`：语言、尺寸和服务器名称相关逻辑。
-
-在 PHP 8.1 或更高版本的命令行中运行服务器名称回归测试：
-
-```bash
-php zabbix_rebrand_logo/tests/ServerNameOverrideTest.php
-```
-
-### 致谢
-
-感谢 [Keberneth](https://github.com/Keberneth) 创建并公开分享 [Zabbix Branding 模块](https://github.com/Keberneth/Zabbix-Modules/tree/main/Branding)。本项目基于该模块修改。
-
-## 模块配置
-
-### 启用登录页尺寸滑块（可选）
-
-在前端根目录安装本地登录视图。仅在目标文件不存在时执行以下命令。已有自定义视图的环境，应先评估两者的兼容性再启用。
+Install the local login view in the frontend root. Run the following command only if the destination is absent. If you already use a custom login view, check compatibility before enabling this option.
 
 ```bash
 LOGIN_VIEW="$ZABBIX_ROOT/local/app/views/general.login.php"
@@ -110,9 +79,7 @@ if [ ! -e "$LOGIN_VIEW" ] && [ ! -L "$LOGIN_VIEW" ]; then
 fi
 ```
 
-### 启用浏览器图标（可选）
-
-在模块中上传并保存浏览器图标后，备份前端原有的 `favicon.ico`，再创建指向模块图标的符号链接。以下命令适用于前端仍使用原始图标且尚无备份的环境。已有自定义链接时，请核对目标路径后更新链接。
+Upload and save the favicon in the module. Then back up the frontend's original `favicon.ico` and create a symlink to the module's favicon. Use the commands below when the frontend still has its original favicon and no backup. If you already use a custom symlink, check its target before updating it.
 
 ```bash
 if [ -f "$MODULE_DIR/assets/logos/favicon.ico" ] \
@@ -123,15 +90,45 @@ if [ -f "$MODULE_DIR/assets/logos/favicon.ico" ] \
 fi
 ```
 
-### 从旧目录升级
+## Notes
 
-1. 备份旧模块目录和 `local/conf/rebrand/`、`local/conf/brand.conf.php`。在模块列表中停用旧模块。
-2. 将旧模块目录（`zabbix_brand_logo`、`zabbix_branding` 或 `Branding`）移出前端的 `modules/`，然后扫描目录，清理旧登记。
-3. 安装新目录 `zabbix_rebrand_logo`，按上述步骤重新扫描并启用。若旧版的配置或图片只保存在旧模块的 `assets/logos/`，将其复制到新模块的同名目录。
-4. 打开品牌设置并点击「更新」，使 `brand.conf.php` 中的图片 URL 指向新目录。如已设置浏览器图标符号链接，将它改为指向新目录。
+- Each file is limited to 2 MB, subject to PHP's upload limits. On save, a login image with pending crop changes or a file over the limit is exported as a PNG that fits the limit.
+- To keep an animated GIF, upload the original within the file size limit and skip cropping. ICO is recommended for the browser favicon.
+- If an old image still appears after updating it, try a hard refresh. A private browser window can help verify favicon changes.
 
-当前模块 ID 为 `zabbix-rebrand-logo`，持久化目录仍为 `local/conf/rebrand/`。
+### Directory ownership and save errors
 
-## 许可证
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-本模块的许可说明见仓库[许可证](../README.md#许可证)。分发时保留相关第三方署名。
+## Development
+
+- `manifest.json` and `Module.php`: Module declaration and menu registration.
+- `actions/`: Reading, validating, and saving settings and images.
+- `views/` and `assets/css/`: Settings interface, previews, and cropping.
+- `install/login-view.php`: Optional login logo sizing integration.
+- `lib/`: Language, size, and server name handling.
+
+Run the server name regression test with PHP 8.1 or later on the command line:
+
+```bash
+php zabbix_rebrand_logo/tests/ServerNameOverrideTest.php
+```
+
+### Acknowledgements
+
+Thanks to [Keberneth](https://github.com/Keberneth) for creating and sharing the original [Zabbix Branding module](https://github.com/Keberneth/Zabbix-Modules/tree/main/Branding), on which this module is based.
+
+## Module Configuration
+
+### Upgrade from the old directory
+
+1. Back up the old module directory, `local/conf/rebrand/`, and `local/conf/brand.conf.php`. Disable the old module in the module list.
+2. Move the old module directory (`zabbix_brand_logo`, `zabbix_branding`, or `Branding`) outside the frontend's `modules/` directory. Scan the directory to clear its registration.
+3. Install `zabbix_rebrand_logo`, scan again, and enable it. If any legacy settings or images exist only in the old module's `assets/logos/` directory, copy them to the corresponding directory in the new module.
+4. Open the module and click **Update** to rewrite the image URLs in `brand.conf.php` for the new directory. If you use a favicon symlink, update it to point to the new directory as well.
+
+The module ID is `zabbix-rebrand-logo`. Persistent settings remain in `local/conf/rebrand/`.
+
+## License
+
+See the repository [license terms](../README.md#license). Preserve third-party attribution when redistributing.

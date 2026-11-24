@@ -15,7 +15,7 @@ interface ImProviderInterface {
     public function getDepartmentUsers(string $departmentId): array;
 
     /**
-     * 本次请求内 IM API 调用调试日志（含原始 HTTP 响应）
+     * Debug log of IM API calls in this request (including raw HTTP responses)
      *
      * @return array<int, array<string, mixed>>
      */

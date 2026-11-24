@@ -1,6 +1,6 @@
 # Zabbix Import/Export
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -31,7 +31,7 @@ Módulo de frontend nativo em **Inventário → Zabbix Import/Export** com exata
 - Transfere configuração de hosts, templates de monitoramento e itens locais em CSV ou JSON. A página de templates também aceita JSON nativo do Zabbix.
 - Filtra por grupo, nome ou origem do item, conforme a página. Alterar uma lista de pesquisa aplica o filtro imediatamente. Selecione a página atual ou todos os resultados filtrados em todas as páginas.
 - Pré-visualiza as importações antes de gravar qualquer configuração. Revise as diferenças, escolha a política para duplicados e baixe o relatório de resultados.
-- A interface segue o idioma do usuário conectado no Zabbix; inglês, chinês simplificado, russo e português do Brasil estão incluídos. Os nomes dos arquivos exportados usam o fuso horário do usuário no Zabbix, ou o padrão do sistema quando o perfil o herda.
+- A interface segue o idioma do usuário conectado no Zabbix; inglês e português do Brasil estão incluídos. Os nomes dos arquivos exportados usam o fuso horário do usuário no Zabbix, ou o padrão do sistema quando o perfil o herda.
 
 ## Instalação
 
@@ -107,7 +107,7 @@ A transferência de templates usa a exportação/importação de configuração 
 
 #### Seleção de idioma
 
-A interface usa o idioma do usuário conectado no Zabbix e recorre ao padrão do sistema quando o perfil usa Padrão. Os catálogos de chinês simplificado, inglês, russo e português do Brasil ficam em `locales` (o português em `locales/pt_BR.php`); catálogos de outros idiomas do Zabbix podem ser adicionados. Textos compartilhados recorrem ao gettext do Zabbix, com inglês como reserva para textos do módulo sem tradução. O idioma do navegador não é usado para sobrepor o perfil.
+A interface usa o idioma do usuário conectado no Zabbix e recorre ao padrão do sistema quando o perfil usa Padrão. Os catálogos de inglês e português do Brasil ficam em `locales` (o português em `locales/pt_BR.php`); catálogos de outros idiomas do Zabbix podem ser adicionados. Textos compartilhados recorrem ao gettext do Zabbix, com inglês como reserva para textos do módulo sem tradução. O idioma do navegador não é usado para sobrepor o perfil.
 
 #### Formato
 

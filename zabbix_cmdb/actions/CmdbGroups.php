@@ -14,7 +14,7 @@ use Modules\ZabbixCmdb\Lib\ItemFinder;
 class CmdbGroups extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -47,24 +47,24 @@ class CmdbGroups extends CController {
         $sortorder = $this->getInput('sortorder', 'DESC');
         $search = $this->getInput('search', '');
 
-        // 获取主机分组列表
+        // Get the host group list
         $hostGroups = API::HostGroup()->get([
             'output' => ['groupid', 'name'],
             'sortfield' => 'name',
             'sortorder' => 'ASC'
         ]);
 
-        // 如果有搜索条件，筛选分组
+        // Filter groups if there are search criteria
         if (!empty($search)) {
             $hostGroups = array_filter($hostGroups, function($group) use ($search) {
                 return stripos($group['name'], $search) !== false;
             });
         }
 
-        // 为每个分组获取详细信息
+        // Get details for each group
         $groupData = [];
         foreach ($hostGroups as $group) {
-            // 获取分组中的主机
+            // Get the hosts in the group
             $hosts = API::Host()->get([
                 'output' => ['hostid', 'host', 'name', 'status'],
                 'groupids' => [$group['groupid']],
@@ -91,13 +91,13 @@ class CmdbGroups extends CController {
             ];
         }
 
-        // 根据排序参数对数据进行排序
+        // Sort the data according to the sort parameters
         if (!empty($groupData)) {
             usort($groupData, function($a, $b) use ($sort, $sortorder) {
                 $valueA = $a[$sort] ?? 0;
                 $valueB = $b[$sort] ?? 0;
 
-                // 对于数值字段，确保正确比较
+                // Make sure numeric fields are compared correctly
                 if (in_array($sort, ['host_count', 'total_cpu', 'total_memory'])) {
                     $valueA = (int)$valueA;
                     $valueB = (int)$valueB;
@@ -122,7 +122,7 @@ class CmdbGroups extends CController {
             'search' => $search
         ]);
         
-        // 显式设置响应标题（Zabbix 6.0 需要）
+        // Set the response title explicitly (required by Zabbix 6.0)
         $response->setTitle(LanguageManager::t('Host Groups'));
 
         $this->setResponse($response);

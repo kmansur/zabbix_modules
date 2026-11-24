@@ -17,7 +17,7 @@ use Modules\ZabbixReports\Lib\ItemFinder;
 class DailyReportItemScan extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -35,28 +35,28 @@ class DailyReportItemScan extends CController {
 
     protected function doAction(): void {
         
-        // 获取所有主机
+        // Get all hosts
         $hosts = API::Host()->get([
             'output' => ['hostid', 'name'],
             'filter' => ['status' => HOST_STATUS_MONITORED],
-            'limit' => 5  // 只检查前5个主机
+            'limit' => 5  // Only check the first 5 hosts
         ]);
         
         if (empty($hosts)) {
             header('Content-Type: text/plain; charset=UTF-8');
-            echo LanguageManager::t('没有找到监控的主机。') . "\n";
+            echo LanguageManager::t('No monitored hosts found.') . "\n";
             exit;
         }
         
         header('Content-Type: text/plain; charset=UTF-8');
-        echo LanguageManager::t('=== Zabbix 监控项扫描工具 ===') . "\n\n";
-        echo LanguageManager::t('正在扫描前5个主机的所有监控项...') . "\n\n";
+        echo LanguageManager::t('=== Zabbix item scanner ===') . "\n\n";
+        echo LanguageManager::t('Scanning all items of the first 5 hosts...') . "\n\n";
         
         foreach ($hosts as $host) {
-            echo LanguageManager::tf('主机: %s (ID: %s)', $host['name'], $host['hostid']) . "\n";
+            echo LanguageManager::tf('Host: %s (ID: %s)', $host['name'], $host['hostid']) . "\n";
             echo str_repeat("=", 60) . "\n";
             
-            // 获取所有监控项
+            // Get all items
             $allItems = API::Item()->get([
                 'output' => ['itemid', 'name', 'key_', 'units', 'value_type'],
                 'hostids' => $host['hostid'],
@@ -64,16 +64,16 @@ class DailyReportItemScan extends CController {
                 'sortfield' => 'name'
             ]);
             
-            echo LanguageManager::tf('总监控项数: %d', count($allItems)) . "\n\n";
+            echo LanguageManager::tf('Total items: %d', count($allItems)) . "\n\n";
             
-            // 分类监控项
+            // Categorize items
             $categories = [
-                'CPU相关' => [],
-                '内存相关' => [],
-                '网络相关' => [],
-                '磁盘相关' => [],
-                '系统相关' => [],
-                '其他' => []
+                'CPU' => [],
+                'Memory' => [],
+                'Network' => [],
+                'Disk' => [],
+                'System' => [],
+                'Other' => []
             ];
             
             foreach ($allItems as $item) {
@@ -81,32 +81,32 @@ class DailyReportItemScan extends CController {
                 $key = strtolower($item['key_']);
                 
                 if (strpos($name, 'cpu') !== false || strpos($key, 'cpu') !== false) {
-                    $categories['CPU相关'][] = $item;
+                    $categories['CPU'][] = $item;
                 } elseif (strpos($name, 'mem') !== false || strpos($key, 'mem') !== false) {
-                    $categories['内存相关'][] = $item;
+                    $categories['Memory'][] = $item;
                 } elseif (strpos($name, 'net') !== false || strpos($key, 'net') !== false || 
                          strpos($name, 'interface') !== false) {
-                    $categories['网络相关'][] = $item;
+                    $categories['Network'][] = $item;
                 } elseif (strpos($name, 'disk') !== false || strpos($key, 'disk') !== false ||
                          strpos($name, 'file') !== false || strpos($key, 'vfs') !== false) {
-                    $categories['磁盘相关'][] = $item;
+                    $categories['Disk'][] = $item;
                 } elseif (strpos($name, 'system') !== false || strpos($key, 'system') !== false ||
                          strpos($name, 'uptime') !== false || strpos($name, 'load') !== false) {
-                    $categories['系统相关'][] = $item;
+                    $categories['System'][] = $item;
                 } else {
-                    $categories['其他'][] = $item;
+                    $categories['Other'][] = $item;
                 }
             }
             
-            // 输出每个分类
+            // Output each category
             foreach ($categories as $categoryName => $items) {
                 if (!empty($items)) {
-                    echo LanguageManager::tf('%s (%d 项):', LanguageManager::t($categoryName), count($items)) . "\n";
+                    echo LanguageManager::tf('%s (%d items):', LanguageManager::t($categoryName), count($items)) . "\n";
                     foreach ($items as $item) {
                         echo "  - {$item['name']}\n";
-                        echo "    " . LanguageManager::tf('键值: %s', $item['key_']) . "\n";
-                        echo "    " . LanguageManager::tf('单位: %s', $item['units']) . "\n";
-                        echo "    " . LanguageManager::t('类型: ') . $this->getValueTypeName($item['value_type']) . "\n\n";
+                        echo "    " . LanguageManager::tf('Key: %s', $item['key_']) . "\n";
+                        echo "    " . LanguageManager::tf('Units: %s', $item['units']) . "\n";
+                        echo "    " . LanguageManager::t('Type: ') . $this->getValueTypeName($item['value_type']) . "\n\n";
                     }
                 }
             }
@@ -114,25 +114,25 @@ class DailyReportItemScan extends CController {
             echo str_repeat("=", 80) . "\n\n";
         }
         
-        echo LanguageManager::t('=== 搜索模式建议 ===') . "\n";
-        echo LanguageManager::t('基于扫描结果，建议以下搜索模式:') . "\n\n";
-        echo LanguageManager::t('CPU使用率可能的名称:') . "\n";
+        echo LanguageManager::t('=== Suggested search patterns ===') . "\n";
+        echo LanguageManager::t('Based on the scan results, try the following search patterns:') . "\n\n";
+        echo LanguageManager::t('Possible CPU utilization item names:') . "\n";
         echo "- CPU utilization\n";
         echo "- CPU usage\n";
         echo "- Processor time\n";
         echo "- CPU idle time\n\n";
         
-        echo LanguageManager::t('CPU数量可能的名称:') . "\n";
+        echo LanguageManager::t('Possible CPU count item names:') . "\n";
         echo "- Number of CPUs\n";
         echo "- CPU cores\n";
         echo "- Processors\n\n";
         
-        echo LanguageManager::t('内存使用率可能的名称:') . "\n";
+        echo LanguageManager::t('Possible memory utilization item names:') . "\n";
         echo "- Memory utilization\n";
         echo "- Memory usage\n";
         echo "- Available memory\n\n";
         
-        echo LanguageManager::t('内存总量可能的名称:') . "\n";
+        echo LanguageManager::t('Possible total memory item names:') . "\n";
         echo "- Total memory\n";
         echo "- Physical memory\n";
         echo "- Memory size\n";

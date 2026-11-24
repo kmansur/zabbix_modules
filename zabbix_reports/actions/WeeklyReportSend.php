@@ -14,7 +14,7 @@ use Modules\ZabbixReports\Lib\ProblemFinder;
 class WeeklyReportSend extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -36,7 +36,7 @@ class WeeklyReportSend extends CController {
         $from = mktime(0, 0, 0, date('m', $weekStart), date('d', $weekStart), date('Y', $weekStart));
         $till = mktime(23, 59, 59, date('m', $weekEnd), date('d', $weekEnd), date('Y', $weekEnd));
 
-        // 使用 ProblemFinder 获取与报表周期有交集的所有告警
+        // Use ProblemFinder to get all alarms that overlap the report period
         $problemResult = ProblemFinder::getSimpleProblemsInPeriod($from, $till);
         $problemCount = $problemResult['problemCount'];
         $resolvedCount = $problemResult['resolvedCount'];

@@ -1,6 +1,6 @@
 # Módulo Zabbix CMDB
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -34,7 +34,7 @@ Módulo de frontend do Zabbix que oferece funções de banco de dados de gerenci
 - **Gerenciamento de grupos de hosts**: estatísticas de todos os grupos de hosts
 - **Pesquisa de grupos**: por nome do grupo
 - **Estatísticas por grupo**: quantidade de hosts, total de CPU e memória total de cada grupo
-- **Internacionalização**: interface em chinês, inglês, russo e português do Brasil
+- **Internacionalização**: interface em inglês e português do Brasil
 - **Design responsivo**: adapta-se a diferentes tamanhos de tela
 - **Interface moderna**: cores em degradê e animações
 - **Estatísticas**: total de hosts, total de grupos e quantidade de hosts ativos

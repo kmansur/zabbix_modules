@@ -1,8 +1,8 @@
 <?php
 /**
- * 机柜告警批量刷新控制器
- * 批量返回指定主机列表的当前活跃告警状态
- * 用于前端定时轮询刷新告警状态
+ * Controller for bulk refreshing rack alarms
+ * Returns the current active alarm status of the given host list in bulk
+ * Used by the frontend's periodic polling to refresh alarm status
  */
 
 namespace Modules\ZabbixRack\Actions;
@@ -16,7 +16,7 @@ use Modules\ZabbixRack\Lib\HostRackManager;
 class RackProblemsRefresh extends CController {
     
     protected function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {

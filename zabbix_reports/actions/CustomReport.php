@@ -17,7 +17,7 @@ use Modules\ZabbixReports\Lib\HostMetrics;
 class CustomReport extends CController {
 
     public function init(): void {
-        // 兼容Zabbix 6和7
+        // Compatible with Zabbix 6 and 7
         if (method_exists($this, 'disableCsrfValidation')) {
             $this->disableCsrfValidation(); // Zabbix 7
         } elseif (method_exists($this, 'disableSIDvalidation')) {
@@ -41,17 +41,17 @@ class CustomReport extends CController {
     }
 
     protected function doAction(): void {
-        // 设置默认日期：开始日期为7天前，结束日期为今天
+        // Set the default dates: start date 7 days ago, end date today
         $defaultFromDate = date('Y-m-d', strtotime('-7 days'));
         $defaultToDate = date('Y-m-d');
         
-        // 获取用户输入的日期，如果为空则使用默认值
+        // Get the dates entered by the user, using the defaults when empty
         $fromDate = $this->getInput('from_date', $defaultFromDate);
         $toDate = $this->getInput('to_date', $defaultToDate);
         $generate = !empty($this->getInput('generate', ''));
         $groupId = $this->getInput('groupid', '');
 
-        // 获取所有主机组（用于过滤下拉框）
+        // Get all host groups (for the filter dropdown)
         $allGroups = API::HostGroup()->get([
             'output' => ['groupid', 'name'],
             'sortfield' => 'name',
@@ -69,9 +69,9 @@ class CustomReport extends CController {
             'filter_group_name' => $this->getGroupName($groupId, $allGroups)
         ];
 
-        // 如果用户点击了生成报表
+        // If the user clicked generate report
         if ($generate && !empty($fromDate) && !empty($toDate)) {
-            // 验证日期格式并转换为时间戳
+            // Validate the date format and convert it to timestamps
             $fromTimestamp = strtotime($fromDate . ' 00:00:00');
             $toTimestamp = strtotime($toDate . ' 23:59:59');
             
@@ -82,7 +82,7 @@ class CustomReport extends CController {
             } elseif (($toTimestamp - $fromTimestamp) > (90 * 24 * 60 * 60)) {
                 $data['error'] = LanguageManager::t('The selected date range cannot exceed 90 days.');
             } else {
-                // 生成真正的报表数据
+                // Generate the actual report data
                 $reportData = $this->generateReportData($fromTimestamp, $toTimestamp, $groupId);
                 $data = array_merge($data, $reportData);
                 $data['report_generated'] = true;
@@ -90,12 +90,12 @@ class CustomReport extends CController {
             }
         }
 
-        // 添加标题到数据中
+        // Add the title to the data
         $data['title'] = LanguageManager::t('Custom Report');
         
         $response = new CControllerResponseData($data);
         
-        // 显式设置响应标题（Zabbix 6.0 需要）
+        // Set the response title explicitly (required by Zabbix 6.0)
         $response->setTitle(LanguageManager::t('Custom Report'));
         
         $this->setResponse($response);
@@ -103,7 +103,7 @@ class CustomReport extends CController {
 
     private function generateReportData(int $fromTimestamp, int $toTimestamp, string $groupId = ''): array {
         try {
-            // 获取所有主机（带分组过滤）
+            // Get all hosts (with group filter)
             $hostParams = [
                 'output' => ['hostid', 'name'],
                 'filter' => ['status' => HOST_STATUS_MONITORED]
@@ -115,7 +115,7 @@ class CustomReport extends CController {
 
             $filteredHostIds = array_column($hosts, 'hostid');
 
-            // 使用 ProblemFinder 获取与报表周期有交集的所有告警
+            // Use ProblemFinder to get all alarms that overlap the report period
             $problemResult = ProblemFinder::getProblemsInPeriod($fromTimestamp, $toTimestamp, 500, $filteredHostIds);
             $problemCount = $problemResult['problemCount'];
             $resolvedCount = $problemResult['resolvedCount'];
@@ -124,7 +124,7 @@ class CustomReport extends CController {
             $triggerHostMap = $problemResult['triggerHostMap'];
             $triggerStatusMap = $problemResult['triggerStatusMap'] ?? [];
 
-            // 构建告警信息
+            // Build the alarm information
             $alertResult = ProblemFinder::buildAlertInfo(
                 $problemEvents, $recoveryMap, $triggerHostMap,
                 LanguageManager::t('Unknown Host'), $triggerStatusMap

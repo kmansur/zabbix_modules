@@ -1,6 +1,6 @@
 # Módulo Zabbix Auto Topology Map
 
-[中文](README.md) · [English](README_en.md) · [Русский](README_ru.md) · **Português (Brasil)**
+[English](README.md) · **Português (Brasil)**
 
 ## ✨ Compatibilidade de versões
 
@@ -34,7 +34,7 @@ O módulo lê e grava os mapas pelas APIs nativas do Zabbix e compartilha os mes
 - **Atualização automática**: atualiza status e métricas a cada 60 segundos no modo de pré-visualização. A atualização é pausada durante a edição ou quando a página está oculta.
 - **Menu nativo de host**: clique em um host no modo de pré-visualização para abrir o menu de host nativo do Zabbix e acessar incidentes, dados recentes, gráficos e outras páginas.
 - **Persistência da visualização**: lembra a última visualização de lista ou de mapa do usuário e permite zoom, deslocamento e ajuste do mapa à janela.
-- **Idiomas e temas**: exibe chinês, inglês, russo ou português do Brasil conforme o idioma do usuário no Zabbix e suporta temas claro e escuro.
+- **Idiomas e temas**: exibe inglês ou português do Brasil conforme o idioma do usuário no Zabbix e suporta temas claro e escuro.
 
 ## Instalação
 
@@ -75,7 +75,7 @@ Também é possível acessar o módulo diretamente em `zabbix.php?action=topomap
 - **Permissões**: a visibilidade de mapas e hosts segue as permissões do Zabbix. Criar, editar e excluir mapas também exige a permissão de perfil **Criar e editar mapas** (`actions.edit_maps`).
 - **Dados compartilhados**: o módulo compartilha dados com os mapas nativos do Zabbix. Editar ou excluir um mapa por qualquer uma das interfaces afeta a outra. Exporte um backup antes de fazer alterações. O módulo oferece exportação em JSON, mas não uma interface de importação correspondente.
 - **Configuração de métricas**: os itens de banda e de tráfego precisam ser selecionados manualmente; não há associação automática. Por padrão, o seletor se limita aos hosts das duas pontas do enlace e mostra apenas itens numéricos. Um valor mais recente ausente é exibido como `-`.
-- **Associação de triggers**: o diálogo de descoberta permite editar as palavras-chave de status de porta, uma por linha. A palavra-chave padrão em chinês é “处于关闭状态”; nos demais idiomas, o padrão é `link down`. Ajuste essas palavras-chave aos nomes reais das suas triggers.
+- **Associação de triggers**: o diálogo de descoberta permite editar as palavras-chave de status de porta, uma por linha. O padrão é `link down`; palavras-chave para nomes de triggers em chinês também vêm embutidas. Ajuste essas palavras-chave aos nomes reais das suas triggers.
 - **Redescoberta**: por padrão, dispositivos e enlaces que não forem redescobertos são mantidos. Você pode optar por remover os enlaces automáticos que não forem mais descobertos; enlaces manuais são sempre mantidos. Revise as opções de layout e de retenção antes de atualizar.
 - **Desempenho da descoberta**: em redes grandes, comece com poucos hosts-semente e pouca profundidade. Timeouts de SNMP, restrições de acesso ou protocolos de descoberta de vizinhos desativados podem fazer com que dispositivos sejam ignorados ou gerar resultados incompletos.
 - **Dimensões da tela**: as dimensões são calculadas automaticamente a partir do conteúdo, e a tela pode se expandir nas quatro direções. Não há entrada manual de largura e altura.
@@ -97,7 +97,7 @@ O plugin usa o framework de módulos do Zabbix. Estrutura de arquivos:
 - `actions/TopomapData.php`: endpoints de dados para gerenciamento de mapas, gravação dos resultados da descoberta, métricas e roteamento
 - `views/topomap.view.php`: view da página e estrutura dos diálogos
 - `services/LldpDiscovery.php`: descoberta de vizinhos via SNMP, interpretação das portas e associação de dispositivos
-- `lib/LanguageManager.php`: textos em chinês, inglês, russo e português do Brasil
+- `lib/LanguageManager.php`: textos em inglês e português do Brasil
 - `assets/js/topomap.js`: lista, tela, interações de edição, descoberta automática e atualização de status
 - `assets/css/topomap.css`: estilos da página e suporte a temas
 

@@ -10,9 +10,9 @@ use Modules\ZabbixJumpserver\Lib\ZabbixVersion;
 use CMenu;
 use CMenuItem;
 
-// 根据实际存在的类来选择基类
-// Zabbix 7.0+ 使用 Zabbix\Core\CModule
-// Zabbix 6.0 使用 Core\CModule
+// Choose the base class according to the classes that actually exist
+// Zabbix 7.0+ uses Zabbix\Core\CModule
+// Zabbix 6.0 uses Core\CModule
 if (class_exists('Zabbix\Core\CModule')) {
     class ModuleBase extends \Zabbix\Core\CModule {}
 } elseif (class_exists('Core\CModule')) {

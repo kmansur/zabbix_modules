@@ -12,17 +12,17 @@ class ConfigManager {
     public const PROVIDERS = ['wecom', 'feishu', 'dingtalk'];
     public const USER_MATCH_FIELDS = ['username', 'email', 'alias'];
 
-    /** 各平台所需的凭据字段（用于表单与校验） */
+    /** Credential fields required by each platform (for the form and validation) */
     public const PROVIDER_FIELDS = [
         'wecom'    => ['corp_id', 'corp_secret'],
         'feishu'   => ['app_id', 'app_secret'],
         'dingtalk' => ['app_key', 'app_secret'],
     ];
 
-    /** 所有可能出现的凭据字段（用于规范化设置项） */
+    /** All credential fields that may appear (for normalizing settings) */
     private const CREDENTIAL_FIELDS = ['corp_id', 'corp_secret', 'app_id', 'app_secret', 'app_key'];
 
-    /** 被视为机密、列表中需脱敏、留空时保持原值的字段 */
+    /** Fields treated as secrets: masked in the list and kept unchanged when left blank */
     private const SECRET_FIELDS = ['corp_secret', 'app_secret'];
 
     private static $config = null;
@@ -32,7 +32,7 @@ class ConfigManager {
     }
 
     /**
-     * 全局选项默认值（不含 settings）。
+     * Defaults of the global options (excluding settings).
      *
      * @return array<string, mixed>
      */
@@ -71,7 +71,7 @@ class ConfigManager {
         if (isset($decoded['settings']) && is_array($decoded['settings'])) {
             $settings = self::normalizeSettings($decoded['settings']);
         } else {
-            // 兼容旧版（顶层 provider + wecom/feishu/dingtalk）格式。
+            // Compatible with the legacy format (top-level provider + wecom/feishu/dingtalk).
             $settings = self::migrateLegacy($decoded);
         }
 
@@ -82,7 +82,7 @@ class ConfigManager {
     }
 
     /**
-     * 旧格式迁移：把已配置凭据的平台转换为设置项，原 provider 设为启用。
+     * Legacy migration: platforms with configured credentials become settings, and the former provider is enabled.
      *
      * @param array<string, mixed> $decoded
      * @return array<int, array<string, mixed>>
@@ -175,7 +175,7 @@ class ConfigManager {
     }
 
     /**
-     * 最多保留一个启用项（保留第一个启用的）。
+     * Keep at most one enabled setting (the first enabled one).
      *
      * @param array<int, array<string, mixed>> $settings
      * @return array<int, array<string, mixed>>
@@ -214,7 +214,7 @@ class ConfigManager {
         }
     }
 
-    /* ===================== 设置项读取 ===================== */
+    /* ===================== Reading settings ===================== */
 
     /**
      * @return array<int, array<string, mixed>>
@@ -253,13 +253,13 @@ class ConfigManager {
         return $active !== null ? (string) $active['name'] : '';
     }
 
-    /* ===================== 设置项写入 ===================== */
+    /* ===================== Writing settings ===================== */
 
     /**
-     * 新建或更新一个设置项。机密字段留空表示保持原值。
+     * Create or update a setting. A blank secret field keeps the current value.
      *
      * @param array<string, mixed> $input
-     * @return array<string, mixed> 规范化后的设置项
+     * @return array<string, mixed> normalized setting
      */
     public static function saveSetting(array $input): array {
         $config = self::load();
@@ -290,7 +290,7 @@ class ConfigManager {
         foreach (self::CREDENTIAL_FIELDS as $field) {
             $value = trim((string) ($input[$field] ?? ''));
             if ($value === '' && in_array($field, self::SECRET_FIELDS, true) && $existing !== null) {
-                // 机密字段留空：保持原值。
+                // Blank secret field: keep the current value.
                 $value = (string) ($existing[$field] ?? '');
             }
             $merged[$field] = $value;
@@ -346,7 +346,7 @@ class ConfigManager {
     }
 
     /**
-     * 启用指定设置项并停用其余项。
+     * Enable the given setting and disable the others.
      */
     public static function enableSetting(string $id): bool {
         $config = self::load();
@@ -407,10 +407,10 @@ class ConfigManager {
         self::$config = null;
     }
 
-    /* ===================== 运行期配置 ===================== */
+    /* ===================== Runtime configuration ===================== */
 
     /**
-     * 校验设置项是否填写了所需凭据。
+     * Check that a setting has the required credentials.
      *
      * @param array<string, mixed> $setting
      */
@@ -428,7 +428,7 @@ class ConfigManager {
     }
 
     /**
-     * 把设置项转换为对应平台客户端所需的凭据结构。
+     * Convert a setting into the credential structure required by the platform client.
      *
      * @param array<string, mixed> $setting
      * @return array<string, mixed>
@@ -461,7 +461,7 @@ class ConfigManager {
     }
 
     /**
-     * 供 ImSyncService / ImProviderFactory 使用的运行期配置（注入启用设置的 provider 与凭据）。
+     * Runtime configuration for ImSyncService / ImProviderFactory (injects the provider and credentials of the enabled setting).
      *
      * @return array<string, mixed>
      */
@@ -485,7 +485,7 @@ class ConfigManager {
         return $runtime;
     }
 
-    /* ===================== 兼容旧接口 ===================== */
+    /* ===================== Legacy interface compatibility ===================== */
 
     public static function getProvider(): string {
         $active = self::getActiveSetting();

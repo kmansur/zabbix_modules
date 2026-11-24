@@ -31,11 +31,11 @@ ob_start();
     <section class="cmdb-rule-section" data-category="<?= $category ?>">
         <header class="cmdb-card__header">
             <div class="cmdb-card__title"><span class="cmdb-card__marker"></span><h2><?= $t($label) ?></h2><span class="cmdb-count">0 <?= $t('Rules') ?></span></div>
-            <button type="button" class="cmdb-button cmdb-button--primary cmdb-add"><span class="cmdb-button__icon">＋</span><?= $t('Add Rule') ?></button>
+            <button type="button" class="cmdb-button cmdb-button--primary cmdb-add"><span class="cmdb-button__icon">+</span><?= $t('Add Rule') ?></button>
         </header>
         <div class="cmdb-table-wrap">
             <table class="cmdb-table"><thead><tr><th><?= $t('Match Field') ?></th><th><?= $t('Match Type') ?></th><th><?= $t('Item Name / Key') ?></th><th><?= $t('Value Conversion') ?></th><th><?= $t('Order / Actions') ?></th></tr></thead><tbody></tbody></table>
-            <div class="cmdb-empty"><span class="cmdb-empty__icon">＋</span><strong><?= $t('No rules configured') ?></strong><span><?= $t('Add the first rule to enable this metric.') ?></span></div>
+            <div class="cmdb-empty"><span class="cmdb-empty__icon">+</span><strong><?= $t('No rules configured') ?></strong><span><?= $t('Add the first rule to enable this metric.') ?></span></div>
         </div>
     </section>
     <?php endforeach ?>

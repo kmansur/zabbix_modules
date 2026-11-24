@@ -13,10 +13,10 @@ use Modules\ZabbixReports\Lib\ReportViewHelper;
 $pageTitle = $data['title'] ?? LanguageManager::t('Daily Report');
 $styleTag = ReportViewHelper::getStyleTag();
 
-// ===== 构建页面内容 =====
+// ===== Build the page content =====
 $content = (new CDiv())->addClass('rpt-container');
 
-// 标题 + 操作按钮
+// Title + action buttons
 $exportParams = ['groupid' => $data['filter_groupid'] ?? ''];
 $filterYear = $data['filter_year'] ?? (int)date('Y');
 $filterMonth = $data['filter_month'] ?? (int)date('m');
@@ -30,7 +30,7 @@ if (!empty($data['filter_group_name'])) {
     $titleText .= ' [' . $data['filter_group_name'] . ']';
 }
 
-// 构建年/月/日下拉选项
+// Build the year/month/day dropdown options
 $currentYear = (int)date('Y');
 $yearOptions = [
     ['value' => (string)$currentYear, 'label' => (string)$currentYear],
@@ -65,26 +65,26 @@ $content->addItem(
     )
 );
 
-// 统计摘要卡片
+// Summary statistics cards
 $content->addItem(ReportViewHelper::buildStatsGrid($data));
 
-// Top CPU / Memory 双列
+// Top CPU / Memory in two columns
 $content->addItem(ReportViewHelper::buildTopResourceSection($data));
 
-// 告警级别雷达 + 主机组问题分布双列图表
+// Severity radar + host group problem distribution, two-column charts
 $content->addItem(ReportViewHelper::buildChartsRow($data['alert_info'] ?? [], $data['hosts_by_group'] ?? []));
 
-// 问题主机标签
+// Problem host tags
 $content->addItem(ReportViewHelper::buildTopProblemHosts($data['top_problem_hosts'] ?? []));
 
-// 告警信息
+// Alarm information
 $content->addItem(ReportViewHelper::buildAlertSection($data['alert_info'] ?? []));
 
-// 主机群组信息
+// Host group information
 $content->addItem(ReportViewHelper::buildHostGroupSection($data['hosts_by_group'] ?? []));
 
-// 渲染页面
+// Render the page
 ViewRenderer::render($pageTitle, $styleTag, $content);
 
-// JS 增强
+// JS enhancements
 echo ReportViewHelper::getScriptTag();

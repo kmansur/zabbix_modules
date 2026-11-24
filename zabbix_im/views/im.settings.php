@@ -99,7 +99,7 @@ a.ims-btn:focus {
 
 $container = (new CDiv())->addClass('ims-container');
 
-// 工具栏
+// Toolbar
 $toolbar = (new CDiv())->addClass('ims-toolbar');
 $toolbar->addItem(
     (new CTag('button', true, LanguageManager::t('Add sync setting')))
@@ -119,7 +119,7 @@ $container->addItem(
         ->addClass('ims-note')
 );
 
-// 列表
+// List
 $table = (new CTable())->addClass('ims-table');
 $table->addRow([
     new CColHeader(LanguageManager::t('Setting name')),
@@ -207,7 +207,7 @@ if ($configPath !== '') {
     );
 }
 
-// 模态表单
+// Modal form
 $providerOptions = '';
 foreach (['wecom', 'feishu', 'dingtalk'] as $p) {
     $providerOptions .= '<option value="' . $p . '">'

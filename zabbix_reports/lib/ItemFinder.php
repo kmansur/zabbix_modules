@@ -188,16 +188,16 @@ class ItemFinder {
     }
     
     /**
-     * 查找CPU使用率监控项
+     * Find the CPU utilization item
      */
     public static function findCpuUtilization($hostid, $timeFrom = null, $timeTill = null) {
         $patterns = [
-            // 优先使用精确的key
+            // Prefer exact keys
             ['filter' => ['key_' => 'system.cpu.util']],
             ['filter' => ['key_' => 'system.cpu.util[]']],
             ['filter' => ['key_' => 'system.cpu.util[,user]']],
             ['filter' => ['key_' => 'system.cpu.util[,system]']],
-            // 按名称搜索作为备选
+            // Search by name as a fallback
             ['search' => ['name' => 'CPU utilization'], 'searchWildcardsEnabled' => true],
             ['search' => ['name' => 'CPU usage'], 'searchWildcardsEnabled' => true],
             ['search' => ['key_' => 'system.cpu.util'], 'searchWildcardsEnabled' => true]
@@ -207,14 +207,14 @@ class ItemFinder {
     }
     
     /**
-     * 查找CPU数量监控项
+     * Find the CPU count item
      */
     public static function findCpuCount($hostid, $timeFrom = null, $timeTill = null) {
         $patterns = [
-            // 优先使用精确的key
+            // Prefer exact keys
             ['filter' => ['key_' => 'system.cpu.num']],
             ['filter' => ['key_' => 'system.hw.cpu.num']],
-            // 按名称搜索作为备选
+            // Search by name as a fallback
             ['search' => ['name' => 'Number of CPUs'], 'searchWildcardsEnabled' => true],
             ['search' => ['name' => 'CPU cores'], 'searchWildcardsEnabled' => true],
             ['search' => ['key_' => 'cpu.num'], 'searchWildcardsEnabled' => true]
@@ -224,15 +224,15 @@ class ItemFinder {
     }
     
     /**
-     * 查找内存使用率监控项
+     * Find the memory utilization item
      */
     public static function findMemoryUtilization($hostid, $timeFrom = null, $timeTill = null) {
         $patterns = [
-            // 优先使用精确的key
+            // Prefer exact keys
             ['filter' => ['key_' => 'vm.memory.utilization']],
             ['filter' => ['key_' => 'vm.memory.util[pused]']],
             ['filter' => ['key_' => 'vm.memory.pused']],
-            // 按名称搜索作为备选
+            // Search by name as a fallback
             ['search' => ['name' => 'Memory utilization'], 'searchWildcardsEnabled' => true],
             ['search' => ['name' => 'Memory usage'], 'searchWildcardsEnabled' => true],
             ['search' => ['key_' => 'vm.memory.util'], 'searchWildcardsEnabled' => true]
@@ -242,14 +242,14 @@ class ItemFinder {
     }
     
     /**
-     * 查找内存总量监控项
+     * Find the total memory item
      */
     public static function findMemoryTotal($hostid, $timeFrom = null, $timeTill = null) {
         $patterns = [
-            // 优先使用精确的key
+            // Prefer exact keys
             ['filter' => ['key_' => 'vm.memory.size[total]']],
             ['filter' => ['key_' => 'vm.memory.total']],
-            // 按名称搜索作为备选
+            // Search by name as a fallback
             ['search' => ['name' => 'Total memory'], 'searchWildcardsEnabled' => true],
             ['search' => ['name' => 'Memory total'], 'searchWildcardsEnabled' => true],
             ['search' => ['key_' => 'vm.memory.size'], 'searchWildcardsEnabled' => true]
@@ -259,14 +259,14 @@ class ItemFinder {
     }
 
     /**
-     * 查找内存大小监控项（别名方法，与findMemoryTotal相同）
+     * Find the memory size item (alias, same as findMemoryTotal)
      */
     public static function findMemorySize($hostid, $timeFrom = null, $timeTill = null) {
         return self::findMemoryTotal($hostid, $timeFrom, $timeTill);
     }
     
     /**
-     * 根据模式列表查找监控项并获取值
+     * Find an item from a list of patterns and get its value
      */
     private static function findItemByPatterns($hostid, $patterns, $timeFrom = null, $timeTill = null) {
         foreach ($patterns as $pattern) {
@@ -283,7 +283,7 @@ class ItemFinder {
                 $item = $items[0];
                 $value = null;
                 
-                // 首先尝试获取历史数据
+                // First try to get history data
                 if ($timeFrom !== null && $timeTill !== null) {
                     $history = API::History()->get([
                         'output' => ['value', 'clock'],
@@ -292,11 +292,11 @@ class ItemFinder {
                         'time_till' => $timeTill,
                         'sortfield' => 'clock',
                         'sortorder' => 'DESC',
-                        'limit' => 10  // 获取多个值以确保有数据
+                        'limit' => 10  // Get several values to make sure there is data
                     ]);
                     
                     if (!empty($history)) {
-                        // 计算平均值（对于CPU和内存使用率）
+                        // Compute the average (for CPU and memory utilization)
                         if (strpos($item['key_'], 'util') !== false || strpos($item['key_'], 'utilization') !== false) {
                             $sum = 0;
                             $count = count($history);
@@ -305,18 +305,18 @@ class ItemFinder {
                             }
                             $value = $count > 0 ? $sum / $count : 0;
                         } else {
-                            // 对于CPU数量和内存总量，使用最新值
+                            // For CPU count and total memory, use the latest value
                             $value = $history[0]['value'];
                         }
                     }
                 }
                 
-                // 如果没有历史数据，使用最后一个值
+                // Without history data, use the last value
                 if ($value === null && isset($item['lastvalue']) && $item['lastvalue'] !== '') {
                     $value = $item['lastvalue'];
                 }
                 
-                // 如果仍然没有值，尝试获取最新的历史数据
+                // If there is still no value, try to get the latest history data
                 if ($value === null) {
                     $recentHistory = API::History()->get([
                         'output' => ['value'],

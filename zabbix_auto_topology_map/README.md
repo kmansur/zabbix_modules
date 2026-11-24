@@ -1,133 +1,133 @@
-# Zabbix 自动拓扑图模块
+# Zabbix Auto Topology Map Module
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 可识别、可启用；页面通过 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | Recognized, enabled; pages pass |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-这是一个 Zabbix 前端模块，用于自动发现网络设备之间的连接关系，并提供拓扑图的集中查看和编辑功能。模块在 Zabbix Web 的 **监测** 菜单下新增 **自动拓扑图** 入口，支持通过 SNMP 读取 LLDP、CDP、EDP 邻居信息，自动生成网络拓扑图。
+This Zabbix frontend module automatically discovers connections between network devices and provides a central interface for viewing and editing topology maps. It adds **Auto Topology Map** under **Monitoring** in the Zabbix web interface and reads LLDP, CDP, and EDP neighbor information over SNMP to generate network topology maps.
 
-模块直接通过 Zabbix 原生 API 读写拓扑图，与 **监测 → 拓扑图** 共用同一份数据。主机状态、问题信息和链路触发器可在画布中显示，带宽、上行流量和下行流量可通过手动关联监控项展示。
+The module reads and writes maps through native Zabbix APIs and shares the same data with **Monitoring → Maps**. The canvas displays host status, problem information, and link triggers. Bandwidth, inbound traffic, and outbound traffic can be displayed by manually associating monitoring items with links.
 
-## 功能特性
+## Features
 
-- **拓扑图管理**：支持创建、名称搜索、排序、重命名、批量删除和 JSON 导出。
-- **自动发现**：
-  - 从配置了 SNMP 接口的主机出发，读取 LLDP / CDP / EDP 邻居信息。
-  - 支持自定义发现深度，范围为 1～10 层，默认 3 层。
-  - 可选择包含未纳管设备，并按设备类型自动选择图标。
-  - 按树形布局生成拓扑图，支持同一对设备之间的多条端口连线。
-- **重新发现**：在当前图内更新设备和链路，尽可能复用已有元素与链接，保留链路指标和走线配置；支持全部重排或保留现有坐标。
-- **画布编辑**：支持添加、拖动和移除地图元素、形状与链接；可编辑图片和主机元素，以及矩形、椭圆和线。
-- **链路指标**：可为带宽、上行流量、下行流量分别选择多个数值型监控项，按最新值求和并进行单位换算。
-- **链路状态**：支持自动匹配端口状态触发器，也可手动选择；触发器报警时对应成员连线变色。
-- **连线走线**：支持自动曲线、自动直角避障和手动折点；聚合链路共用标签与走线配置。
-- **主机状态**：显示正常、问题、维护和停用状态，并支持问题高亮及状态图标。
-- **宏展开**：形状文本与主机元素标签支持 `{MAP.NAME}`、`{HOST.NAME}`、`{HOST.CONN}`，按当前拓扑图名称和主机最新名称/连接地址实时展开。
-- **自动刷新**：预览画布每 60 秒刷新状态和指标；编辑期间或页面隐藏时暂停刷新。
-- **原生主机菜单**：预览时点击主机，可打开 Zabbix 原生主机菜单，访问问题、最新数据、图形等页面。
-- **视图记忆**：记住用户上次查看的列表或拓扑图，支持缩放、平移和适应窗口。
-- **国际化与主题**：界面跟随 Zabbix 用户语言显示中文、英文或俄语，并适配深色、浅色主题。
+- **Map management**: Create, search by name, sort, rename, bulk delete, and export maps as JSON.
+- **Automatic discovery**:
+  - Read LLDP / CDP / EDP neighbors starting from hosts with SNMP interfaces.
+  - Configure discovery depth from 1 to 10 levels, with a default of 3.
+  - Optionally include unmanaged devices and automatically select icons by device type.
+  - Generate maps in a tree layout, with support for multiple port connections between the same pair of devices.
+- **Rediscovery**: Update devices and links in the current map, reusing existing elements and links where possible to preserve link metrics and routing settings. Rearrange the entire layout or retain existing coordinates.
+- **Canvas editing**: Add, drag, and remove map elements, shapes, and links. Edit image and host elements, as well as rectangles, ellipses, and lines.
+- **Link metrics**: Select multiple numeric items separately for bandwidth, inbound traffic, and outbound traffic. Their latest values are summed and converted to appropriate units.
+- **Link status**: Automatically match port status triggers or select them manually. When a trigger reports a problem, the corresponding member link changes color.
+- **Link routing**: Supports automatic curves, automatic orthogonal routing with obstacle avoidance, and manual waypoints. Aggregated links share labels and routing settings.
+- **Host status**: Displays normal, problem, maintenance, and disabled states, with problem highlighting and status icons.
+- **Macro expansion**: Shape text and host element labels support `{MAP.NAME}`, `{HOST.NAME}`, and `{HOST.CONN}`, expanded at render time from the current map name and the latest host name/connection address.
+- **Automatic refresh**: Refreshes status and metrics every 60 seconds in preview mode. Refreshing pauses while editing or when the page is hidden.
+- **Native host menu**: Click a host in preview mode to open the native Zabbix host menu and access problems, latest data, graphs, and other pages.
+- **View persistence**: Remembers the user's last list or map view and supports zooming, panning, and fitting the map to the window.
+- **Localization and themes**: Displays English or Brazilian Portuguese according to the Zabbix user's language and supports light and dark themes.
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
-根据 Zabbix 前端的实际安装位置，将本仓库部署到模块目录。以下为常见路径示例：
+Deploy this repository to the module directory for your Zabbix frontend installation. Common paths are shown below:
 
 ```bash
-# Zabbix 6.0 / 7.0 常见部署路径
+# Common deployment path for Zabbix 6.0 / 7.0
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/modules/
 
-# Zabbix 7.2+ / 7.4 / 8.0 常见部署路径（兼容性需另行验证）
+# Common deployment path for Zabbix 7.2+ / 7.4 / 8.0 (compatibility requires separate verification)
 git clone https://github.com/X-Mars/zabbix_modules.git /usr/share/zabbix/ui/modules/
 ```
 
-如果已部署本仓库，更新已有文件即可。也可仅将 `zabbix_auto_topology_map` 目录复制到实际的模块目录，确保 `manifest.json` 直接位于该目录下，不要额外嵌套一层。Web 服务用户需要具有模块文件的读取权限。
+If the repository is already deployed, update the existing files. Alternatively, copy only the `zabbix_auto_topology_map` directory into your actual module directory. Ensure that `manifest.json` is directly inside that directory, without an extra nested directory. The web server user must have read access to the module files.
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
 
-如果在 Zabbix 6.0 环境尝试部署，需要将模块的 `manifest_version` 修改为 `1.0`：
+If you attempt to deploy the module on Zabbix 6.0, change its `manifest_version` to `1.0`:
 
 ```bash
-# 在仓库根目录执行；该修改不代表已通过 Zabbix 6.0 兼容性验证
+# Run from the repository root; this change does not imply verified Zabbix 6.0 compatibility
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' zabbix_auto_topology_map/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 转到 **Administration → General → Modules（管理 → 通用 → 模块）**。
-2. 点击 **Scan directory（扫描目录）** 按钮扫描新模块。
-3. 找到 **Zabbix Auto Topology Map** 模块并启用。
-4. 刷新页面，在 **监测 → 自动拓扑图** 中访问模块。
+1. Go to **Administration → General → Modules**.
+2. Click **Scan directory** to scan for new modules.
+3. Find **Zabbix Auto Topology Map** and enable it.
+4. Refresh the page and open **Monitoring → Auto Topology Map**.
 
-也可通过 `zabbix.php?action=topomap.view` 直接访问模块页面。
+You can also access the module directly at `zabbix.php?action=topomap.view`.
 
-## 注意事项
+## Notes
 
-- **操作权限**：可见的拓扑图和主机受 Zabbix 权限控制；创建、编辑和删除还需具备角色权限 **创建和编辑拓扑图**（`actions.edit_maps`）。
-- **共享数据**：模块与原生拓扑图共用数据，在任一入口修改或删除拓扑图都会影响另一入口。修改前建议导出备份；本模块提供 JSON 导出，未提供对应的导入入口。
-- **指标配置**：带宽和流量监控项需要手动选择，不会自动匹配。选择器默认限定链路两端主机，且只显示数值型监控项；没有最新数据时显示 `-`。
-- **触发器匹配**：自动发现窗口支持编辑端口状态关键词，一行一个。默认中文关键词为“处于关闭状态”，英文为 `link down`，请按实际触发器名称调整。
-- **重新发现**：默认保留未再次发现的设备和链路；可选择移除未再次发现的自动连线，手工连线始终保留。更新前请确认布局与保留选项。
-- **发现性能**：大规模网络建议先选择少量起点和较小深度。SNMP 超时、访问限制或设备未开启邻居发现协议，均可能导致设备被跳过或发现结果不完整。
-- **画布尺寸**：尺寸根据内容自动计算，支持向四个方向扩展，不提供手动输入宽高的入口。
-- **原生元素限制**：主机组、触发器和嵌套拓扑图元素可预览、拖动和删除，属性编辑需使用原生编辑器；状态统计目前仅针对主机元素。
-- **图标与宏限制**：模块预览不解析图标映射；形状文本与主机元素标签中支持 `{MAP.NAME}`、`{HOST.NAME}`、`{HOST.CONN}` 宏，按当前拓扑图名称和主机最新名称/连接地址实时展开（`{HOST.CONN}` 优先取主接口，其次 SNMP 接口的 IP 或 DNS），其余宏不会展开。需要完整原生渲染效果时，请使用 Zabbix 原生拓扑图页面。
-- **升级与备份**：备份原生拓扑图数据及模块自建表，保留链路指标、走线和设置。升级后建议使用 `Ctrl+F5` 刷新浏览器缓存；若菜单未更新，可检查 PHP OPcache 缓存。
+- **Permissions**: Map and host visibility follows Zabbix permissions. Creating, editing, and deleting maps also requires the **Create and edit maps** role permission (`actions.edit_maps`).
+- **Shared data**: The module shares data with native Zabbix maps. Editing or deleting a map through either interface affects the other. Export a backup before making changes. The module provides JSON export but does not provide a corresponding import interface.
+- **Metric configuration**: Bandwidth and traffic items must be selected manually; they are not matched automatically. By default, the selector is limited to the hosts at both ends of the link and only displays numeric items. A missing latest value is displayed as `-`.
+- **Trigger matching**: The discovery dialog allows you to edit port status keywords, one per line. The default is `link down`; keywords for Chinese trigger names are also built in. Adjust these keywords to match your actual trigger names.
+- **Rediscovery**: Devices and links that are not rediscovered are retained by default. You can choose to remove automatic links that are no longer discovered; manual links are always retained. Review the layout and retention options before updating.
+- **Discovery performance**: For large networks, start with a small number of seed hosts and a shallow discovery depth. SNMP timeouts, access restrictions, or disabled neighbor discovery protocols can cause devices to be skipped or produce incomplete results.
+- **Canvas dimensions**: Dimensions are calculated automatically from the content, and the canvas can expand in all four directions. Manual width and height entry is not available.
+- **Native element limitations**: Host group, trigger, and nested map elements can be previewed, dragged, and deleted, but their properties must be edited in the native editor. Status calculations currently apply only to host elements.
+- **Icon and macro limitations**: The module preview does not resolve icon mappings. Shape text and host element labels support the `{MAP.NAME}`, `{HOST.NAME}`, and `{HOST.CONN}` macros, expanded at render time from the current map name and the latest host name/connection address (`{HOST.CONN}` prefers the main interface, then the SNMP interface IP or DNS). Other macros are not expanded. Use the native Zabbix map page when full native rendering is required.
+- **Upgrades and backups**: Back up native map data and the module's custom tables to preserve link metrics, routing, and settings. After upgrading, use `Ctrl+F5` to refresh the browser cache. If the menu does not update, check the PHP OPcache cache.
 
-### 目录归属与保存提示
+### Directory ownership and save errors
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-## 开发
+## Development
 
-插件基于 Zabbix 模块框架开发。文件结构：
+The plugin is built on the Zabbix module framework. File structure:
 
-- `manifest.json`：模块配置、路由与静态资源声明
-- `Module.php`：注册“监测 → 自动拓扑图”菜单
-- `actions/TopomapView.php`：页面控制器与初始视图状态
-- `actions/TopomapData.php`：拓扑图管理、自动发现结果保存、指标与走线配置等数据接口
-- `views/topomap.view.php`：页面视图与弹窗结构
-- `services/LldpDiscovery.php`：SNMP 邻居发现、端口解析与设备匹配
-- `lib/LanguageManager.php`：中文、英文和俄语语言管理
-- `assets/js/topomap.js`：列表、画布、编辑交互、自动发现与状态刷新
-- `assets/css/topomap.css`：页面样式与主题适配
+- `manifest.json`: Module configuration, routes, and static asset declarations
+- `Module.php`: Registers the Monitoring → Auto Topology Map menu entry
+- `actions/TopomapView.php`: Page controller and initial view state
+- `actions/TopomapData.php`: Data endpoints for map management, saving discovery results, metrics, and routing settings
+- `views/topomap.view.php`: Page view and dialog structure
+- `services/LldpDiscovery.php`: SNMP neighbor discovery, port parsing, and device matching
+- `lib/LanguageManager.php`: English and Brazilian Portuguese localization
+- `assets/js/topomap.js`: List, canvas, editing interactions, automatic discovery, and status refresh
+- `assets/css/topomap.css`: Page styles and theme support
 
-拓扑图主体使用 Zabbix 原生 `map` API 保存；链路指标、走线和模块设置保存在模块自建表中。扩展保存逻辑时，应同时考虑元素及链接 ID 的复用和关联配置的清理。
+Map content is saved through the native Zabbix `map` API. Link metrics, routing, and module settings are stored in custom module tables. When extending the save logic, account for element and link ID reuse and cleanup of associated configuration.
 
-如需扩展，可参考 [Zabbix 模块开发文档](https://www.zabbix.com/documentation/7.0/en/devel/modules)。
+For more information, see the [Zabbix module development documentation](https://www.zabbix.com/documentation/7.0/en/devel/modules).
 
-## 模块配置
+## Module Configuration
 
-### 配置自动发现环境
+### Configure the Automatic Discovery Environment
 
-- 为 **Zabbix Web 前端使用的 PHP 环境** 安装并启用 `snmp` 扩展，无需额外调用 `snmpwalk` 命令行工具。
-- 确保前端服务器能够通过 SNMP 访问目标设备，并在设备上开启相应的 LLDP / CDP / EDP 协议。
-- 在 Zabbix 主机中配置 SNMP 接口及认证信息。自动发现主机选择器仅允许选择具有 SNMP 接口的主机。
-- 模块会按需创建 `topomap_link_metrics`、`topomap_link_paths` 和 `topomap_settings` 数据表，前端使用的数据库账号需具有相应的建表和读写权限。
+- Install and enable the `snmp` extension in **the PHP environment used by the Zabbix web frontend**. The module does not require the `snmpwalk` command-line tool.
+- Ensure that the frontend server can reach the target devices over SNMP and that the relevant LLDP / CDP / EDP protocols are enabled on those devices.
+- Configure SNMP interfaces and authentication details on Zabbix hosts. The discovery host selector only allows hosts with SNMP interfaces.
+- The module creates the `topomap_link_metrics`, `topomap_link_paths`, and `topomap_settings` tables on demand. The database account used by the frontend needs the corresponding table creation, read, and write permissions.
 
-根据操作系统选择对应命令安装 PHP SNMP 扩展：
+Install the PHP SNMP extension using the command for your operating system:
 
 ```bash
 # Debian / Ubuntu
 sudo apt update
 sudo apt install php-snmp
 
-# 使用 dnf 的系统（如 Rocky Linux / AlmaLinux / Fedora）
+# Systems using dnf (such as Rocky Linux / AlmaLinux / Fedora)
 sudo dnf install php-snmp
 
-# 使用 yum 的系统（如 CentOS / RHEL 旧版本）
+# Systems using yum (such as older CentOS / RHEL releases)
 sudo yum install php-snmp
 ```
 
-## 许可证
+## License
 
-本项目遵循 Zabbix 的许可证。详情请见 [Zabbix 许可证](https://www.zabbix.com/license)。
+This project follows the Zabbix license. See the [Zabbix license](https://www.zabbix.com/license) for details.

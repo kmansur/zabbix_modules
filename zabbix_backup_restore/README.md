@@ -1,129 +1,130 @@
-# Zabbix 备份与还原
+# Zabbix Backup and Restore
 
-[English](README_en.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
+**English** · [Português (Brasil)](README_pt-BR.md)
 
-## ✨ 版本兼容性
+## ✨ Version Compatibility
 
-| Zabbix | PHP | manifest_version | 结果 |
+| Zabbix | PHP | manifest_version | Result |
 |---|---|---|---|
-| 6.0.49 | 7.3.33 | 1.0 | 两个扩展配置大类共 11 种配置通过真实导出、预览、新建还原、更新和回滚测试 |
-| 7.0.32 | 8.0.30 | 2.0 | 可识别、可启用；页面通过 |
-| 8.0.0 | 8.4.27 | 2.0 | 可识别、可启用；页面通过 |
+| 6.0.49 | 7.3.33 | 1.0 | All 11 access/shared types verified with real export, preview, create, update and rollback |
+| 7.0.32 | 8.0.30 | 2.0 | Recognized, enabled; pages pass |
+| 8.0.0 | 8.4.27 | 2.0 | Recognized, enabled; pages pass |
 
-## 描述
+## Description
 
-从 Zabbix 前端按类别导出配置到一个 YAML 文件，然后在目标实例预览并还原。单个 YAML 的导出和上传上限均为 **500 MiB（524,288,000 字节）**。支持 7.0 → 7.0、7.0 → 8.0 和 8.0 → 8.0，并可读取本模块旧版生成的 YAML。
+Select configuration in the Zabbix frontend, export one YAML file, and preview and restore it on the destination. The per-file limit is **500 MiB (524,288,000 bytes)** for both export and upload. Supported migration paths are 7.0 → 7.0, 7.0 → 8.0, and 8.0 → 8.0. The module also reads backups made by earlier releases of this module.
   
 ![1](images/1.png)
 
-## 功能特性
+## Features
 
-- 按类别导出 Zabbix 配置到 YAML，单文件上限为 500 MiB。
-- 还原前预览源版本、目标版本与配置记录数。
-- 创建缺失对象或更新匹配对象，失败时回滚当前批次。
+- Export configuration categories to YAML, up to 500 MiB per file.
+- Preview source and target versions and record counts before restoring.
+- Create missing objects or update matching objects, with batch rollback on failure.
 
-## 安装步骤
+## Installation
 
-### 安装模块
+### Install Module
 
-1. 在源、目标 Zabbix 前端创建 `modules/zabbix_backup_restore`，复制 `Module.php`、`manifest.json`、`actions/`、`assets/`、`lib/` 和 `views/`。
+1. Create `modules/zabbix_backup_restore` in both Zabbix frontends and copy `Module.php`, `manifest.json`, `actions/`, `assets/`, `lib/`, and `views/` into it.
 
-### ⚠️ 修改 manifest.json 文件
+### ⚠️ Modify manifest.json
 
-Zabbix 6.0 将模块清单版本改为 1.0；7.0/8.0 保持 2.0。
+For Zabbix 6.0, change the module manifest version to 1.0. Keep 2.0 on 7.0/8.0.
 
 ```bash
 sed -i 's/"manifest_version": 2.0/"manifest_version": 1.0/' /usr/share/zabbix/modules/zabbix_backup_restore/manifest.json
 ```
 
-### 启用模块
+### Enable Module
 
-1. 用超级管理员打开 **管理 → 常规 → 模块**，扫描目录并启用 **Zabbix Backup and Restore**。
-2. 进入 **管理 → 备份与还原**。模块的菜单、导出、预览和还原均要求超级管理员权限。
+1. As a Super admin, open **Administration → General → Modules**, scan the directory, and enable **Zabbix Backup and Restore**.
+2. Open **Administration → Backup and restore**. The menu and all backup operations require Super admin access.
 
-## 注意事项
+## Notes
 
-### 目录归属与保存提示
+### Directory ownership and save errors
 
-仅当模块目录的属主或属组与 PHP 运行账号不匹配时，显示实际安装目录的归属修改命令；归属正确时不显示提醒。保存失败时，在原错误提示中补充修改目录归属和 `getenforce` 检查 SELinux 的提醒。提示跟随 Zabbix Web 用户语言，不增加弹窗或命令折叠区。
+Module pages show an ownership command only when the directory owner or group differs from the PHP runtime account. Correct ownership produces no reminder. Save errors retain their original message and add directory ownership and SELinux (`getenforce`) reminders. Text follows the Zabbix Web user language. No extra dialogs or command panels are added.
 
-## 开发
+## Development
 
-### 本地回归测试
+### Local regression tests
 
-7.0/8.0 运行 `php tests/regression.php /path/to/zabbix/ui`，覆盖新版和旧版文件、500 MiB 边界、时区、引用映射、回滚及重复还原。6.0 运行 `php tests/legacy.php /path/to/zabbix`，检查旧版原生导出规则、两个扩展分类、用户组权限映射及 YAML 往返。各测试使用目标版本自带的 YAML 库和常量。
+On 7.0/8.0, run `php tests/regression.php /path/to/zabbix/ui` to cover current and legacy files, the 500 MiB boundary, timezones, reference mapping, rollback and retries. On 6.0, run `php tests/legacy.php /path/to/zabbix` to check native import rules, both extended categories, group rights mapping and YAML round trips. Each suite uses that version’s bundled YAML parser and constants.
 
-## 模块配置
+## Module Configuration
 
-### 导出和还原
+### Export and restore
 
-1. 在源实例勾选配置类别。主机、模板、分组及引用对象可一起导出，也可以在目标实例预先准备依赖。点击 **下载 YAML**。文件名为 `zabbix_backup_yyyy-mm-dd_hh-mm-ss.yaml`，时间取自当前 Zabbix 用户的时区。
-2. 在目标实例上传 `.yaml` 或 `.yml` 文件，选择还原方式。默认创建缺失对象。勾选 **更新目标实例中的同名或同 UUID 配置** 后，匹配对象的字段和相关子列表可被源配置更新或替换。执行更新前，可以先导出目标实例的配置作备份。
-3. 点击 **预览还原**，核对来源和目标版本、文件记录数及需要手工补充的内容。预览校验文件结构和版本，记录数表示文件里包含的条目。目标依赖和写入校验在执行还原时完成。
-4. 点击 **执行还原**。浏览器会再次上传同一文件。预览凭证与文件内容及还原选项绑定，有效期为一小时。重新选择文件、修改更新选项或预览过期后，需重新预览。
-5. 模块使用 Zabbix API 创建、更新并重建引用。缺失或存在歧义的依赖会终止处理，失败的批次会回滚。完成后可按模板名、主机名或所属分组核对关键对象。
+1. Select the configuration categories on the source. Include related configuration or confirm that it already exists on the destination. Click **Download YAML**. The filename follows `zabbix_backup_yyyy-mm-dd_hh-mm-ss.yaml` in the current Zabbix user's timezone.
+2. On the destination, select the `.yaml` or `.yml` file and choose the restore mode. The default creates missing configuration. The update option also changes matching records by name or UUID and can replace their nested lists. Consider exporting the destination configuration before enabling updates.
+3. Click **Preview restore**. Review the source and destination versions, counts from the file, and any manual follow-up. Preview checks the file structure and version. The module validates destination dependencies and writes during restore.
+4. Click **Restore configuration**. The browser uploads the same file again. The confirmation is bound to the file contents and the restore option and expires after one hour. Preview again after selecting a different file, changing the option, or letting the confirmation expire.
+5. The module writes through the Zabbix API and rebuilds references. A missing or ambiguous dependency stops the restore and rolls back the batch. Afterward, verify important records by their names or groups in the destination frontend.
 
-### 迁移范围
+### Migration coverage
 
-| 类别 | 可迁移配置 |
+| Area | Configuration |
 | --- | --- |
-| 监控 | 主机、模板、主机组、模板组、网络发现规则、维护计划、代理、代理组 |
-| 可视化 | 拓扑图、图像、模板仪表板、8.0 全局仪表板 |
-| 访问与通知 | 用户、用户组、角色、通知接收地址、媒体类型、动作、脚本 |
-| 服务与共享 | 服务及依赖、SLA、全局宏、全局正则表达式、事件关联 |
+| Monitoring | Hosts, templates, host groups, template groups, network discovery, maintenance periods, proxies, proxy groups |
+| Visualization | Maps, images, template dashboards, global dashboards on 8.0 |
+| Access and notifications | Users, user groups, roles, notification destinations, media types, actions, scripts |
+| Services and shared configuration | Services and dependencies, SLAs, global macros, global regular expressions, event correlations |
 
-Zabbix 6.0 页面同样提供 **访问权限与通知**（用户、用户组、角色、媒体类型、动作、脚本）和 **服务与共享配置**（服务及依赖、SLA、全局宏、全局正则表达式、事件关联）。6.0 使用旧版用户组 rights、脚本字段和动作条件常量进行备份及还原。已在开发环境 6.0.49 上实测。更早的 6.0 补丁版本仍需在目标环境确认 API 能力。
+Zabbix 6.0 also provides **Access and notifications** (users, user groups, roles, media types, actions and scripts) and **Services and shared configuration** (services and dependencies, SLAs, global macros, global regular expressions and event correlations). The module adapts legacy user group rights, script fields and action condition constants. These operations have been tested on the development server running 6.0.49. Earlier 6.0 patch releases require confirmation of the available APIs.
 
-6.0 的监控分类提供主机组、模板、主机、图像和拓扑图；模板组、代理组等后续版本配置请按对应版本的导出页面选择。本次 6.0 扩展配置验收覆盖同版本还原；跨大版本还原需在目标实例核对依赖与 API 差异。
+The 6.0 Monitoring category includes host groups, templates, hosts, images and maps. Use the corresponding version's export page for later features such as template groups and proxy groups. This round of 6.0 acceptance testing covers same-version restore. Check dependencies and API differences on the destination before a cross-version restore.
 
-监控项、触发器、低级别发现规则及其原型、Web 场景、值映射和用户宏随所属主机或模板迁移。选择带有依赖关系的模板或主机时，应同时导出所需父模板、分组、代理等对象，或确认目标实例已有这些依赖。低级别发现产生的对象由目标服务器重新发现。
+Items, triggers, low-level discovery rules and prototypes, web scenarios, value maps, and user macros travel with their hosts or templates. Include referenced parent templates, groups, and proxies or make sure they exist on the destination. The destination rediscovers objects generated by discovery.
 
-- 配置备份的范围限于配置对象。历史、趋势、事件和当前运行状态需要通过相应的数据迁移方式处理。
-- 新建本地账户后需要重置密码，机密宏的值需要重新配置。涉及 LDAP/SAML、MFA 或前端模块权限时，请先在目标准备对应的目录、认证方式及模块。外部系统预配的用户需要重新预配。
-- 图像、拓扑图和仪表板采用 Zabbix 原生导出范围。相关所有者和共享权限请在目标核对。8.0 生成的备份需要 8.0 目标。
-- YAML 可能包含 PSK、SNMP、媒体类型凭据和可执行配置。通过 HTTPS 传输，限制文件的存储和访问权限，并只还原可信文件。
+- The backup covers configuration objects. Migrate history, trends, events, and runtime state through the corresponding data migration workflows.
+- Reset newly created local account passwords and re-enter secret macro values. Prepare referenced LDAP/SAML directories, MFA methods, and frontend modules on the destination. Provision externally managed users again.
+- Zabbix native export determines map, image, and dashboard coverage. Check ownership and sharing on the destination. Backups created on 8.0 require an 8.0 destination.
+- YAML can contain PSKs, SNMP or media credentials, and executable configuration. Use HTTPS, restrict access to the files, and restore backups from trusted sources.
 
-### 500 MiB 大文件环境配置
+### Server settings for 500 MiB files
 
-500 MiB 指 YAML 文件本身。上传是 `multipart/form-data` 请求，请为表单字段和头部留出空间。可将各层请求体上限设为 **512 MiB（536,870,912 字节）**，单文件上限设为 500 MiB。代理、负载均衡器或 WAF 的较低限制也会生效。页面显示模块与 PHP 限制计算出的上传上限。Web 服务器和上游代理的限制需要分别核对。
+The 500 MiB limit applies to the YAML file. A `multipart/form-data` upload also contains headers and form fields. Allow at least **512 MiB (536,870,912 bytes)** for the HTTP request and 500 MiB for the file. A lower limit on any web server, reverse proxy, load balancer, or WAF can reject the request. The module displays the limit calculated from the application and PHP settings. Check upstream limits separately.
 
-模块按记录读写 YAML，导出先写到 PHP 临时目录，再向浏览器发送文件。上传临时目录和代理缓冲目录也可能落盘。为每个并发请求预留足够的可用磁盘空间，并确认运行用户可以写入相应目录。Zabbix 原生 API 仍会在 PHP 内存中构建待导出或还原的配置。内存峰值与对象数量、嵌套规模和并发量有关，可能达到文件体积的多倍。建议在目标环境测量代表性备份的峰值，再确定 PHP 内存配额、容器上限和 PHP-FPM 的 `pm.max_children`。资源紧张时可分批迁移，按依赖顺序还原。
+The module reads and writes YAML by record. Export uses temporary storage before streaming the download. PHP uploads and proxy buffering can also consume temporary disk space. Allow enough space for concurrent requests and check directory access for the services involved. The native Zabbix APIs still build configuration structures in PHP memory. Peak usage can be several times the YAML size and depends on object count, nesting and concurrency. Measure a representative backup before sizing PHP memory, the container limit, and PHP-FPM's `pm.max_children`. With constrained resources, migrate in smaller batches and restore in dependency order.
 
 #### PHP / PHP-FPM
 
-在处理 Zabbix 的 PHP-FPM 池配置中设置参数。池配置常见于 `/etc/php-fpm.d/` 或 `/etc/php/<版本>/fpm/pool.d/`。请核对 Web 请求实际使用的池及其配置，CLI 的 `php -i` 只反映 CLI 环境。
+Apply these settings to the pool that handles the Zabbix frontend. Pool files are commonly under `/etc/php-fpm.d/` or `/etc/php/<version>/fpm/pool.d/`. Confirm the effective settings for the web SAPI. The CLI configuration reported by `php -i` may differ.
 
 ```ini
-; 合并到当前 Zabbix FPM 池
+; Add to the existing Zabbix FPM pool
 php_value[upload_max_filesize] = 500M
 php_value[post_max_size] = 512M
 php_value[max_input_time] = 1800
 php_value[max_execution_time] = 1800
 request_terminate_timeout = 2100s
 
-; 内存充足的测试环境示例。按实测峰值、可用内存及并发量调整
+; Example for a test environment with sufficient RAM.
+; Base this value on measured peak usage and available memory per worker.
 php_value[memory_limit] = 16G
 ```
 
-如使用 PHP 的 Web SAPI `php.ini`，直接设置 `upload_max_filesize`、`post_max_size`、`max_input_time`、`max_execution_time` 及 `memory_limit`；`request_terminate_timeout` 属于 FPM 池。必要时用 `upload_tmp_dir` 指定有足够空间、由 PHP 运行用户访问的上传临时目录。导出临时文件通常位于 PHP 的系统临时目录，可用 `sys_temp_dir` 指定。修改后用 `php-fpm -t` 或对应版本的 FPM 命令检查配置，再重载实际运行的服务。部署在容器时，同时核对容器的内存配额和挂载空间。 [PHP 参数手册](https://www.php.net/manual/zh/ini.core.php) · [PHP-FPM 池配置](https://www.php.net/manual/zh/install.fpm.configuration.php)
+In the web SAPI's `php.ini`, use the regular PHP directives directly. `request_terminate_timeout` belongs to the FPM pool. Set `upload_tmp_dir` if PHP's upload directory needs a separate volume. PHP's system temporary directory, configurable with `sys_temp_dir`, holds the temporary export. Test with `php-fpm -t` or the matching versioned binary, then reload the correct service. For containers, check memory limits and mounted storage as well. [PHP configuration](https://www.php.net/manual/en/ini.core.php) · [PHP-FPM pool configuration](https://www.php.net/manual/en/install.fpm.configuration.php)
 
 #### Apache 2.4 + PHP-FPM
 
-把请求体设置放入服务 Zabbix 的虚拟主机或路径，把 `ProxyTimeout` 放入对应虚拟主机。下面的路径需与访问 URL 一致。
+Set `ProxyTimeout` in the Zabbix virtual host. Set `LimitRequestBody` for the frontend path, adjusting it to match the URL.
 
 ```apache
-# Zabbix 虚拟主机内
+# Inside the Zabbix virtual host
 ProxyTimeout 2100
 <Location "/zabbix/">
     LimitRequestBody 536870912
 </Location>
 ```
 
-如果配置了 `RequestReadTimeout`，慢速上传还会受 `mod_reqtimeout` 的读取时间和最低速率限制。出现 HTTP 408 时检查该层。使用 `apachectl configtest` 或 `httpd -t` 检查后重载 Apache。 [LimitRequestBody](https://httpd.apache.org/docs/2.4/mod/core.html#limitrequestbody) · [ProxyTimeout](https://httpd.apache.org/docs/2.4/mod/mod_proxy.html#proxytimeout) · [mod_reqtimeout](https://httpd.apache.org/docs/2.4/mod/mod_reqtimeout.html)
+If `RequestReadTimeout` is set, its body timeout and minimum data rate also apply to slow uploads. Check that layer for HTTP 408. Run `apachectl configtest` or `httpd -t` before reloading Apache. [LimitRequestBody](https://httpd.apache.org/docs/2.4/mod/core.html#limitrequestbody) · [ProxyTimeout](https://httpd.apache.org/docs/2.4/mod/mod_proxy.html#proxytimeout) · [mod_reqtimeout](https://httpd.apache.org/docs/2.4/mod/mod_reqtimeout.html)
 
 #### Nginx
 
-把以下设置合并到现有 Zabbix `server` 或匹配 `zabbix.php` 的 `location`。直连 PHP-FPM 时使用 `fastcgi_*`；Nginx 反代 Apache 时在执行 `proxy_pass` 的位置使用 `proxy_*`。
+Apply the directives in the existing Zabbix `server` or the `location` handling `zabbix.php`. Use the FastCGI timeouts when Nginx connects to PHP-FPM. Use the proxy timeouts in the existing `proxy_pass` location when it forwards to Apache or another HTTP backend.
 
 ```nginx
 client_max_body_size 512m;
@@ -133,25 +134,25 @@ client_body_timeout 300s;
 fastcgi_send_timeout 2100s;
 fastcgi_read_timeout 2100s;
 
-# Nginx → Apache / 其他 HTTP 后端时，在现有 proxy_pass 位置设置
+# Nginx → Apache or another HTTP backend
 proxy_send_timeout 2100s;
 proxy_read_timeout 2100s;
 ```
 
-`client_body_timeout`、`fastcgi_read_timeout` 和 `proxy_read_timeout` 衡量的是连续两次读取数据之间的等待时间。大上传可能写入 `client_body_temp_path`。使用 `nginx -t` 校验后重载 Nginx。 [Nginx 请求体参数](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size) · [FastCGI 参数](https://nginx.org/en/docs/http/ngx_http_fastcgi_module.html#fastcgi_read_timeout) · [HTTP 反代参数](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_read_timeout)
+The client body and upstream read timeouts measure idle time between reads. Large uploads may use disk in `client_body_temp_path`. Run `nginx -t` before reloading Nginx. [Nginx request body settings](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size) · [FastCGI settings](https://nginx.org/en/docs/http/ngx_http_fastcgi_module.html#fastcgi_read_timeout) · [HTTP proxy settings](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_read_timeout)
 
-#### 验证和排错
+#### Verification and troubleshooting
 
-| 现象 | 检查位置 |
+| Symptom | What to check |
 | --- | --- |
-| HTTP 413 或浏览器提示文件过大 | 模块的 500 MiB 上限、`upload_max_filesize`、`post_max_size` 及每一层代理的请求体限制 |
-| `POST Content-Length ... exceeds the limit` | Web SAPI 生效的 `post_max_size`，其值需要大于文件和表单开销之和 |
-| HTTP 500、`Allowed memory size ... exhausted` 或 FastCGI 连接被重置 | PHP-FPM 日志、池的 `memory_limit` 及容器或主机的内存限制 |
-| HTTP 502、503 或 504 | PHP-FPM 工作进程状态、Apache/Nginx 错误日志、相应的执行时间和上游超时 |
-| 预览可用，还原失败 | 文件及选项是否与预览一致，错误中列出的目标依赖、权限或 API 校验条件 |
+| HTTP 413 or file size error | The module's 500 MiB limit, `upload_max_filesize`, `post_max_size`, and the request limit at every proxy |
+| `POST Content-Length ... exceeds the limit` | Effective web SAPI `post_max_size`, with room for both the YAML and multipart overhead |
+| HTTP 500, `Allowed memory size ... exhausted`, or a reset FastCGI connection | PHP-FPM logs, pool `memory_limit`, and host or container memory limits |
+| HTTP 502, 503, or 504 | PHP-FPM workers, Apache/Nginx error logs, execution limits, and upstream timeouts |
+| Preview succeeds and restore fails | The file and option used in preview, then destination references and API validation errors |
 
-重载后刷新模块页面，检查显示的 PHP 上传上限。先导出并预览一份小文件，再在隔离目标上验证代表性的大文件和正式还原。留意 Web 和 PHP-FPM 日志，并记录耗时、内存和临时磁盘峰值。
+After reloading the services, refresh the module and check the PHP upload limit displayed on the page. Export and preview a small file first. Then test a representative large file and an actual restore on an isolated destination. Review both PHP and web server logs, and record elapsed time, memory and temporary disk usage.
 
-## 许可证
+## License
 
-本模块的许可说明见仓库[许可证](../README.md#许可证)。分发时保留相关第三方署名。
+See the repository [license terms](../README.md#license). Preserve third-party attribution when redistributing.

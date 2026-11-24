@@ -2,39 +2,6 @@
 /** Vendored into each module so modules remain independently installable. PHP 7.3+. */
 if (!class_exists('ZabbixModuleNotice', false)) {
     final class ZabbixModuleNotice {
-        private const RUSSIAN = [
-            'If saving fails, change the directory ownership and check SELinux: ' => 'При ошибке сохранения измените владельца каталога и проверьте SELinux: ',
-            'Directory ownership reminder: ' => 'Проверьте владельца каталога: ',
-            'Please change the directory ownership and check SELinux.' => 'Измените владельца каталога и проверьте SELinux.',
-            'Configuration file: ' => 'Файл конфигурации: ',
-            'Invalid JSON' => 'Недопустимый JSON',
-            'Invalid config.json' => 'Недопустимый файл config.json',
-            'Invalid provider' => 'Недопустимый поставщик',
-            'Invalid region' => 'Недопустимый регион',
-            'Account not found' => 'Учётная запись не найдена',
-            'Name is required.' => 'Укажите имя.',
-            'Access key is required.' => 'Укажите ключ доступа.',
-            'Secret key is required.' => 'Укажите секретный ключ.',
-            'Cannot lock config file' => 'Не удалось заблокировать файл конфигурации',
-            'Failed to initialize branding storage. Review the web server error log for details.' => 'Не удалось инициализировать хранилище оформления. Проверьте журнал ошибок веб-сервера.',
-            'Failed to encode branding settings as JSON.' => 'Не удалось закодировать настройки оформления в JSON.',
-            'Please select dates' => 'Выберите даты',
-            'Help URL: only HTTP and HTTPS URLs are allowed.' => 'Ссылка на справку должна начинаться с HTTP или HTTPS.',
-            'Server name: enter a name, or choose Default or Hidden.' => 'Введите имя сервера или выберите «По умолчанию» либо «Скрыто».',
-            'file too large.' => 'Файл слишком велик.',
-            'upload was only partially completed.' => 'Файл загружен только частично.',
-            'no file was uploaded.' => 'Файл не загружен.',
-            'missing temporary upload directory.' => 'Временный каталог загрузки отсутствует.',
-            'could not write file to disk.' => 'Не удалось записать файл на диск.',
-            'upload blocked by a PHP extension.' => 'Загрузка заблокирована расширением PHP.',
-            'unknown upload error.' => 'Неизвестная ошибка загрузки.',
-            'invalid upload payload.' => 'Недопустимые данные загрузки.',
-            'invalid file type. Allowed: PNG, JPG, GIF, ICO.' => 'Недопустимый тип файла. Поддерживаются PNG, JPG, GIF и ICO.',
-            'file too large. Maximum: 2 MB.' => 'Файл слишком велик. Максимум — 2 МБ.',
-            'file content does not match the selected image format.' => 'Содержимое файла не соответствует выбранному формату изображения.',
-            'cpu_usage rules are required' => 'Для использования ЦП требуется хотя бы одно правило.',
-            'memory_usage rules are required' => 'Для использования памяти требуется хотя бы одно правило.',
-        ];
 
         private const PORTUGUESE = [
             'If saving fails, change the directory ownership and check SELinux: ' => 'Se o salvamento falhar, altere o proprietário do diretório e verifique o SELinux: ',
@@ -92,25 +59,11 @@ if (!class_exists('ZabbixModuleNotice', false)) {
                 } catch (\Throwable $e) { $locale = 'en_US'; }
             }
             $locale = trim($locale);
-            if (preg_match('/^ru(?:[-_]|$)/i', $locale)) {
-                return 'ru_RU';
-            }
-            if (preg_match('/^pt(?:[-_]|$)/i', $locale)) {
-                return 'pt_BR';
-            }
-
-            return preg_match('/^zh(?:[-_]|$)/i', $locale) ? 'zh_CN' : 'en_US';
+            // Supported languages: Brazilian Portuguese (pt*) and English (everything else).
+            return preg_match('/^pt(?:[-_]|$)/i', $locale) ? 'pt_BR' : 'en_US';
         }
-        public static function text(string $english, string $chinese): string {
-            $language = self::language();
-            if ($language === 'ru_RU') {
-                return self::RUSSIAN[$english] ?? $english;
-            }
-            if ($language === 'pt_BR') {
-                return self::PORTUGUESE[$english] ?? $english;
-            }
-
-            return $language === 'zh_CN' ? $chinese : $english;
+        public static function text(string $english): string {
+            return self::language() === 'pt_BR' ? (self::PORTUGUESE[$english] ?? $english) : $english;
         }
         public static function escape(string $text): string {
             return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -156,8 +109,7 @@ if (!class_exists('ZabbixModuleNotice', false)) {
                 .' '.escapeshellarg(realpath($module) ?: $module);
         }
         public static function saveHint(string $module): string {
-            return self::text('If saving fails, change the directory ownership and check SELinux: ',
-                '保存报错时，请修改目录归属并检查 SELinux：')
+            return self::text('If saving fails, change the directory ownership and check SELinux: ')
                 .self::ownershipCommand($module).'; getenforce';
         }
         public static function reminder(string $module): string {
@@ -174,7 +126,7 @@ if (!class_exists('ZabbixModuleNotice', false)) {
                 return $hint;
             }
             return $hint.'<p class="module-ownership-reminder" role="note" style="margin:12px 0;overflow-wrap:anywhere">'
-                .self::escape(self::text('Directory ownership reminder: ', '目录归属提醒：'))
+                .self::escape(self::text('Directory ownership reminder: '))
                 .'<code>'.self::escape(self::ownershipCommand($module)).'</code></p>';
         }
         public static function storageText(string $module, array $targets): string {
@@ -191,49 +143,14 @@ if (!class_exists('ZabbixModuleNotice', false)) {
                 $commands[] = 'chown '.(isset($spec['recursive']) && !$spec['recursive'] ? '' : '-R ')
                     .'-- '.escapeshellarg($account['user'].':'.$account['group']).' '.escapeshellarg($path);
             }
-            return self::text('Please change the directory ownership and check SELinux.', '请修改目录归属并检查 SELinux。')
+            return self::text('Please change the directory ownership and check SELinux.')
                 ."\n".implode("\n", $commands ?: [self::ownershipCommand($module)])."\ngetenforce";
         }
         public static function failure(\Throwable $error, string $module, array $targets): string {
             return self::translate($error->getMessage())."\n".self::storageText($module, $targets);
         }
         public static function translate(string $message): string {
-            $translations = [
-                'Invalid JSON' => 'JSON 格式无效', 'Invalid config.json' => 'config.json 格式无效',
-                'Invalid provider' => '不支持的服务商', 'Invalid region' => '区域参数无效',
-                'Account not found' => '未找到账号', 'Name is required.' => '请输入名称。',
-                'Access key is required.' => '请输入访问密钥。', 'Secret key is required.' => '请输入密钥。',
-                'Cannot lock config file' => '无法锁定配置文件',
-                'Failed to initialize branding storage. Review the web server error log for details.' => '品牌存储初始化失败，请查看 Web 服务器错误日志。',
-                'Failed to encode branding settings as JSON.' => '品牌配置无法编码为 JSON。',
-                'Please select dates' => '请选择日期',
-                "Help URL: only HTTP and HTTPS URLs are allowed." => "帮助链接：仅允许 HTTP 和 HTTPS 地址。",
-                "Server name: enter a name, or choose Default or Hidden." => "服务器名称：请输入名称，或选择默认/隐藏。",
-                "file too large." => "文件过大。",
-                "upload was only partially completed." => "文件仅上传了一部分。",
-                "no file was uploaded." => "未上传文件。",
-                "missing temporary upload directory." => "缺少上传临时目录。",
-                "could not write file to disk." => "无法将文件写入磁盘。",
-                "upload blocked by a PHP extension." => "上传被 PHP 扩展阻止。",
-                "unknown upload error." => "未知上传错误。",
-                "invalid upload payload." => "上传内容无效。",
-                "invalid file type. Allowed: PNG, JPG, GIF, ICO." => "文件类型无效，支持 PNG、JPG、GIF、ICO。",
-                "file too large. Maximum: 2 MB." => "文件过大，上限为 2 MB。",
-                "file content does not match the selected image format." => "文件内容与所选图片格式不符。"
-            ];
-            $language = self::language();
-            if ($language === 'zh_CN') {
-                if (preg_match('/^(cpu_usage|memory_usage) rules are required$/', $message, $match)) {
-                    return ($match[1] === 'cpu_usage' ? 'CPU 使用率' : '内存使用率').'至少需要一条匹配规则。';
-                }
-                return $translations[$message] ?? $message;
-            }
-            $reverse = array_flip($translations);
-            $english = $reverse[$message] ?? $message;
-            if ($language === 'pt_BR') {
-                return self::PORTUGUESE[$english] ?? $english;
-            }
-            return $language === 'ru_RU' ? (self::RUSSIAN[$english] ?? $english) : $english;
+            return self::language() === 'pt_BR' ? (self::PORTUGUESE[$message] ?? $message) : $message;
         }
     }
 }
